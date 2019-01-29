@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "build",
+        "-t",
+        "gcr.io/atomic-sensors-ci/tests-image",
+        "./tests"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "run",
+        "gcr.io/atomic-sensors-ci/tests-image"
+      ]
+    }
+  ]
+}
