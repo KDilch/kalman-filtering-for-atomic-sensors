@@ -1,3 +1,3 @@
 FROM python:3
-ADD main.py /
+ADD tests/main.py /
 CMD [ "python", "./main.py" ]
