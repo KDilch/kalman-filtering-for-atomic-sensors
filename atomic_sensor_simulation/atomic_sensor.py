@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from numpy.random import randn  # white noise
+from noise import GaussianWhiteNoise
 
 
 class Spin(object):
 
     def __init__(self, larmor_freq, t2_param, scalar_strength):
         self.__precession = Precession(larmor_freq, t2_param)
-        self.__noise = Gaussian_White_Noise(scalar_strength)
+        self.__noise = GaussianWhiteNoise(scalar_strength)
         self.__signal = None
 
         self.__vec_previous = None
@@ -56,25 +56,6 @@ class Precession(object):
         self.__val = self.__arr.dot(spin_vec) * time_step
         return
 
-
-class Gaussian_White_Noise(object):
-    def __init__(self, scalar_strength, mean=0):
-        self.__mean = mean
-        self.__scalar_strength = scalar_strength  # determined experimentally
-        self.__val = None
-
-    @property
-    def val(self):
-        if self.__val is not None:
-            return self.__val
-        else:
-            Warning('Not current value defined for gaussian noise. You need to step first.')
-
-    def step(self, time_step):
-        self.__val = np.sqrt(self.__scalar_strength) * time_step * randn(2) + self.__mean
-        return
-
-
 class Signal(object):
 
     def __init__(self, larmor_freq, quadrature, coupling_const, correlation_time, scalar_strength):
@@ -102,10 +83,10 @@ class Signal(object):
 
 class OrnsteinUhlenbeckProcess(object):
 
-    def __init__(self, quadrature, correlation_time, scalar_stregth):
+    def __init__(self, quadrature, correlation_time, scalar_strength):
         self.__correlation_time = correlation_time
         self.__quadrature = quadrature
-        self.__noise = Gaussian_White_Noise(scalar_stregth)
+        self.__noise = GaussianWhiteNoise(scalar_strength)
         self.__val = None
 
     @property

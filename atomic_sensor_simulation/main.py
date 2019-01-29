@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import logging
+import sys
 
 
 def main():
-    #setup a logger
-    logger = logging.getLogger('AtomicSensorSimulation')
+    # setup a logger
+    logger = logging.getLogger('atomic_sensor_simulation')
     logger.setLevel(logging.DEBUG)
-    file_handler = logging.FileHandler('logs/AtomicSensorSimulation.log')
+    file_handler = logging.FileHandler('logs/atomic_sensor_simulation.log')
     file_handler.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.ERROR)
