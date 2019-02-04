@@ -1,26 +1,59 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import logging
-import sys
+from logger import Logger
+from utilities import stringify_namespace
+import argparse
 
 
 def main():
-    # # setup a logger
-    # logger = logging.getLogger('atomic_sensor_simulation')
-    # logger.setLevel(logging.DEBUG)
-    # file_handler = logging.FileHandler('logs/atomic_sensor_simulation.log')
-    # file_handler.setLevel(logging.DEBUG)
-    # console_handler = logging.StreamHandler()
-    # console_handler.setLevel(logging.ERROR)
-    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # file_handler.setFormatter(formatter)
-    # console_handler.setFormatter(formatter)
-    # logger.addHandler(file_handler)
-    # logger.addHandler(console_handler)
-    print('shit')
+    # setup a logger
+    logs = Logger('atomic_sensor_simulation', log_file_path='logs/atomic_sensor_simulation.log')
+    logs.logger.info('Starting execution of Atomic Sensor Simulation.')
+
+    # create the top-level parser
+    parser = argparse.ArgumentParser(prog='Atomic Sensor Simulation')
+    # parser.add_argument('--working_dir', action='store', help='foo help')
+    subparsers = parser.add_subparsers(help='sub-command help')
+
+    # create the parser for the "run-tests" command
+    tests_parser = subparsers.add_parser('run-tests', help='Run unit tests')
+    tests_parser.set_defaults(func=run_tests)
+
+    # create the parser for the "run-simulation" command
+    simulation_parser = subparsers.add_parser('run-simulation', help='Run atomic sensor simulation')
+    simulation_parser.add_argument('-o',
+                                   '--output_path',
+                                   action='store',
+                                   help='A string representing path where the output should be saved.',
+                                   default='./')
+    simulation_parser.add_argument('--save_plots',
+                                   action='store_true',
+                                   help='Bool specifying if you want to save plots',
+                                   default=False)
+    simulation_parser.add_argument('--save_data_file',
+                                   action='store_true',
+                                   help='Bool specifying if you want to save the data in a file',
+                                   default=False)
+    simulation_parser.set_defaults(func=run_simulation)
+
+    # parse some argument lists
+    args = parser.parse_args()
+    args.func(args)
+    logs.logger.info('Parsed input arguments %r' % stringify_namespace(args))
 
     return 0
 
 
+def run_simulation(*args):
+    #:TODO implement this function
+    pass
+
+
+def run_tests(*args):
+    #:TODO implement this function
+    pass
+
+
 if __name__ == "__main__":
+
     main()
