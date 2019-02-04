@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 
 
 class Logger(object):
 
-    def __init__(self, name, log_file_path = None):
+    def __init__(self, name, log_file_path=None):
         self.logger = logging.getLogger(name)
         self.__log_file_path = log_file_path
         self.log_file_handler = self.__create_log_file_handler()
@@ -24,7 +25,12 @@ class Logger(object):
     def __create_log_file_handler(self):
         if self.__log_file_path is not None:
             if os.path.exists(self.log_dir_path):
-                return logging.FileHandler(self.__log_file_path)
+                return RotatingFileHandler(self.__log_file_path,
+                                           mode='a',
+                                           maxBytes=5*1024*1024,
+                                           backupCount=2,
+                                           encoding=None,
+                                           delay=0)
             else:
                 os.makedirs(self.log_dir_path)
                 return logging.FileHandler(self.__log_file_path)
