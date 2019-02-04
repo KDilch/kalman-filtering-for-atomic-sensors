@@ -35,7 +35,6 @@ class Logger(object):
                 os.makedirs(self.log_dir_path)
                 return self.__create_log_file_handler()
         else:
-            self.logger.error('Log file path is None. Creating a log_file handler failed.')
             raise ValueError('Log file path is None. Creating a log_file handler failed.')
 
     def __setup_logger(self):
