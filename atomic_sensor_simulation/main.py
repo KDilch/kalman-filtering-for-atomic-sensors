@@ -16,12 +16,13 @@ def main():
     subparsers = parser.add_subparsers(help='sub-command help')
 
     # create the parser for the "run-tests" command
-    tests_parser = subparsers.add_parser('run_tests', help='Run unit tests')
+    tests_parser = subparsers.add_parser('run-tests', help='Run unit tests')
     tests_parser.set_defaults(func=run_tests)
 
     # create the parser for the "run-simulation" command
-    simulation_parser = subparsers.add_parser('run_simulation', help='Run atomic sensor simulation')
-    simulation_parser.add_argument('--output_path',
+    simulation_parser = subparsers.add_parser('run-simulation', help='Run atomic sensor simulation')
+    simulation_parser.add_argument('-o',
+                                   '--output_path',
                                    action='store',
                                    help='A string representing path where the output should be saved.',
                                    default='./')
@@ -31,25 +32,25 @@ def main():
                                    default=False)
     simulation_parser.add_argument('--save_data_file',
                                    action='store_true',
-                                   help='Bool specifying if you want to data file',
+                                   help='Bool specifying if you want to save the data in a file',
                                    default=False)
     simulation_parser.set_defaults(func=run_simulation)
 
     # parse some argument lists
     args = parser.parse_args()
     args.func(args)
-
-    print(stringify_namespace(args))
     logs.logger.info('Parsed input arguments %r' % stringify_namespace(args))
 
     return 0
 
 
 def run_simulation(*args):
+    #:TODO implement this function
     pass
 
 
 def run_tests(*args):
+    #:TODO implement this function
     pass
 
 

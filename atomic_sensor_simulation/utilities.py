@@ -10,6 +10,4 @@ def stringify_namespace(namespace):
     for arg in namespace.__dict__:
         if arg:
             __str += " --" + arg + ": " + str(namespace.__dict__[arg])
-        else:
-            pass
     return __str

@@ -30,12 +30,13 @@ class Logger(object):
                                            maxBytes=5*1024*1024,
                                            backupCount=2,
                                            encoding=None,
-                                           delay=0)
+                                           delay=False)
             else:
                 os.makedirs(self.log_dir_path)
-                return logging.FileHandler(self.__log_file_path)
+                return self.__create_log_file_handler()
         else:
-            return None
+            self.logger.error('Log file path is None. Creating a log_file handler failed.')
+            raise ValueError('Log file path is None. Creating a log_file handler failed.')
 
     def __setup_logger(self):
         self.logger.setLevel(logging.DEBUG)
