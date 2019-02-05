@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from logger import Logger
 from utilities import stringify_namespace
+from noisy_measurement import NoisyDataGenerator
+from atomic_sensor import Signal
 import argparse
 
 
@@ -46,6 +48,10 @@ def main():
 
 def run_simulation(*args):
     #:TODO implement this function
+    logs = Logger('run-simulation-logger', log_file_path='logs/atomic_sensor_simulation.log')
+    logs.logger.info('Starting execution of run-simulation command.')
+    clean_signal = Signal(larmor_freq=1, quadrature=)
+    noise = NoisyDataGenerator(logs=logs, signal=clean_signal, time_step=1)
     pass
 
 

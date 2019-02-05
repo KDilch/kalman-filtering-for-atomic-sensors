@@ -56,6 +56,7 @@ class Precession(object):
         self.__val = self.__arr.dot(spin_vec) * time_step
         return
 
+
 class Signal(object):
 
     def __init__(self, larmor_freq, quadrature, coupling_const, correlation_time, scalar_strength):
