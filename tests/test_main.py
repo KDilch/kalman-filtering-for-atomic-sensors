@@ -1,6 +1,5 @@
 import unittest
-import tests.test_noise
-
+from tests import test_noise
 # initialize the test suite
 loader = unittest.TestLoader()
 suite = unittest.TestSuite()
