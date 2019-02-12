@@ -1,3 +1,3 @@
 FROM python:3
-ADD main.py /
+ADD test_main.py /
 ENTRYPOINT [ "python", "./test_main.py" ]
