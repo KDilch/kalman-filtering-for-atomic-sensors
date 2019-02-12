@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from noise import GaussianWhiteNoise
-
+from atomic_sensor_simulation.noise import GaussianWhiteNoise
 
 class Spin(object):
 
@@ -22,7 +21,6 @@ class Spin(object):
         self.__signal.step()
         self.__vec_previous = self.__vec_current
         self.__vec_current = self.__precession.val
-
 
 class Precession(object):
 
@@ -82,22 +80,16 @@ class Signal(object):
         return np.array([self.__coupling_const*np.cos(self.__larmor_freq*time), self.__coupling_const*np.sin(self.__larmor_freq*time)])
 
 
-class OrnsteinUhlenbeckProcess(object):
 
-    def __init__(self, quadrature, correlation_time, scalar_strength):
-        self.__correlation_time = correlation_time
-        self.__quadrature = quadrature
-        self.__noise = GaussianWhiteNoise(scalar_strength)
-        self.__val = None
 
-    @property
-    def val(self):
-        if self.__val is not None:
-            return self.__val
-        else:
-            Warning('Not current value defined for quadrature. You need to step first.')
 
-    def step(self, time_step):
-        self.__noise.step(time_step)
-        self.__val = -self.__correlation_time*self.__quadrature * time_step + self.__noise.val
-        return
+class Quadrature(object):
+    pass
+
+
+class State(object):
+    """
+    Represents a state vector x_t_k = [j_y, j_z, q(t_k), p(t_k)]
+    """
+    def __init__(self, spin, quadrature, t_k):
+        self.__val = np.array([spin, quadrature])

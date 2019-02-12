@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from logger import Logger
-from utilities import stringify_namespace
-from noisy_measurement import NoisyDataGenerator
-from atomic_sensor import Signal
+from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
+from atomic_sensor_simulation.noise import GaussianWhiteNoise
 import argparse
+import logging
 
 
 def main():
     # setup a logger
-    logs = Logger('atomic_sensor_simulation', log_file_path='logs/atomic_sensor_simulation.log')
-    logs.logger.info('Starting execution of Atomic Sensor Simulation.')
+    load_logging_config()
+    logger = logging.getLogger(__name__)
+    logger.info('Starting execution of Atomic Sensor Simulation.')
 
     # create the top-level parser
     parser = argparse.ArgumentParser(prog='Atomic Sensor Simulation')
@@ -40,19 +40,19 @@ def main():
 
     # parse some argument lists
     args = parser.parse_args()
+    logger.info('Parsed input arguments %r' % stringify_namespace(args))
     args.func(args)
-    logs.logger.info('Parsed input arguments %r' % stringify_namespace(args))
-
+    logger.info('Ending execution of the application.')
     return 0
 
 
 def run_simulation(*args):
     #:TODO implement this function
-    logs = Logger('run-simulation-logger', log_file_path='logs/atomic_sensor_simulation.log')
-    logs.logger.info('Starting execution of run-simulation command.')
-    clean_signal = Signal(larmor_freq=1, quadrature=)
-    noise = NoisyDataGenerator(logs=logs, signal=clean_signal, time_step=1)
-    pass
+    logger = logging.getLogger(__name__)
+    logger.info('Starting execution of run-simulation command.')
+    noise = GaussianWhiteNoise(initial_value=1, scalar_strength=1, dt=1)
+    noise.plot(is_show=True)
+    return
 
 
 def run_tests(*args):
