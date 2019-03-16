@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
+from atomic_sensor_simulation.state import Spin, State, Signal, Quadrature
+from atomic_sensor_simulation import CONSTANTS
 import argparse
 import logging
 
@@ -51,7 +53,28 @@ def run_simulation(*args):
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-simulation command.')
     noise = GaussianWhiteNoise(initial_value=1, scalar_strength=1, dt=1)
-    noise.plot(is_show=True)
+    noise.plot(is_show=False)
+    print(CONSTANTS.LARMOR_FREQ, CONSTANTS.T2_PARAM)
+    spin = Spin(larmor_freq=CONSTANTS.LARMOR_FREQ, t2_param=CONSTANTS.T2_PARAM, scalar_strength=1, dt=0.1)
+    quadrature = Quadrature(p=0,
+                            q=1,
+                            correlation_time=CONSTANTS.CORRELATION_CONSTANT_OU_PROCESS,
+                            scalar_strength=1,
+                            dt=CONSTANTS.SAMPLING_PERIOD) #initialize quadrature so that cos(t) is not there and sin(t) can be treated linearly
+    signal = Signal(CONSTANTS.LARMOR_FREQ, quadrature, dt=CONSTANTS.SAMPLING_PERIOD, coupling_const=CONSTANTS.CORRELATION_CONSTANT_OU_PROCESS)
+    state = State(spin, signal)
+    logger.info('Initialized state to %r'%state.__str__())
+    print(CONSTANTS.g_D_COUPLING_CONST, CONSTANTS.SCALAR_STREGTH_Y)
+    num_current = 0
+    import numpy as np
+    data = np.empty(1000)
+    while num_current < CONSTANTS.NUM_STEPS:
+        state.step()
+        data[num_current] = state.signal
+        num_current += 1
+    print(data)
+    from atomic_sensor_simulation.utilities import plot_data
+    plot_data(np.arange(1000), data, is_show=True)
     return
 
 
