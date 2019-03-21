@@ -34,10 +34,10 @@ class NoisyDataGenerator(object):
     def step(self):
         if self.__index_current < len(self.__all_data):
             self.__noise.__step(time_step=self.__time_step)
-            self.__all_data[0] = self.__noise.val + self.__signal.val
+            self.__all_data[0] = self.__noise.val + self.__signal.vec
             self.__index_current += 1
         else:
-            self.__all_data.append(self.__noise.val + self.__signal.val)
+            self.__all_data.append(self.__noise.val + self.__signal.vec)
 
     def generate(self):
         while self.__index_current < len(self.__all_data):
