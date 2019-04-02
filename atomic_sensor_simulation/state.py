@@ -9,9 +9,10 @@ class State(object):
     Represents a state vector x_t_k = [j, q]. Only Wiener Processes.
     """
 
-    def __init__(self, spin, quadrature, noise_spin, noise_quadrature, dt, logger=None):
+    def __init__(self, spin, quadrature, noise_spin, noise_quadrature, dt, logger=None, atoms_correlation_const = 0):
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.info('Initializing an instance of a State class.')
+        self.__atom_correlation_conts = atoms_correlation_const
         self.__spin = spin
         self.__quadrature = quadrature
         self.__spin_no_noise = spin
@@ -56,7 +57,7 @@ class State(object):
 
     def step(self):
         self.__logger.debug('Executing step function.')
-        self.__spin += g_a_COUPLING_CONST * self.__quadrature * self.__dt + self.__noise[0].step()
-        self.__quadrature += self.__noise[1].step()
-        self.__spin_no_noise += g_a_COUPLING_CONST * self.__quadrature_no_noise * self.__dt
+        self.__spin = self.__atom_correlation_conts*self.__spin_no_noise*self.__dt + g_a_COUPLING_CONST * self.__quadrature_no_noise * self.__dt + self.__noise[0].step()
+        self.__quadrature = self.quadrature_no_noise + self.__noise[1].step()
+        self.__spin_no_noise = self.__atom_correlation_conts*self.__spin_no_noise*self.__dt + g_a_COUPLING_CONST * self.__quadrature_no_noise * self.__dt
         return

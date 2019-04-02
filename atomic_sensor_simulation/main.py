@@ -159,11 +159,10 @@ def run_simulation(*args):
     plt.show()
 
 def run_wiener(*args):
-
     def linear_kalman():
         kalman_filter = KalmanFilter(dim_x=2, dim_z=1)
         kalman_filter.x = np.array([spin_initial_val, quadrature_initial_val])
-        kalman_filter.F = np.array([[1, dt * CONSTANTS.g_a_COUPLING_CONST], [0, 1]])
+        kalman_filter.F = np.array([[-atoms_correlation_const*dt, dt * CONSTANTS.g_a_COUPLING_CONST], [0, 1]])
         kalman_filter.H = np.array([[CONSTANTS.g_d_COUPLING_CONST * dt, 0]])
         kalman_filter.P *= CONSTANTS.SCALAR_STREGTH_y
         kalman_filter.R = np.array([[CONSTANTS.SCALAR_STREGTH_y]])
@@ -178,17 +177,21 @@ def run_wiener(*args):
     # initial conditions
     spin_initial_val = 0.0
     quadrature_initial_val = 0.5
-    dt = 0.01
+    dt = 1.
     num_iter = 2000
+    atoms_correlation_const = 0.000001
 
     state = State(spin=spin_initial_val,
                   quadrature=quadrature_initial_val,
                   noise_spin=GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STREGTH_j, dt=dt),
-                  noise_quadrature=GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STRENGTH_q, dt=dt),
-                  dt=dt)
-    sensor = AtomicSensor(state, scalar_strenght_y = CONSTANTS.SCALAR_STREGTH_y, dt=dt)
+                  noise_quadrature=GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STRENGTH_q,
+                                                      dt=dt),
+                  dt=dt,
+                  atoms_correlation_const=atoms_correlation_const)
+    sensor = AtomicSensor(state, scalar_strenght_y=CONSTANTS.SCALAR_STREGTH_y, dt=dt)
 
-    zs, zs_no_noise, noise = zip(*np.array([(*sensor.read(), sensor.noise) for _ in range(num_iter)])) # read photocurrent values from the sensor
+    zs, zs_no_noise, noise = zip(*np.array(
+        [(*sensor.read(), sensor.noise) for _ in range(num_iter)]))  # read photocurrent values from the sensor
     # zs_minus_noise = np.subtract(zs, noise)
     # # plot (time, photocurrent) for values with noise and for values without noise
     # plt.plot(range(num_iter), zs, 'r', label='Noisy sensor detection')
@@ -197,17 +200,17 @@ def run_wiener(*args):
     # plt.plot(range(num_iter), zs_no_noise, 'k', label='Ideal data')
     # plt.legend()
     # plt.show()
-    Fs = [np.array([[1., _ * CONSTANTS.g_a_COUPLING_CONST], [0, 1]]) for _ in range(num_iter)]
+    Fs = [np.array([[-atoms_correlation_const*_, _ * CONSTANTS.g_a_COUPLING_CONST], [0, 1]]) for _ in range(num_iter)]
     kalman_filter = linear_kalman()
     (mu, cov, _, _) = kalman_filter.batch_filter(zs, Fs=Fs)
     (xs, Ps, Ks, _) = kalman_filter.rts_smoother(mu, cov, Fs=Fs)
-    filtered_signal = mu[:, 1]
+    filtered_signal = xs[:, 1]
 
     # # plot results
     plt.plot(range(num_iter), zs_no_noise, 'k')  # sensor readings
-    plt.plot(range(num_iter), np.ones(num_iter)*0.5, 'b')  # sensor readings
+    plt.plot(range(num_iter), np.ones(num_iter) * 0.5, 'b')  # sensor readings
     plt.plot(range(num_iter), filtered_signal, 'r')  # sensor readings
-    print(zs_no_noise)
+    # plt.ylim(0.4,0.6)
     plt.show()
 
 def run_tests(*args):

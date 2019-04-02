@@ -6,11 +6,13 @@ from atomic_sensor_simulation.noise import GaussianWhiteNoise
 
 class AtomicSensor(object):
     """Implementation of measurement made by a sensor."""
-    def __init__(self, state, dt, scalar_strenght_y, initial_reading=0, logger=None):
+    def __init__(self, state, dt, scalar_strenght_y, logger=None):
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.info('Initializing an instance of a AtomicSensor class.')
         self.__state = state
         self.__dt = dt
+        from atomic_sensor_simulation.CONSTANTS import g_d_COUPLING_CONST
+        initial_reading = g_d_COUPLING_CONST*state.spin + state.quadrature
         self.__noise = GaussianWhiteNoise(initial_reading, scalar_strenght_y, dt)
         self.__z = initial_reading  # photocurrent value with noise (measured by the atomic sensor)
         self.__z_no_noise = initial_reading  # photocurrent value without noise
