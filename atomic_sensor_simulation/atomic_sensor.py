@@ -15,14 +15,19 @@ class AtomicSensor(object):
         self.__z = initial_reading  # photocurrent value with noise (measured by the atomic sensor)
         self.__z_no_noise = initial_reading  # photocurrent value without noise
 
+    @property
+    def noise(self):
+        return self.__noise.value
+
+    @property
+    def z_no_noise(self):
+        return self.__z_no_noise
+
     def read(self):
         self.__state.step()
-        self.__z += g_d_COUPLING_CONST * self.__state.spin * self.__dt + self.__noise.step()
-        return self.__z
-
-    def read_no_noise(self):
+        self.__z = self.__z_no_noise + g_d_COUPLING_CONST * self.__state.spin * self.__dt + self.__noise.step()
         self.__z_no_noise += g_d_COUPLING_CONST * self.__state.spin_no_noise * self.__dt
-        return self.__z_no_noise
+        return self.__z, self.__state.quadrature
 
     def generate(self, num_steps):
         results = np.empty(num_steps)

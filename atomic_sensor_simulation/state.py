@@ -44,11 +44,11 @@ class State(object):
 
     @property
     def spin_no_noise(self):
-        return self.__spin
+        return self.__spin_no_noise
 
     @property
     def quadrature_no_noise(self):
-        return self.__quadrature
+        return self.__quadrature_no_noise
 
     @property
     def noise(self):
@@ -59,5 +59,4 @@ class State(object):
         self.__spin += g_a_COUPLING_CONST * self.__quadrature * self.__dt + self.__noise[0].step()
         self.__quadrature += self.__noise[1].step()
         self.__spin_no_noise += g_a_COUPLING_CONST * self.__quadrature_no_noise * self.__dt
-        self.__quadrature_no_noise += self.__noise[1].step()
         return
