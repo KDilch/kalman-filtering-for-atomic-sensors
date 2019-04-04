@@ -25,8 +25,8 @@ class AtomicSensor(object):
     def z_no_noise(self):
         return self.__z_no_noise
 
-    def read(self):
-        self.__state.step()
+    def read(self,t):
+        self.__state.step(t)
         self.__z = self.__z_no_noise + g_d_COUPLING_CONST * self.__state.spin * self.__dt + self.__noise.step()
         self.__z_no_noise += g_d_COUPLING_CONST * self.__state.spin_no_noise * self.__dt
         return self.__z, self.__state.quadrature
