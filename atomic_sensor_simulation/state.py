@@ -49,16 +49,17 @@ class State(object):
     def spin_no_noise(self):
         return self.__spin_no_noise
 
-    def quadrature_no_noise(self,t):
-        return self.__amplitude*np.sin(self.__omega*t)
+    def quadrature_no_noise(self, t):
+        return self.__quadrature_no_noise
+        # return self.__amplitude*np.sin(self.__omega*t)
 
     @property
     def noise(self):
         return self.__noise
 
-    def step(self,t):
+    def step(self, t):
         self.__logger.debug('Executing step function.')
         self.__spin = -self.__atom_correlation_conts*self.__spin_no_noise*self.__dt + g_a_COUPLING_CONST * self.quadrature_no_noise(t) * self.__dt + self.__noise[0].step()
-        self.__quadrature = self.quadrature_no_noise(t) + self.__noise[1].step()
-        self.__spin_no_noise = -self.__atom_correlation_conts*self.__spin_no_noise*self.__dt + g_a_COUPLING_CONST * self.quadrature_no_noise(t) * self.__dt
+        self.__quadrature = self.quadrature_no_noise(t) + self.__noise[1].step() + self.__amplitude*np.sin(self.__omega*t)
+        self.__spin_no_noise = -self.__atom_correlation_conts*self.__spin_no_noise*self.__dt + g_a_COUPLING_CONST * self.quadrature_no_noise(t)
         return
