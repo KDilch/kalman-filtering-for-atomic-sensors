@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.state import State
+from atomic_sensor_simulation.state import AtomicSensorState
 from atomic_sensor_simulation.atomic_sensor import AtomicSensor
 from atomic_sensor_simulation import CONSTANTS
-from filterpy.stats import plot_covariance
 from scipy.linalg import block_diag
 from filterpy.kalman import KalmanFilter
 
@@ -90,15 +89,22 @@ def run_wiener(*args):
     omega = 0.1
     amplitude = 0.
 
-    state = State(spin=spin_initial_val,
-                  quadrature=quadrature_initial_val,
-                  noise_spin=GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STREGTH_j, dt=dt),
-                  noise_quadrature=GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STRENGTH_q,
-                                                      dt=dt),
-                  dt=dt,
-                  atoms_correlation_const=atoms_correlation_const,
-                  omega=omega,
-                  amplitude=amplitude)
+    # state = State(spin=spin_initial_val,
+    #               quadrature=quadrature_initial_val,
+    #               noise_spin=GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STREGTH_j, dt=dt),
+    #               noise_quadrature=GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STRENGTH_q,
+    #                                                   dt=dt),
+    #               dt=dt,
+    #               atoms_correlation_const=atoms_correlation_const,
+    #               omega=omega,
+    #               amplitude=amplitude)
+    state = AtomicSensorState(initial_vec = np.array([spin_initial_val, quadrature_initial_val]),
+                              noise_vec = np.array([GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STREGTH_j, dt=dt), GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STRENGTH_q, dt=dt)]),
+                              evolution_matrix=1,
+                              initial_time=0,
+                              atoms_wiener_const=atoms_correlation_const,
+                              g_a_coupling_const=CONSTANTS.g_a_COUPLING_CONST)
+
     sensor = AtomicSensor(state, scalar_strenght_y=CONSTANTS.SCALAR_STREGTH_y, dt=dt)
 
     zs, qs = zip(*np.array(
