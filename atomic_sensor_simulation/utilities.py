@@ -6,7 +6,6 @@ import logging.config
 import matplotlib.pyplot as plt
 import logging
 
-
 def stringify_namespace(namespace):
     """
     :param argv: namespace
@@ -71,6 +70,23 @@ def plot_data(x, y, **kwargs):
             return
     plt.savefig(output, format="svg")
     return
+
+# Define operations on functions
+
+
+class multiplicable:
+
+    def __init__(self, f):
+        self.f = f
+
+    def __call__(self, x):
+        return self.f(x)
+
+    def __mul__(self, other):
+        return multiplicable(lambda x: self(x) * other(x))
+
+    def __add__(self, other):
+        return multiplicable(lambda x: self(x) + other(x))
 
 
 
