@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+import numpy as np
 import logging.config
 import matplotlib.pyplot as plt
 import logging
+from scipy.linalg import expm
+
 
 def stringify_namespace(namespace):
     """
@@ -71,11 +74,8 @@ def plot_data(x, y, **kwargs):
     plt.savefig(output, format="svg")
     return
 
-# Define operations on functions
 
-
-class multiplicable:
-
+class operable:
     def __init__(self, f):
         self.f = f
 
@@ -83,12 +83,25 @@ class multiplicable:
         return self.f(x)
 
     def __mul__(self, other):
-        return multiplicable(lambda x: self(x) * other(x))
+        return operable(lambda x: self(x) * other(x))
 
     def __add__(self, other):
-        return multiplicable(lambda x: self(x) + other(x))
+        return operable(lambda x: self(x) + other(x))
 
 
+def create_matrix_of_functions(matrix):
+    def matrix_of_functions_obj(x):
+        matrix_flat = matrix.flatten()
+        shape = np.shape(matrix)
+        evaluated_matrix = np.empty_like(matrix_flat)
+        for index, element in np.ndenumerate(matrix_flat):
+            evaluated_matrix[index] = matrix_flat[index](x)
+        return np.reshape(evaluated_matrix, shape)
+    return matrix_of_functions_obj
+
+
+def exp_matrix_of_functions(matrix):
+    return lambda time: expm(matrix(time))
 
 
 

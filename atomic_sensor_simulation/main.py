@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.state import AtomicSensorState
-from atomic_sensor_simulation.atomic_sensor import AtomicSensor
+from atomic_sensor_simulation.state.atomic_sensor import AtomicSensorState
+from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
 from atomic_sensor_simulation import CONSTANTS
-from scipy.linalg import block_diag
-from filterpy.kalman import KalmanFilter
+from atomic_sensor_simulation.filter.kalmanf_pos_vel_simulation import initialize_kalman_filter_from_derrivatives
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -48,7 +47,11 @@ def main():
 
     # create the parser for the "run-wiener" command
     tests_parser = subparsers.add_parser('run-wiener', help='')
-    tests_parser.set_defaults(func=run_wiener)
+    tests_parser.set_defaults(func=run_simulation)
+
+    # create the parser for the "run-simple_kf" command
+    position_speed_parser = subparsers.add_parser('run-position-speed', help='')
+    position_speed_parser.set_defaults(func=run_position_speed)
 
     # parse some argument lists
     args = parser.parse_args()
@@ -59,10 +62,6 @@ def main():
 
 
 def run_simulation(*args):
-    pass
-
-def run_wiener(*args):
-
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-wiener command.')
 
@@ -70,50 +69,116 @@ def run_wiener(*args):
     spin_initial_val = 0.0
     quadrature_initial_val = 0.0
     dt = 1.
-    num_iter = 200
+    num_iter = 100
     atoms_correlation_const = 0.000001
     omega = 0.1
     amplitude = 1.
 
-    state = AtomicSensorState(initial_vec = np.array([spin_initial_val, quadrature_initial_val]),
-                              noise_vec = np.array([GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STREGTH_j, dt=dt), GaussianWhiteNoise(spin_initial_val, scalar_strength=CONSTANTS.SCALAR_STRENGTH_q, dt=dt)]),
-                              evolution_matrix=1,
+    state = AtomicSensorState(initial_vec=np.array([spin_initial_val, quadrature_initial_val]),
+                              noise_vec=np.array([GaussianWhiteNoise(spin_initial_val,
+                                                                     scalar_strength=CONSTANTS.SCALAR_STREGTH_j,
+                                                                     dt=dt),
+                                                  GaussianWhiteNoise(spin_initial_val,
+                                                                     scalar_strength=CONSTANTS.SCALAR_STRENGTH_q,
+                                                                     dt=dt)]),
                               initial_time=0,
                               atoms_wiener_const=atoms_correlation_const,
-                              g_a_coupling_const=CONSTANTS.g_a_COUPLING_CONST)
+                              g_a_coupling_const=CONSTANTS.g_a_COUPLING_CONST,
+                              control_amplitude=amplitude,
+                              control_freq=omega)
 
-    sensor = AtomicSensor(state, scalar_strenght_y=CONSTANTS.SCALAR_STREGTH_y, dt=dt)
 
-    zs, qs = zip(*np.array(
-        [(sensor.read(_)) for _ in range(num_iter)]))  # read photocurrent values from the sensor
+    sensor = AtomicSensor(state,
+                          scalar_strenght_y=CONSTANTS.SCALAR_STREGTH_y,
+                          dt=dt)
 
-    from atomic_sensor_simulation.operable_functions import create_multiplicable_const_func, create_multiplicable_sin_func, create_multiplicable_cos_func
-    F = np.exp(np.array([[-atoms_correlation_const*dt, dt * CONSTANTS.g_a_COUPLING_CONST], [0, dt]]))
-    d_transition_matrix = np.array([[create_multiplicable_const_func(-atoms_correlation_const), create_multiplicable_const_func(CONSTANTS.g_a_COUPLING_CONST)], [create_multiplicable_const_func(0), create_multiplicable_const_func(1.)]])
-    from atomic_sensor_simulation.kalman_filter import compute_B_from_d_vals
-    Fs = [np.exp(np.array([[-atoms_correlation_const*dt, dt * CONSTANTS.g_a_COUPLING_CONST], [0, dt]])) for _ in range(num_iter)]
-    us = [np.array([0, (amplitude/omega)*(np.cos(omega*(_))-np.cos(omega*(_-1)))]).T for _ in range(num_iter)]
-    # Bs = [compute_B_from_d_vals(d_transition_matrix,
-    #                             np.array([[create_multiplicable_const_func(1), create_multiplicable_const_func(0)], [create_multiplicable_const_func(0), create_multiplicable_const_func(1)]]),
-    #                             _) for _ in range(num_iter)]
-    Bs = [F.dot(np.eye(2)) for _ in range(num_iter)]
+    zs = np.array([(sensor.read(_)) for _ in range(num_iter)])  # read from the sensor
+    time_arr  = np.arange(0, num_iter, dt)
 
-    from atomic_sensor_simulation.kalman_filter import initialize_kalman_filter_from_derrivatives
+    # KALMAN FILTER
+    Fs = [state.F_evolution_matrix(_) for _ in time_arr]
+    # us = [state.u_control_vec(time) for time in time_arr]
+    # Bs = [state.B_control_evolution_matrix(time) for time in time_arr]
 
-    kalman_filter = initialize_kalman_filter_from_derrivatives(np.array([spin_initial_val, quadrature_initial_val]))
-    (mu, cov, _, _) = kalman_filter.batch_filter(zs, Fs=Fs, us=us, Bs=Bs)
+    # waveform = np.empty_like(us)
+    # for element in range(len(us)):
+    #     waveform[element] = Bs[element].dot(us[element])[1]
+
+    kalman_filter = initialize_kalman_filter_from_derrivatives(np.array([spin_initial_val, quadrature_initial_val]),
+                                                               dt=dt,
+                                                               atoms_correlation_const=atoms_correlation_const)
+    (mu, cov, _, _) = kalman_filter.batch_filter(zs, Fs=Fs)
     filtered_signal = mu[:, 1]
 
     # # plot results
-    plt.plot(range(num_iter), qs, label='Signal')  # sensor readings
-    # plt.plot(range(num_iter), cov[:,1], 'b')  # sensor readings
-    plt.plot(range(num_iter), filtered_signal, label='Filtered signal')  # sensor readings
+    # plt.plot(range(num_iter), sensor.quadrature_full_history, label='Signal')  # sensor readings
+    # plt.plot(range(num_iter), cov[:,1], 'b')  # covariances
+    plt.plot(range(num_iter), filtered_signal, label='Filtered signal')  # filtered signal
+    # plt.plot(range(num_iter), waveform, label=' quadrature_no_noise')  # waveform
+    plt.plot(range(num_iter), sensor.quadrature_full_history, label=' quadrature_history')  # waveform
     plt.legend()
-    # plt.ylim(0.4,0.6)
     plt.show()
 
+
+def run_position_speed(*args):
+    logger = logging.getLogger(__name__)
+    logger.info('Starting execution of run_position_speed command.')
+    dt = 1.
+    num_iter = 20
+
+    from atomic_sensor_simulation.state.pos_vel_sensor import PosVelSensorState
+
+    state = PosVelSensorState(initial_vec=np.array([0., 0., 2., 1.]),
+                              noise_vec=np.array([GaussianWhiteNoise(0,
+                                                                     scalar_strength=0.05,
+                                                                     dt=dt),
+                                                  GaussianWhiteNoise(0,
+                                                                     scalar_strength=0.05,
+                                                                     dt=dt),
+                                                  GaussianWhiteNoise(0,
+                                                                     scalar_strength=0.05,
+                                                                     dt=dt),
+                                                  GaussianWhiteNoise(0,
+                                                                     scalar_strength=0.05,
+                                                                     dt=dt)
+                                                  ]),
+                              initial_time=0)
+    from atomic_sensor_simulation.sensor import pos_sensor
+
+    sensor = pos_sensor.PosSensor(state,
+                                  scalar_strenght_y=1.,
+                                  dt=dt)
+    time_arr = np.arange(0, num_iter, dt)
+
+    zs = np.array([(np.array([sensor.read(_)]).T) for _ in time_arr])  # read from the sensor
+
+    # KALMAN FILTER
+    # Fs = [state.F_evolution_matrix(_) for _ in time_arr]
+    # us = [state.u_control_vec(time) for time in time_arr]
+    # Bs = [state.B_control_evolution_matrix(time) for time in time_arr]
+
+    # waveform = np.empty_like(us)
+    # for element in range(len(us)):
+    #     waveform[element] = Bs[element].dot(us[element])[1]
+
+    kalman_filter = initialize_kalman_filter_from_derrivatives(np.array([0., 0., 0., 0.]).T,
+                                                               dt=dt,
+                                                               initial_F=state.F_evolution_matrix(0))
+    (mu, cov, _, _) = kalman_filter.batch_filter(zs)
+    filtered_signal = mu[:, 0]
+    zs *= .3048
+    # # plot results
+    # plt.plot(range(num_iter), sensor.quadrature_full_history, label='Signal')  # sensor readings
+    # plt.plot(range(num_iter), cov[:,1], 'b')  # covariances
+    plt.plot(mu[:, 0], mu[:, 2], label='Filtered signal')  # filtered signal
+    # plt.plot(range(num_iter), waveform, label=' quadrature_no_noise')  # waveform
+    plt.plot(zs[:, 0], zs[:, 1], label=' quadrature_history')  # waveform
+    plt.legend()
+    plt.show()
+
+
 def run_tests(*args):
-    #:TODO implement this function
+    #:TODO implement
     pass
 
 
