@@ -11,11 +11,12 @@ class AtomicSensor(object):
         self.__logger.info('Initializing an instance of a AtomicSensor class.')
         self.__state = state
         self.__dt = dt
-        from atomic_sensor_simulation.CONSTANTS import g_d_COUPLING_CONST
         initial_reading = g_d_COUPLING_CONST*state.spin + state.quadrature
         self.__noise = GaussianWhiteNoise(initial_reading, scalar_strenght_y, dt)
         self.__z = initial_reading  # photocurrent value with noise (measured by the atomic sensor)
         self.__z_no_noise = initial_reading  # photocurrent value without noise
+        self.__quadrature_history = []
+        self.__quadrature_no_noise_history = []
 
     @property
     def noise(self):
@@ -25,11 +26,22 @@ class AtomicSensor(object):
     def z_no_noise(self):
         return self.__z_no_noise
 
+    @property
+    def quadrature_full_history(self):
+        return self.__quadrature_history
+
+    @property
+    def quadrature_no_noise_full_history(self):
+        return self.__quadrature_no_noise_history
+
     def read(self, t):
         self.__state.step(t)
         self.__z = self.__z_no_noise + g_d_COUPLING_CONST * self.__state.spin * self.__dt + self.__noise.step()
         self.__z_no_noise += g_d_COUPLING_CONST * self.__state.spin_no_noise * self.__dt
-        return self.__z, self.__state.quadrature
+        self.__quadrature_history.append([self.__state.quadrature])
+        self.__quadrature_no_noise_history.append([self.__state.quadrature_no_noise])
+
+        return self.__z
 
     def generate(self, num_steps):
         results = np.empty(num_steps)
