@@ -15,6 +15,7 @@ class PosVelSensorCoordinates(Enum):
     POSITION_Y = 2
     VELOCITY_Y = 3
 
+
 class PosVelSensorState(State):
     """
     Specialization of a state abstract class. Represents a state vector x_t_k = [x, v].
@@ -118,7 +119,6 @@ class PosVelSensorState(State):
         for n in range(len(self.noise_vec)):
             self.noise_vec[n].step()
             noise_val_vec[n] = self.noise_vec[n].value
-            print(noise_val_vec)
         return np.array(noise_val_vec)
 
     def step(self, t):

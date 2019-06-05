@@ -39,7 +39,7 @@ class AtomicSensorState(State):
         F_transition_matrix = exp_matrix_of_functions(create_matrix_of_functions(np.array(
                            [
                                [create_operable_const_func(self.__atoms_wiener_correlation_const*dt), create_operable_const_func(self.__g_a_coupling_const*dt)],
-                               [create_operable_const_func(0), create_operable_const_func(dt)]
+                               [create_operable_const_func(0), create_operable_const_func(-dt)]
                            ])))
 
         State.__init__(self, initial_vec, noise_vec, AtomicSensorCoordinates,
@@ -77,7 +77,7 @@ class AtomicSensorState(State):
 
     @property
     def quadrature_no_noise(self):
-        return self._state_vec_no_noise[self._coordinates.SPIN.value]
+        return self._state_vec_no_noise[self._coordinates.QUADRATURE.value]
 
     @property
     def time(self):
@@ -88,7 +88,6 @@ class AtomicSensorState(State):
         for n in range(len(self.noise_vec)):
             self.noise_vec[n].step()
             noise_val_vec[n] = self.noise_vec[n].value
-            print(noise_val_vec)
         return np.array(noise_val_vec)
 
     def step(self, t):
@@ -96,14 +95,6 @@ class AtomicSensorState(State):
         self._time = t
         self.__logger.debug('Performing a step for time %r' % str(self._time))
         F = self._transition_matrix(self._time)
-        u = self._control_vec(self._time)
-        B = self._control_evolution_matrix(self._time)
-        from atomic_sensor_simulation import CONSTANTS
-        Q = F.dot(np.eye(2)).dot(np.array([[(CONSTANTS.SCALAR_STREGTH_j), (0)], [(0), (CONSTANTS.SCALAR_STRENGTH_q)]])).dot(
-            np.eye(2).T).dot(F.T)
-
-        self._state_vec = F.dot(self.state_vec_no_noise) +\
-                          self.__noise_step() +\
-                          0
+        self._state_vec = F.dot(self.state_vec_no_noise) + self.__noise_step()
         self._state_vec_no_noise = F.dot(self.state_vec_no_noise)
         return
