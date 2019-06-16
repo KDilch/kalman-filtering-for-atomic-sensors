@@ -4,7 +4,9 @@ import logging
 from enum import Enum
 
 from atomic_sensor_simulation.state.state import State
-from atomic_sensor_simulation.utilities import create_matrix_of_functions, exp_matrix_of_functions
+from atomic_sensor_simulation.utilities import create_matrix_of_functions
+from scipy.linalg import expm
+
 from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func
 
 
@@ -35,12 +37,12 @@ class AtomicSensorState(State):
         self.__g_a_coupling_const = kwargs['g_a_coupling_const']
         self.__control_amplitude = kwargs['control_amplitude']
         self.__control_freq = kwargs['control_freq']
+        self.__spin_correlation_const = kwargs['spin_correlation_const']
+        self.__dt = dt
 
-        F_transition_matrix = exp_matrix_of_functions(create_matrix_of_functions(np.array(
-                           [
-                               [create_operable_const_func(self.__atoms_wiener_correlation_const*dt), create_operable_const_func(self.__g_a_coupling_const*dt)],
-                               [create_operable_const_func(0), create_operable_const_func(-dt)]
-                           ])))
+        #TODO clean
+        F_transition_matrix = expm(np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])*dt)
+        self.Phi_transition_matrix = np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])
 
         State.__init__(self, initial_vec, noise_vec, AtomicSensorCoordinates,
                        F_evolution_matrix=F_transition_matrix,
@@ -94,7 +96,6 @@ class AtomicSensorState(State):
         self.__logger.debug('Updating time and dt.')
         self._time = t
         self.__logger.debug('Performing a step for time %r' % str(self._time))
-        F = self._transition_matrix(self._time)
-        self._state_vec = F.dot(self.state_vec_no_noise) + self.__noise_step()
-        self._state_vec_no_noise = F.dot(self.state_vec_no_noise)
+        self._state_vec = self._transition_matrix.dot(self.state_vec_no_noise) + self.__noise_step()
+        self._state_vec_no_noise = self._transition_matrix.dot(self.state_vec_no_noise)
         return

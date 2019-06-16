@@ -65,29 +65,30 @@ def run__atomic_sensor(*args):
 
     # SIMULATION=====================================================
     # simulation parameters
-    num_iter = 300
-    dt = 1.
-    atoms_correlation_const = 0.1
+    num_iter = 30
+    dt = 0.1
+    atoms_correlation_const = 1.
+    spin_correlation_const = 0.0003333
     logger.info('Setting simulation parameters to num_iter = %r, delta_t = %r, atoms_correlation_const=%r.' %
                 (str(num_iter),
                  str(dt),
                  str(atoms_correlation_const)
                  )
                 )
-    g_a_COUPLING_CONST = 0.2
-    SCALAR_STREGTH_y = 0.01
-    SCALAR_STREGTH_j = 0.01
-    SCALAR_STRENGTH_q = 0.01
-
-    time_arr = np.arange(0, num_iter, dt)
+    g_a_COUPLING_CONST = 1.
+    g_d_COUPLING_CONST = 1.
+    SCALAR_STREGTH_y = 1.
+    SCALAR_STREGTH_j = 0.1
+    SCALAR_STRENGTH_q = 0.1
+    time_arr = np.arange(0, num_iter*dt, dt)
 
     #consts for control function -> amplitude*sin(omega*t)
     omega = 0.1
     amplitude = 1.
 
     #initial conditions
-    spin_initial_val = 0.0
-    quadrature_initial_val = 0.1
+    spin_initial_val = 1.
+    quadrature_initial_val = 1.
 
     logger.info('Setting initial conditions to spin = %r, quadrature = %r' %
                 (str(spin_initial_val),
@@ -103,42 +104,57 @@ def run__atomic_sensor(*args):
                                                                      scalar_strength=SCALAR_STRENGTH_q,
                                                                      dt=dt)]),
                               initial_time=0,
+                              dt=dt,
                               atoms_wiener_const=atoms_correlation_const,
                               g_a_coupling_const=g_a_COUPLING_CONST,
+                              spin_correlation_const=spin_correlation_const,
                               control_amplitude=amplitude,
                               control_freq=omega)
 
     sensor = AtomicSensor(state,
                           scalar_strenght_y=SCALAR_STREGTH_y,
+                          g_d_COUPLING_CONST=g_d_COUPLING_CONST,
                           dt=dt)
 
-    zs = np.array([np.array((sensor.read(_))) for _ in range(num_iter)])  # noisy measurement
+    zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
 
     # KALMAN FILTER=====================================================
-    model = AtomicSensorModel(F=np.array(state.F_evolution_matrix(0), dtype='float64'),
-                              initial_state=np.array([0.1, 0.1]),
-                              dim_z=1)
+    model = AtomicSensorModel(F=np.array(state.F_evolution_matrix, dtype='float64'),
+                              Phi=state.Phi_transition_matrix,
+                              initial_state=np.array([1.1, 1.1]),
+                              dim_z=1,
+                              scalar_strenght_y=SCALAR_STREGTH_y,
+                              scalar_strength_j=SCALAR_STREGTH_j,
+                              scalar_strength_q=SCALAR_STRENGTH_q,
+                              g_d_COUPLING_CONST=g_d_COUPLING_CONST,
+                              dt=dt)
 
     (mu, cov, _, _) = model.filterpy.batch_filter(zs)
     filtered_data = mu[:, 1]
 
-    # plot data (noisy, exact and filtered)
-    plt.plot(time_arr, filtered_data, label='Filtered data')
-    plt.plot(range(num_iter), sensor.quadrature_no_noise_full_history, label='Exact data')
+    # plot atoms (noisy, exact and filtered)
+    plt.plot(time_arr, filtered_data, label='Filtered data (filterpy)')
+    plt.scatter(time_arr, sensor.quadrature_no_noise_full_history, label='Exact data')
     plt.plot(time_arr, sensor.quadrature_full_history, label='Noisy data')
     plt.legend()
     plt.show()
 
-    # plot covariances
-    plt.plot(range(num_iter), cov[:, 1, 1], 'b')  # covariances P_q
+    # plot zs
+    plt.scatter(time_arr, sensor.z_no_noise_arr, label='Exact sensor readings')
+    plt.plot(time_arr, zs, label='Noisy sensor readings')
+    plt.legend()
     plt.show()
+
+    # plot covariances
+    # plt.plot(time_arr, cov[:, 1, 1], 'b')  # covariances P_q
+    # plt.show()
 
     # Stable solution
 
 def run_position_speed(*args):
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run_position_speed command.')
-    dt = 1.
+    dt = 0.5
     num_iter = 20
 
     from atomic_sensor_simulation.state.pos_vel_sensor import PosVelSensorState
@@ -157,7 +173,8 @@ def run_position_speed(*args):
                                                                      scalar_strength=0.05,
                                                                      dt=dt)
                                                   ]),
-                              initial_time=0)
+                              initial_time=0,
+                              dt=dt)
     from atomic_sensor_simulation.sensor import pos_sensor
 
     sensor = pos_sensor.PosSensor(state,
