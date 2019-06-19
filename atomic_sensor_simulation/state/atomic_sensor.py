@@ -40,15 +40,17 @@ class AtomicSensorState(State):
         self.__spin_correlation_const = kwargs['spin_correlation_const']
         self.__dt = dt
 
-        #TODO clean
-        F_transition_matrix = expm(np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])*dt)
-        self.Phi_transition_matrix = np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])
+        self.Phi_transition_matrix = expm(np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])*dt)
+        self.F_transition_matrix = np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])
 
-        State.__init__(self, initial_vec, noise_vec, AtomicSensorCoordinates,
-                       F_evolution_matrix=F_transition_matrix,
-                       u_control_vec=create_matrix_of_functions(np.array([create_operable_const_func(0), create_operable_const_func(1)]).T),
+        State.__init__(self,
+                       initial_vec,
+                       noise_vec,
+                       AtomicSensorCoordinates,
+                       Phi_evolution_matrix=self.Phi_transition_matrix,
+                       u_control_vec=create_matrix_of_functions(np.array([create_operable_const_func(0), create_operable_const_func(0)]).T),
                        u_control_evolution_matrix=create_matrix_of_functions(np.array([[create_operable_const_func(0), create_operable_const_func(0)],
-                                                                          [create_operable_const_func(0), create_operable_cos_func(self.__control_amplitude, self.__control_freq)]])))
+                                                                          [create_operable_const_func(0), create_operable_const_func(0)]])))
 
     @property
     def state_vec(self):
@@ -96,6 +98,6 @@ class AtomicSensorState(State):
         self.__logger.debug('Updating time and dt.')
         self._time = t
         self.__logger.debug('Performing a step for time %r' % str(self._time))
-        self._state_vec = self._transition_matrix.dot(self.state_vec_no_noise) + self.__noise_step()
-        self._state_vec_no_noise = self._transition_matrix.dot(self.state_vec_no_noise)
+        self._state_vec = self._Phi_evolution_matrix.dot(self.state_vec_no_noise) + self.__noise_step()
+        self._state_vec_no_noise = self._Phi_evolution_matrix.dot(self.state_vec_no_noise)
         return

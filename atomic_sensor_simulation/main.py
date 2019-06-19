@@ -65,10 +65,10 @@ def run__atomic_sensor(*args):
 
     # SIMULATION=====================================================
     # simulation parameters
-    num_iter = 30
+    num_iter = 50
     dt = 0.1
     atoms_correlation_const = 1.
-    spin_correlation_const = 0.0003333
+    spin_correlation_const = 0.3333
     logger.info('Setting simulation parameters to num_iter = %r, delta_t = %r, atoms_correlation_const=%r.' %
                 (str(num_iter),
                  str(dt),
@@ -78,8 +78,8 @@ def run__atomic_sensor(*args):
     g_a_COUPLING_CONST = 1.
     g_d_COUPLING_CONST = 1.
     SCALAR_STREGTH_y = 1.
-    SCALAR_STREGTH_j = 0.1
-    SCALAR_STRENGTH_q = 0.1
+    SCALAR_STREGTH_j = 0.2
+    SCALAR_STRENGTH_q = 0.2
     time_arr = np.arange(0, num_iter*dt, dt)
 
     #consts for control function -> amplitude*sin(omega*t)
@@ -118,10 +118,10 @@ def run__atomic_sensor(*args):
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
 
-    # KALMAN FILTER=====================================================
-    model = AtomicSensorModel(F=np.array(state.F_evolution_matrix, dtype='float64'),
+    # KALMAN FILTER====================================================
+    model = AtomicSensorModel(F=np.array(state.F_transition_matrix, dtype='float64'),
                               Phi=state.Phi_transition_matrix,
-                              initial_state=np.array([1.1, 1.1]),
+                              z0=zs[0],
                               dim_z=1,
                               scalar_strenght_y=SCALAR_STREGTH_y,
                               scalar_strength_j=SCALAR_STREGTH_j,
@@ -129,13 +129,46 @@ def run__atomic_sensor(*args):
                               g_d_COUPLING_CONST=g_d_COUPLING_CONST,
                               dt=dt)
 
-    (mu, cov, _, _) = model.filterpy.batch_filter(zs)
-    filtered_data = mu[:, 1]
+    # (mu, cov, _, _) = model.filterpy.batch_filter(zs)
+    # filtered_data = mu[:, 1]
+
+    i = 0
+    filtered_data = np.zeros(num_iter)
+    while i < num_iter:
+        z = zs[i]
+        model.filterpy.predict()
+        model.filterpy.update(z)
+        filtered_data[i] = model.filterpy.x[0]
+        i += 1
+
+    from atomic_sensor_simulation.model.atomic_sensor_model import HomeMadeKalmanFilter
+    H = np.array([[g_d_COUPLING_CONST, 0.]])
+    H_inverse = np.linalg.pinv(H)
+    Q = np.array([[SCALAR_STREGTH_j**2, 0.], [0., SCALAR_STRENGTH_q**2]])
+    R_delta = [[SCALAR_STREGTH_y**2/dt]]
+    z0 = zs[0]
+    home_made_kf = HomeMadeKalmanFilter(dimx=2,
+                                        dimz=1,
+                                        x0=np.dot(H_inverse, z0),
+                                        error_x0=Q + np.dot(np.dot(H_inverse, R_delta), np.transpose(H_inverse)),
+                                        Phi_delta=state.Phi_transition_matrix,
+                                        H=H,
+                                        R_delta=R_delta,
+                                        Q_delta=np.dot(np.dot(state.F_transition_matrix, Q), np.transpose(state.F_transition_matrix)) * dt)
+    filtered_data_home = np.zeros(num_iter)
+    i = 0
+    while i < num_iter:
+        z = zs[i]
+        home_made_kf.predict()
+        home_made_kf.update(z)
+        filtered_data_home[i] = home_made_kf.x[0]
+        i += 1
 
     # plot atoms (noisy, exact and filtered)
     plt.plot(time_arr, filtered_data, label='Filtered data (filterpy)')
-    plt.scatter(time_arr, sensor.quadrature_no_noise_full_history, label='Exact data')
-    plt.plot(time_arr, sensor.quadrature_full_history, label='Noisy data')
+    plt.scatter(time_arr, sensor.spin_full_history, label='Noisy data')
+    plt.plot(time_arr, sensor.spin_no_noise_full_history, label='Exact data')
+    # plt.plot(time_arr, filtered_data_home, label="Homemade_filter")
     plt.legend()
     plt.show()
 
@@ -195,7 +228,7 @@ def run_position_speed(*args):
 
     kalman_filter = initialize_kalman_filter_from_derrivatives(np.array([0., 0., 0., 0.]).T,
                                                                dt=dt,
-                                                               initial_F=state.F_evolution_matrix(0))
+                                                               initial_F=state.Phi_evolution_matrix(0))
     (mu, cov, _, _) = kalman_filter.batch_filter(zs)
     filtered_signal = mu[:, 0]
     zs *= .3048

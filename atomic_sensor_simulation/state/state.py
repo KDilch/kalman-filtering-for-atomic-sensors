@@ -14,20 +14,20 @@ class State(ABC):
                  initial_vec,
                  noise_vec,
                  coordinates_enum,
-                 F_evolution_matrix,
+                 Phi_evolution_matrix,
                  u_control_vec=None,
                  u_control_evolution_matrix=None):
         """
         :param initial_vec: numpy array
         :param noise_vec: numpy array
         :param coordinates_enum: indicates the order of coordinates using human readable names
-        :param F_evolution_matrix: array of lambdas
+        :param Phi_evolution_matrix: 
         :param u_control_vec:
         """
         self._state_vec = initial_vec
         self._state_vec_no_noise = initial_vec
         self._noise_vec = noise_vec
-        self._transition_matrix = F_evolution_matrix
+        self._Phi_evolution_matrix = Phi_evolution_matrix
         self._control_vec = u_control_vec
         self._control_evolution_matrix = u_control_evolution_matrix
         self._coordinates = coordinates_enum
@@ -38,8 +38,8 @@ class State(ABC):
         return self._state_vec
 
     @property
-    def F_evolution_matrix(self):
-        return self._transition_matrix
+    def Phi_evolution_matrix(self):
+        return self._Phi_evolution_matrix
 
     @property
     def u_control_vec(self):

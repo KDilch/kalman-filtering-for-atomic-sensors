@@ -59,7 +59,7 @@ class PosVelSensorState(State):
                            ]))
 
         State.__init__(self, initial_vec, noise_vec, PosVelSensorCoordinates,
-                       F_evolution_matrix=F_transition_matrix,
+                       Phi_evolution_matrix=F_transition_matrix,
                        u_control_vec=0,
                        u_control_evolution_matrix=0)
 
@@ -125,7 +125,7 @@ class PosVelSensorState(State):
         self.__logger.debug('Updating time and dt.')
         self._time = t
         self.__logger.debug('Performing a step for time %r' % str(self._time))
-        F = self._transition_matrix(self._time)
+        F = self._Phi_evolution_matrix(self._time)
         # u = self._control_vec(self._time)
         # B = self._control_evolution_matrix(self._time)
         from numpy.random import randn
