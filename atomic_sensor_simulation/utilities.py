@@ -4,9 +4,11 @@ import os
 import json
 import numpy as np
 import logging.config
+import operator
 import matplotlib.pyplot as plt
 import logging
 from scipy.linalg import expm
+from  scipy.integrate import quad
 
 
 def stringify_namespace(namespace):
@@ -89,20 +91,48 @@ class operable:
         return operable(lambda x: self(x) + other(x))
 
 
-def create_matrix_of_functions(matrix):
-    def matrix_of_functions_obj(x):
-        matrix_flat = matrix.flatten()
-        shape = np.shape(matrix)
-        evaluated_matrix = np.empty_like(matrix_flat)
-        for index, element in np.ndenumerate(matrix_flat):
-            evaluated_matrix[index] = matrix_flat[index](x)
-        return np.reshape(evaluated_matrix, shape)
-    return matrix_of_functions_obj
-
+def eval_matrix_of_functions(matrix, x):
+    matrix_flat = matrix.flatten()
+    shape = np.shape(matrix)
+    evaluated_matrix = np.empty_like(matrix_flat)
+    for index, element in np.ndenumerate(matrix_flat):
+        evaluated_matrix[index] = matrix_flat[index](x)
+    return np.reshape(evaluated_matrix, shape)
 
 def exp_matrix_of_functions(matrix):
     return lambda time: expm(matrix(time))
 
+def integrate_matrix_of_functions(matrix, from_x, to_x):
+    matrix_flat = matrix.flatten()
+    shape = np.shape(matrix)
+    integrated_matrix = np.empty_like(matrix_flat)
+    for index, element in np.ndenumerate(matrix_flat):
+        integrated_matrix[index] = quad(matrix_flat[index], from_x, to_x)[0]
+    return np.reshape(integrated_matrix, shape)
 
 
+class operable:
+    def __init__(self, f):
+        self.f = f
 
+    def __call__(self, x):
+        return self.f(x)
+
+
+def op_to_function_op(op):
+    def function_op(self, operand):
+        def f(x):
+            return op(self(x), operand(x))
+
+        return operable(f)
+
+    return function_op
+
+
+for name, op in [(name, getattr(operator, name)) for name in dir(operator) if "__" in name]:
+    try:
+        op(1, 2)
+    except TypeError:
+        pass
+    else:
+        setattr(operable, name, op_to_function_op(op))

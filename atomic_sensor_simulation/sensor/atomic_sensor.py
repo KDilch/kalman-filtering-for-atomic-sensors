@@ -17,9 +17,9 @@ class AtomicSensor(object):
         self.__z = initial_reading
         self.__z_no_noise = initial_reading
         self.__quadrature_history = []
-        self.__quadrature_no_noise_history = []
+        self.__quadrature_mean_history = []
         self.__spin_history = []
-        self.__spin_no_noise_history = []
+        self.__spin_mean_history = []
         self.z_no_noise_arr = []
 
     @property
@@ -35,25 +35,25 @@ class AtomicSensor(object):
         return self.__quadrature_history
 
     @property
-    def quadrature_no_noise_full_history(self):
-        return self.__quadrature_no_noise_history
+    def quadrature_mean_full_history(self):
+        return self.__quadrature_mean_history
 
     @property
     def spin_full_history(self):
         return self.__spin_history
 
     @property
-    def spin_no_noise_full_history(self):
-        return self.__spin_no_noise_history
+    def spin_mean_full_history(self):
+        return self.__spin_mean_history
 
     def read(self, t):
         self.__state.step(t)
         self.__z = self.g_d_COUPLING_CONST * self.__state.spin + self.__noise.step()
         self.__z_no_noise = self.g_d_COUPLING_CONST * self.__state.spin
         self.__quadrature_history.append([self.__state.quadrature])
-        self.__quadrature_no_noise_history.append([self.__state.quadrature_no_noise])
+        self.__quadrature_mean_history.append([self.__state.quadrature_mean])
         self.__spin_history.append([self.__state.spin])
-        self.__spin_no_noise_history.append([self.__state.spin_no_noise])
+        self.__spin_mean_history.append([self.__state.spin_mean])
         self.z_no_noise_arr.append(self.__z_no_noise)
         return self.__z
 

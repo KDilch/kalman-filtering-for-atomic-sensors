@@ -2,16 +2,18 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.linalg import solve_discrete_are
+from scipy.integrate import quad
+
+from atomic_sensor_simulation.utilities import eval_matrix_of_functions, integrate_matrix_of_functions
 
 
 class HomeMadeKalmanFilter(object):
 
-    def __init__(self, x0, P0, Phi_delta, Q_delta, H, R_delta, G=None):
+    def __init__(self, x0, P0, Phi_delta, Q_delta, H, R_delta, G=None, Gamma=None, u=None):
         self.x = x0
         self.P = P0
         self.Phi_delta = Phi_delta
         self.dim_x = len(x0)
-        self.dim_z = None #needed to perform checks
         self.Q_delta = Q_delta
         self.H = H
         self.R_delta = R_delta
@@ -19,9 +21,11 @@ class HomeMadeKalmanFilter(object):
             self.G = G
         else:
             self.G = np.identity(self.dim_x)
+        self.Gamma = Gamma
+        self.u = u
 
-    def predict(self):
-        x = np.dot(self.Phi_delta, self.x)
+    def predict(self, from_time, to_time):
+        x = np.dot(self.Phi_delta, self.x) + self.Phi_delta.dot(integrate_matrix_of_functions(self.Gamma.dot(self.u), from_time, to_time))
         P = np.dot(np.dot(self.Phi_delta, self.P), np.transpose(self.Phi_delta)) + self.Q_delta
         self.x = x
         self.P = P

@@ -35,9 +35,9 @@ class SpeedVelocitySensor(object):
     def read(self, t):
         self.__state.step(t)
         self.__z = self.__z_no_noise + g_d_COUPLING_CONST * self.__state.spin * self.__dt + self.__noise.step()
-        self.__z_no_noise += g_d_COUPLING_CONST * self.__state.spin_no_noise * self.__dt
+        self.__z_no_noise += g_d_COUPLING_CONST * self.__state.spin_mean * self.__dt
         self.__quadrature_history.append([self.__state.quadrature])
-        self.__quadrature_no_noise_history.append([self.__state.quadrature_no_noise])
+        self.__quadrature_no_noise_history.append([self.__state.quadrature_mean])
 
         return self.__z
 

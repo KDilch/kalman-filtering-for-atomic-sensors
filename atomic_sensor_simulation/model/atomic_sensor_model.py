@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from filterpy.kalman import KalmanFilter
-from atomic_sensor_simulation.homemade_kalman_filter.homemade_kf import HomeMadeKalmanFilter
 import numpy as np
+from scipy.linalg import expm
 
+from atomic_sensor_simulation.homemade_kalman_filter.homemade_kf import HomeMadeKalmanFilter
+from atomic_sensor_simulation.utilities import integrate_matrix_of_functions
 
 class AtomicSensorModel(object):
 
-    def __init__(self, F, Phi, z0, dt, scalar_strength_z, scalar_strength_j, scalar_strength_q, g_d_COUPLING_CONST=1.):
+    def __init__(self, F, Gamma, u, z0, dt, scalar_strength_z, scalar_strength_j, scalar_strength_q, g_d_COUPLING_CONST=1.):
         self.F = F
-        self.Phi_delta = Phi
+        self.Phi_delta = expm(integrate_matrix_of_functions(F,0, dt))
         self.Q = np.array([[scalar_strength_j**2, 0.], [0., scalar_strength_q**2]])
         self.Q_delta = np.dot(np.dot(self.Phi_delta, self.Q), self.Phi_delta.transpose()) * dt
         self.H = np.array([[g_d_COUPLING_CONST, 0.]])
@@ -17,9 +19,13 @@ class AtomicSensorModel(object):
         self.R_delta = [[scalar_strength_z ** 2 / dt]]
 
         self.x0, self.P0 = self.calculate_x0_and_P0(z0)
+        print(self.x0, "initialize x0")
         self.dim_x = len(self.x0)
         self.dim_z = len(z0)
         self.dt = dt
+
+        self.Gamma_control_transition_matrix = Gamma
+        self.u_control_vec = u
 
     def calculate_x0_and_P0(self, z0):
         x0 = np.dot(self.H_inverse, z0)
@@ -35,6 +41,7 @@ class AtomicSensorModel(object):
         filterpy.Q = self.Q_delta
         filterpy.H = self.H
         filterpy.R = self.R_delta
+
         return filterpy
 
     def initialize_homemade_filter(self):
@@ -43,4 +50,6 @@ class AtomicSensorModel(object):
                                     Phi_delta=self.Phi_delta,
                                     Q_delta=self.Q_delta,
                                     H=self.H,
-                                    R_delta=self.R_delta)
+                                    R_delta=self.R_delta,
+                                    Gamma=self.Gamma_control_transition_matrix,
+                                    u=self.u_control_vec)

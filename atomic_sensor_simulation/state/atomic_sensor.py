@@ -4,8 +4,7 @@ import logging
 from enum import Enum
 
 from atomic_sensor_simulation.state.state import State
-from atomic_sensor_simulation.utilities import create_matrix_of_functions
-from scipy.linalg import expm
+from atomic_sensor_simulation.utilities import eval_matrix_of_functions
 
 from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func
 
@@ -28,7 +27,7 @@ class AtomicSensorState(State):
         :param initial_time: float; a member variable __time of class state is initialized to initial time
         :param logger: an instance of logger.Logger; if not passed a new instance of a logger is initialized
         :param kwargs: key word args specific to a given simulation;
-                       in this case they are: atoms_wiener_const, g_a_coupling_const #TODO
+                       in this case they are: atoms_wiener_const, g_a_coupling_const
         """
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.info('Initializing an instance of a AtomicSensorState class.')
@@ -39,18 +38,17 @@ class AtomicSensorState(State):
         self.__control_freq = kwargs['control_freq']
         self.__spin_correlation_const = kwargs['spin_correlation_const']
         self.__dt = dt
-
-        self.Phi_transition_matrix = expm(np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])*dt)
-        self.F_transition_matrix = np.array([[-self.__spin_correlation_const, 0], [0, -self.__atoms_wiener_correlation_const]])
+        F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const), create_operable_const_func(0)],
+                                        [create_operable_const_func(0), create_operable_const_func(-self.__atoms_wiener_correlation_const)]])
 
         State.__init__(self,
                        initial_vec,
                        noise_vec,
                        AtomicSensorCoordinates,
-                       Phi_evolution_matrix=self.Phi_transition_matrix,
-                       u_control_vec=create_matrix_of_functions(np.array([create_operable_const_func(0), create_operable_const_func(0)]).T),
-                       u_control_evolution_matrix=create_matrix_of_functions(np.array([[create_operable_const_func(0), create_operable_const_func(0)],
-                                                                          [create_operable_const_func(0), create_operable_const_func(0)]])))
+                       F_transition_matrix=F_transition_matrix,
+                       u_control_vec=np.array([create_operable_const_func(0.), create_operable_cos_func(self.__control_amplitude, self.__control_freq)]).T,
+                       Gamma_control_evolution_matrix=np.array([[create_operable_const_func(1.), create_operable_const_func(0.)],
+                                                                [create_operable_const_func(0.), create_operable_const_func(1.)]]))
 
     @property
     def state_vec(self):
@@ -58,9 +56,9 @@ class AtomicSensorState(State):
         return self._state_vec
 
     @property
-    def state_vec_no_noise(self):
+    def mean_state_vec(self):
         """Returns a numpy array representing a state vector x without any noise."""
-        return self._state_vec_no_noise
+        return self._mean_state_vec
 
     @property
     def noise_vec(self):
@@ -76,12 +74,12 @@ class AtomicSensorState(State):
         return self._state_vec[self._coordinates.QUADRATURE.value]
 
     @property
-    def spin_no_noise(self):
-        return self._state_vec_no_noise[self._coordinates.SPIN.value]
+    def spin_mean(self):
+        return self._mean_state_vec[self._coordinates.SPIN.value]
 
     @property
-    def quadrature_no_noise(self):
-        return self._state_vec_no_noise[self._coordinates.QUADRATURE.value]
+    def quadrature_mean(self):
+        return self._mean_state_vec[self._coordinates.QUADRATURE.value]
 
     @property
     def time(self):
@@ -98,6 +96,7 @@ class AtomicSensorState(State):
         self.__logger.debug('Updating time and dt.')
         self._time = t
         self.__logger.debug('Performing a step for time %r' % str(self._time))
-        self._state_vec = self._Phi_evolution_matrix.dot(self.state_vec_no_noise) + self.__noise_step()
-        self._state_vec_no_noise = self._Phi_evolution_matrix.dot(self.state_vec_no_noise)
+        self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self.__dt
+        self._control_state_vec = self._control_state_vec + eval_matrix_of_functions(self._Gamma_control_evolution_matrix, t).dot(eval_matrix_of_functions(self._u_control_vec, t)) * self.__dt
+        self._state_vec = self._mean_state_vec + self._control_state_vec + self.__noise_step()
         return

@@ -69,7 +69,7 @@ class PosVelSensorState(State):
         return self._state_vec
 
     @property
-    def state_vec_no_noise(self):
+    def mean_state_vec(self):
         """Returns a numpy array representing a state vector x without any noise."""
         return self._state_vec_no_noise
 
@@ -130,7 +130,7 @@ class PosVelSensorState(State):
         # B = self._control_evolution_matrix(self._time)
         from numpy.random import randn
 
-        self._state_vec = F.dot(self.state_vec_no_noise) +\
+        self._state_vec = F.dot(self.mean_state_vec) + \
                           np.array([randn() *1., randn() * 1., 0., 0.])
-        self._state_vec_no_noise = F.dot(self.state_vec_no_noise)
+        self._state_vec_no_noise = F.dot(self.mean_state_vec)
         return
