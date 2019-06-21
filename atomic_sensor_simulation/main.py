@@ -59,7 +59,6 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.state.atomic_sensor import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
-    from atomic_sensor_simulation.utilities import eval_matrix_of_functions, integrate_matrix_of_functions
 
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-atomic-sensor command.')
@@ -68,54 +67,66 @@ def run__atomic_sensor(*args):
     # simulation parameters
     num_iter = 100
     dt = 0.1
-    atoms_correlation_const = 1.
-    spin_correlation_const = 0.3333
-    logger.info('Setting simulation parameters to num_iter = %r, delta_t = %r, atoms_correlation_const=%r.' %
+    light_correlation_const = 0.3333
+    lamour_freq = 0.1
+    atoms_correlation_const = 0.666  # 1/T2
+    logger.info('Setting simulation parameters to num_iter = %r, delta_t = %r, light_correlation_const=%r.' %
                 (str(num_iter),
                  str(dt),
-                 str(atoms_correlation_const)
+                 str(light_correlation_const)
                  )
                 )
-    g_a_COUPLING_CONST = 1. #for now this value is not used
-    g_d_COUPLING_CONST = 8.
-    SCALAR_STREGTH_z = 5.
-    SCALAR_STREGTH_j = 1.
-    SCALAR_STRENGTH_q = 1.
+    g_d_COUPLING_CONST = 10.
+    SCALAR_STREGTH_z = 1.
+    SCALAR_STREGTH_jy = 1.
+    SCALAR_STREGTH_jz = 0.3
+    SCALAR_STRENGTH_qp = 1.
+    SCALAR_STRENGTH_qq = 1.
+
     time_arr = np.arange(0, num_iter*dt, dt)
 
     #consts for coupling function -> amplitude*cos(omega*t)
-    omega = 5.
-    amplitude = 0.
-    phase_shift = 0.
+    omega = 50.
+    amplitude = 1000.
 
     #initial conditions
-    spin_initial_val = 3.
-    quadrature_initial_val = 3.
+    spin_y_initial_val = 1.
+    spin_z_initial_val = 1.
+    quadrature_p_initial_val = 1.
+    quadrature_q_initial_val = 1.
 
-    logger.info('Setting initial conditions to spin = %r, quadrature = %r' %
-                (str(spin_initial_val),
-                 str(quadrature_initial_val)
+    logger.info('Setting initial conditions to spin = [%r, %r], quadrature = [%r, %r]' %
+                (str(spin_y_initial_val),
+                 str(spin_z_initial_val),
+                 str(quadrature_p_initial_val),
+                 str(quadrature_q_initial_val)
                  )
                 )
 
-    state = AtomicSensorState(initial_vec=np.array([spin_initial_val, quadrature_initial_val]),
-                              noise_vec=np.array([GaussianWhiteNoise(spin_initial_val,
-                                                                     scalar_strength=SCALAR_STREGTH_j,
+    state = AtomicSensorState(initial_vec=np.array([spin_y_initial_val, spin_z_initial_val, quadrature_p_initial_val, quadrature_q_initial_val]),
+                              noise_vec=np.array([GaussianWhiteNoise(spin_y_initial_val,
+                                                                     scalar_strength=SCALAR_STREGTH_jy,
                                                                      dt=dt),
-                                                  GaussianWhiteNoise(spin_initial_val,
-                                                                     scalar_strength=SCALAR_STRENGTH_q,
-                                                                     dt=dt)]),
+                                                  GaussianWhiteNoise(spin_z_initial_val,
+                                                                     scalar_strength=SCALAR_STREGTH_jz,
+                                                                     dt=dt),
+                                                  GaussianWhiteNoise(quadrature_q_initial_val,
+                                                                     scalar_strength=SCALAR_STRENGTH_qp,
+                                                                     dt=dt),
+                                                  GaussianWhiteNoise(quadrature_q_initial_val,
+                                                                     scalar_strength=SCALAR_STRENGTH_qq,
+                                                                     dt=dt)
+                                                  ]),
                               initial_time=0,
                               dt=dt,
-                              atoms_wiener_const=atoms_correlation_const,
-                              g_a_coupling_const=g_a_COUPLING_CONST,
-                              spin_correlation_const=spin_correlation_const,
+                              light_correlation_const=light_correlation_const,
+                              spin_correlation_const=atoms_correlation_const,
+                              lamour_freq=lamour_freq,
                               coupling_amplitude=amplitude,
-                              coupling_freq=omega,
-                              coupling_phase_shift=phase_shift)
+                              coupling_freq=omega)
 
     sensor = AtomicSensor(state,
-                          scalar_strenght_y=SCALAR_STREGTH_z,
+                          scalar_strenght_z=SCALAR_STREGTH_z,
                           g_d_COUPLING_CONST=g_d_COUPLING_CONST,
                           dt=dt)
 
@@ -127,8 +138,10 @@ def run__atomic_sensor(*args):
                               u=state.u_control_vec,
                               z0=[zs[0]],
                               scalar_strength_z=SCALAR_STREGTH_z,
-                              scalar_strength_j=SCALAR_STREGTH_j,
-                              scalar_strength_q=SCALAR_STRENGTH_q,
+                              scalar_strength_jy=SCALAR_STREGTH_jy,
+                              scalar_strength_jz=SCALAR_STREGTH_jz,
+                              scalar_strength_qp=SCALAR_STRENGTH_qp,
+                              scalar_strength_qq=SCALAR_STRENGTH_qq,
                               g_d_COUPLING_CONST=g_d_COUPLING_CONST,
                               dt=dt)
 
@@ -141,10 +154,10 @@ def run__atomic_sensor(*args):
         z = zs[index]
         # B = eval_matrix_of_functions(model.Gamma_control_transition_matrix, time)  # B, F are time independent
         # u = integrate_matrix_of_functions(model.u_control_vec, from_x=time-dt, to_x=time)
-        filterpy.predict()
+        filterpy.predict(F=model.compute_Phi_delta(from_time=time-dt))
         filterpy.update(z)
-        filtered_light[index] = filterpy.x[1]
-        filtered_atoms[index] = filterpy.x[0]
+        filtered_light[index] = filterpy.x[3]
+        filtered_atoms[index] = filterpy.x[1]
 
     # RUN HOMEMADE KALMAN FILTER
     logger.info("Initializing homemade Kalman Filter")
@@ -154,17 +167,18 @@ def run__atomic_sensor(*args):
     filtered_atoms_homemade = np.zeros(num_iter)
     for index, time in enumerate(time_arr):
         z = zs[index]
-        home_made_kf.predict(from_time=time, to_time=time+dt)
+        home_made_kf.predict(from_time=time, to_time=time+dt, Phi_delta=model.compute_Phi_delta(from_time=time-dt))
         home_made_kf.update(z)
-        filtered_light_homemade[index] = home_made_kf.x[1]
-        filtered_atoms_homemade[index] = home_made_kf.x[0]
+        filtered_light_homemade[index] = home_made_kf.x[3]
+        filtered_atoms_homemade[index] = home_made_kf.x[1]
 
     # PLOTS=========================================================
+    _, j_z_full_history, q_p_full_history, q_q_full_history = zip(*sensor.state_vec_full_history)
+
     # plot light (noisy, exact and filtered)
     logger.info("Plotting data")
     plt.plot(time_arr, filtered_light, label='Filtered data (filterpy)')
-    plt.plot(time_arr, sensor.quadrature_full_history, label='Exact data')
-    # plt.plot(time_arr, sensor.spin_no_noise_full_history, label='Mean data')
+    plt.plot(time_arr, q_q_full_history, label='Exact data')
     plt.plot(time_arr, filtered_light_homemade, label="Homemade_filter")
     plt.title("Light")
     plt.legend()
@@ -173,9 +187,8 @@ def run__atomic_sensor(*args):
     #plot atoms
     logger.info("Plotting data")
     plt.plot(time_arr, filtered_atoms, label='Filtered data (filterpy)')
-    plt.plot(time_arr, sensor.spin_full_history, label='Exact data')
-    # plt.plot(time_arr, sensor.spin_mean_full_history, label='Mean data')
-    # plt.plot(time_arr, filtered_atoms_homemade, label="Homemade_filter")
+    plt.plot(time_arr, j_z_full_history, label='Exact data')
+    plt.plot(time_arr, filtered_atoms_homemade, label="Homemade_filter")
     plt.title("Atoms")
     plt.legend()
     plt.show()

@@ -58,7 +58,10 @@ class PosVelSensorState(State):
                                 create_operable_const_func(1.)]
                            ]))
 
-        State.__init__(self, initial_vec, noise_vec, PosVelSensorCoordinates,
+        State.__init__(self,
+                       initial_vec,
+                       noise_vec,
+                       PosVelSensorCoordinates,
                        Phi_evolution_matrix=F_transition_matrix,
                        u_control_vec=0,
                        u_control_evolution_matrix=0)

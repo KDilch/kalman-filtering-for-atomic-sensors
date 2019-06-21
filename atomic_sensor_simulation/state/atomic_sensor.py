@@ -6,13 +6,15 @@ from enum import Enum
 from atomic_sensor_simulation.state.state import State
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions
 
-from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func
+from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func, create_operable_sin_func
 
 
 class AtomicSensorCoordinates(Enum):
     """Enum translating vectors coordinates to human readable names."""
-    SPIN = 0
-    QUADRATURE = 1
+    SPIN_Y = 0
+    SPIN_Z = 1
+    QUADRATURE_P = 2
+    QUADRATURE_Q = 3
 
 
 class AtomicSensorState(State):
@@ -32,24 +34,50 @@ class AtomicSensorState(State):
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.info('Initializing an instance of a AtomicSensorState class.')
         self.__time = initial_time
-        self.__atoms_wiener_correlation_const = kwargs['atoms_wiener_const']
-        self.__g_a_coupling_const = kwargs['g_a_coupling_const']
+        self.__light_correlation_const = kwargs['light_correlation_const']
         self.__coupling_amplitude = kwargs['coupling_amplitude']
         self.__coupling_freq = kwargs['coupling_freq']
+        self.__lamour_freq = kwargs['lamour_freq']
         self.__spin_correlation_const = kwargs['spin_correlation_const']
-        self.__coupling_phase_shift = kwargs['coupling_phase_shift']
         self.__dt = dt
-        F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const), create_operable_cos_func(amplitude=self.__coupling_amplitude, omega=self.__coupling_freq, phase_shift=self.__coupling_phase_shift)],
-                                        [create_operable_const_func(0), create_operable_const_func(-self.__atoms_wiener_correlation_const)]])
+        F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const),
+                                         create_operable_const_func(self.__lamour_freq),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(0)],
+
+                                        [create_operable_const_func(-self.__lamour_freq),
+                                          create_operable_const_func(-self.__spin_correlation_const),
+                                          create_operable_cos_func(amplitude=self.__coupling_amplitude,
+                                                                   omega=self.__coupling_freq,
+                                                                   phase_shift=0.),
+                                          create_operable_sin_func(amplitude=self.__coupling_amplitude,
+                                                                   omega=self.__coupling_freq,
+                                                                   phase_shift=0.)],
+
+                                        [create_operable_const_func(0),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(-self.__light_correlation_const),
+                                         create_operable_const_func(0)
+                                         ],
+
+                                        [create_operable_const_func(0),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(-self.__light_correlation_const)]])
 
         State.__init__(self,
                        initial_vec,
                        noise_vec,
                        AtomicSensorCoordinates,
                        F_transition_matrix=F_transition_matrix,
-                       u_control_vec=np.array([create_operable_const_func(0.), create_operable_const_func(0.)]).T,
-                       Gamma_control_evolution_matrix=np.array([[create_operable_const_func(1.), create_operable_const_func(0.)],
-                                                                [create_operable_const_func(0.), create_operable_const_func(1.)]]))
+                       u_control_vec=np.array([create_operable_const_func(0.),
+                                               create_operable_const_func(0.),
+                                               create_operable_const_func(0.),
+                                               create_operable_const_func(0.)]).T,
+                       Gamma_control_evolution_matrix=np.array([[create_operable_const_func(1.), create_operable_const_func(0.), create_operable_const_func(0.), create_operable_const_func(0.)],
+                                                                [create_operable_const_func(0.), create_operable_const_func(1.), create_operable_const_func(0.), create_operable_const_func(0.)],
+                                                                [create_operable_const_func(0.), create_operable_const_func(0.), create_operable_const_func(1.), create_operable_const_func(0.)],
+                                                                [create_operable_const_func(0.), create_operable_const_func(0.), create_operable_const_func(0.), create_operable_const_func(1.)]]))
 
     @property
     def state_vec(self):
@@ -59,7 +87,7 @@ class AtomicSensorState(State):
     @property
     def mean_state_vec(self):
         """Returns a numpy array representing a state vector x without any noise."""
-        return self._mean_state_vec
+        return np.array(self._mean_state_vec)
 
     @property
     def noise_vec(self):
@@ -68,19 +96,19 @@ class AtomicSensorState(State):
 
     @property
     def spin(self):
-        return self._state_vec[self._coordinates.SPIN.value]
+        return [self._state_vec[self._coordinates.SPIN_Y.value], self._state_vec[self._coordinates.SPIN_Z.value]]
 
     @property
     def quadrature(self):
-        return self._state_vec[self._coordinates.QUADRATURE.value]
+        return [self._state_vec[self._coordinates.QUADRATURE_P.value], self._state_vec[self._coordinates.QUADRATURE_Q.value]]
 
     @property
     def spin_mean(self):
-        return self._mean_state_vec[self._coordinates.SPIN.value]
+        return [self._mean_state_vec[self._coordinates.SPIN_Y.value], self._mean_state_vec[self._coordinates.SPIN_Z.value]]
 
     @property
     def quadrature_mean(self):
-        return self._mean_state_vec[self._coordinates.QUADRATURE.value]
+        return [self._mean_state_vec[self._coordinates.QUADRATURE_P.value], self._mean_state_vec[self._coordinates.QUADRATURE_Q.value]]
 
     @property
     def time(self):

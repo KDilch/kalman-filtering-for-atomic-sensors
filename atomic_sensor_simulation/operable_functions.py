@@ -9,10 +9,10 @@ def create_operable_const_func(const):
     return const_func
 
 
-def create_operable_sin_func(amplitude, omega):
+def create_operable_sin_func(amplitude, omega, phase_shift):
     @operable
     def sin_func(t):
-        return amplitude*np.sin(omega*t)
+        return amplitude*np.sin(omega*t+phase_shift)
     return sin_func
 
 
