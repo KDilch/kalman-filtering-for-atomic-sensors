@@ -56,7 +56,7 @@ def main():
 
 
 def run__atomic_sensor(*args):
-    from atomic_sensor_simulation.state.atomic_sensor import AtomicSensorState
+    from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
 
@@ -173,7 +173,7 @@ def run__atomic_sensor(*args):
         filtered_atoms_homemade[index] = home_made_kf.x[1]
 
     # PLOTS=========================================================
-    _, j_z_full_history, q_p_full_history, q_q_full_history = zip(*sensor.state_vec_full_history)
+    j_y_full_history, j_z_full_history, q_p_full_history, q_q_full_history = zip(*sensor.state_vec_full_history)
 
     # plot light (noisy, exact and filtered)
     logger.info("Plotting data")
@@ -199,10 +199,6 @@ def run__atomic_sensor(*args):
     plt.legend()
     plt.show()
 
-    # # plot covariances
-    # plt.plot(time_arr, cov[:, 1, 1], 'b')  # covariances P_q
-    # plt.show()
-
 
 def run_position_speed(*args):
 
@@ -211,7 +207,8 @@ def run_position_speed(*args):
     dt = 0.5
     num_iter = 20
 
-    from atomic_sensor_simulation.state.pos_vel_sensor import PosVelSensorState
+    from atomic_sensor_simulation.state.pos_vel_state import PosVelSensorState
+    from atomic_sensor_simulation.model.pos_vel_model import PosVelModel
 
     state = PosVelSensorState(initial_vec=np.array([0., 0., 2., 1.]),
                               noise_vec=np.array([GaussianWhiteNoise(0,
@@ -236,32 +233,24 @@ def run_position_speed(*args):
                                   dt=dt)
     time_arr = np.arange(0, num_iter, dt)
 
-    zs = np.array([(np.array([sensor.read(_)]).T) for _ in time_arr])  # read from the sensor
+    zs = np.array([np.array((sensor.read(_))) for _ in time_arr])
 
-    # KALMAN FILTER
-    # Fs = [state.F_evolution_matrix(_) for _ in time_arr]
-    # us = [state.u_control_vec(time) for time in time_arr]
-    # Bs = [state.B_control_evolution_matrix(time) for time in time_arr]
-
-    # waveform = np.empty_like(us)
-    # for element in range(len(us)):
-    #     waveform[element] = Bs[element].dot(us[element])[1]
-
-    kalman_filter = initialize_kalman_filter_from_derrivatives(np.array([0., 0., 0., 0.]).T,
-                                                               dt=dt,
-                                                               initial_F=state.Phi_evolution_matrix(0))
-    (mu, cov, _, _) = kalman_filter.batch_filter(zs)
-    filtered_signal = mu[:, 0]
+    # KALMAN FILTER============================================================================
+    model = PosVelModel(state.F_transition_matrix,
+                        Gamma=state.Gamma_control_evolution_matrix,
+                        u=state.u_control_vec,
+                        z0=zs[0],
+                        dt=dt)
+    filterpy_kf = model.initialize_filterpy()
+    (mu, cov, _, _) = filterpy_kf.batch_filter(zs)
     zs *= .3048
-    # # plot results
-    # plt.plot(range(num_iter), sensor.quadrature_full_history, label='Signal')  # sensor readings
-    # plt.plot(range(num_iter), cov[:,1], 'b')  # covariances
-    plt.plot(mu[:, 0], mu[:, 2], label='Filtered signal')  # filtered signal
-    # plt.plot(range(num_iter), waveform, label=' quadrature_no_noise')  # waveform
-    plt.plot(zs[:, 0], zs[:, 1], label=' quadrature_history')  # waveform
+
+    # plot position
+    plt.plot(mu[:, 0], mu[:, 2], label='Filtered signal')
+    plt.plot(zs[:, 0], zs[:, 1], label='Noisy signal')
     plt.legend()
     plt.show()
-
+    
 
 def run_tests(*args):
     #:TODO implement

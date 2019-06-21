@@ -109,30 +109,3 @@ def integrate_matrix_of_functions(matrix, from_x, to_x):
     for index, element in np.ndenumerate(matrix_flat):
         integrated_matrix[index] = quad(matrix_flat[index], from_x, to_x)[0]
     return np.reshape(integrated_matrix, shape)
-
-
-class operable:
-    def __init__(self, f):
-        self.f = f
-
-    def __call__(self, x):
-        return self.f(x)
-
-
-def op_to_function_op(op):
-    def function_op(self, operand):
-        def f(x):
-            return op(self(x), operand(x))
-
-        return operable(f)
-
-    return function_op
-
-
-for name, op in [(name, getattr(operator, name)) for name in dir(operator) if "__" in name]:
-    try:
-        op(1, 2)
-    except TypeError:
-        pass
-    else:
-        setattr(operable, name, op_to_function_op(op))

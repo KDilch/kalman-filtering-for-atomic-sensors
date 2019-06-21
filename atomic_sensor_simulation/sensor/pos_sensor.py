@@ -42,7 +42,7 @@ class PosSensor(object):
                              self.__z_no_noise[1] + self.__state.velocity_y * self.__dt + + randn() * self.__noise_std])
         self.__z_no_noise += np.array([self.__state.velocity_x * self.__dt, self.__state.velocity_y * self.__dt])
         self.__position_x_history.append([self.__state.position_x])
-        self.__position_x_no_noise_history.append([self.__state.position_x_no_noise])
+        self.__position_x_no_noise_history.append([self.__state.mean_position_x])
         return self.__z
 
     def generate(self, num_steps):

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from abc import ABC, abstractmethod
+from abc import ABC
+import logging
 
+from atomic_sensor_simulation.utilities import eval_matrix_of_functions
 
 class State(ABC):
     """An abstract class representing any state vector."""
@@ -10,9 +12,12 @@ class State(ABC):
                  noise_vec,
                  coordinates_enum,
                  F_transition_matrix,
+                 dt,
+                 time,
                  u_control_vec=None,
                  Gamma_control_evolution_matrix=None,
-                 initial_control_vec=None):
+                 initial_control_vec=None,
+                 logger=None):
         """
         :param initial_vec: numpy array
         :param noise_vec: numpy array
@@ -20,8 +25,10 @@ class State(ABC):
         :param Phi_evolution_matrix: 
         :param u_control_vec:
         """
+        self._logger = logger or logging.getLogger(__name__)
         self._state_vec = initial_vec
         self._mean_state_vec = initial_vec
+        self._dt = dt
         if initial_control_vec:
             self._control_state_vec = initial_control_vec
         else:
@@ -31,7 +38,7 @@ class State(ABC):
         self._u_control_vec = u_control_vec
         self._Gamma_control_evolution_matrix = Gamma_control_evolution_matrix
         self._coordinates = coordinates_enum
-        self._time = None
+        self._time = time
 
     @property
     def state_vec(self):
@@ -62,10 +69,21 @@ class State(ABC):
         return self.noise_vec
 
     @property
-    @abstractmethod
     def time(self):
-        raise NotImplementedError
+        return self._time
 
-    @abstractmethod
-    def step(self, time):
-        raise NotImplementedError
+    def step(self, t):
+        self._logger.debug('Updating time and dt.')
+        self._time = t
+        self._logger.debug('Performing a step for time %r' % str(self._time))
+        self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self._dt
+        # self._control_state_vec = self._control_state_vec + eval_matrix_of_functions(self._Gamma_control_evolution_matrix, t).dot(eval_matrix_of_functions(self._u_control_vec, t))*self.quadrature * self.__dt
+        self._state_vec = self._mean_state_vec + self._noise_step()
+        return
+
+    def _noise_step(self):
+        noise_val_vec = np.zeros(len(self.noise_vec))
+        for n in range(len(self.noise_vec)):
+            self.noise_vec[n].step()
+            noise_val_vec[n] = self.noise_vec[n].value
+        return np.array(noise_val_vec)
