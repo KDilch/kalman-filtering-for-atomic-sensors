@@ -16,8 +16,8 @@ def create_operable_sin_func(amplitude, omega):
     return sin_func
 
 
-def create_operable_cos_func(amplitude, omega):
+def create_operable_cos_func(amplitude, omega, phase_shift):
     @operable
     def cos_func(t):
-        return amplitude*np.cos(omega*t)
+        return amplitude*np.cos(omega*t+phase_shift)
     return cos_func

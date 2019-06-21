@@ -38,7 +38,7 @@ class AtomicSensorState(State):
         self.__control_freq = kwargs['control_freq']
         self.__spin_correlation_const = kwargs['spin_correlation_const']
         self.__dt = dt
-        F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const), create_operable_const_func(0)],
+        F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const), create_operable_cos_func(amplitude=self.__control_amplitude, omega=self.__control_freq, phase_shift=5.)],
                                         [create_operable_const_func(0), create_operable_const_func(-self.__atoms_wiener_correlation_const)]])
 
         State.__init__(self,
@@ -46,7 +46,7 @@ class AtomicSensorState(State):
                        noise_vec,
                        AtomicSensorCoordinates,
                        F_transition_matrix=F_transition_matrix,
-                       u_control_vec=np.array([create_operable_const_func(0.), create_operable_cos_func(self.__control_amplitude, self.__control_freq)]).T,
+                       u_control_vec=np.array([create_operable_const_func(0.), create_operable_const_func(0.)]).T,
                        Gamma_control_evolution_matrix=np.array([[create_operable_const_func(1.), create_operable_const_func(0.)],
                                                                 [create_operable_const_func(0.), create_operable_const_func(1.)]]))
 
@@ -97,6 +97,6 @@ class AtomicSensorState(State):
         self._time = t
         self.__logger.debug('Performing a step for time %r' % str(self._time))
         self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self.__dt
-        self._control_state_vec = self._control_state_vec + eval_matrix_of_functions(self._Gamma_control_evolution_matrix, t).dot(eval_matrix_of_functions(self._u_control_vec, t)) * self.__dt
-        self._state_vec = self._mean_state_vec + self._control_state_vec + self.__noise_step()
+        # self._control_state_vec = self._control_state_vec + eval_matrix_of_functions(self._Gamma_control_evolution_matrix, t).dot(eval_matrix_of_functions(self._u_control_vec, t))*self.quadrature * self.__dt
+        self._state_vec = self._mean_state_vec + self.__noise_step()
         return

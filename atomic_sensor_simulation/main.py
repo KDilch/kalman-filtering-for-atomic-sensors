@@ -66,10 +66,10 @@ def run__atomic_sensor(*args):
 
     # SIMULATION=====================================================
     # simulation parameters
-    num_iter = 200
+    num_iter = 100
     dt = 0.1
-    atoms_correlation_const = 0.3333
-    spin_correlation_const = 0.333
+    atoms_correlation_const = 1.
+    spin_correlation_const = 0.3333
     logger.info('Setting simulation parameters to num_iter = %r, delta_t = %r, atoms_correlation_const=%r.' %
                 (str(num_iter),
                  str(dt),
@@ -77,15 +77,15 @@ def run__atomic_sensor(*args):
                  )
                 )
     g_a_COUPLING_CONST = 1. #for now this value is not used
-    g_d_COUPLING_CONST = 1.
-    SCALAR_STREGTH_z = 0.1
-    SCALAR_STREGTH_j = 0.05
-    SCALAR_STRENGTH_q = 0.05
+    g_d_COUPLING_CONST = 8.
+    SCALAR_STREGTH_z = 5.
+    SCALAR_STREGTH_j = 1.
+    SCALAR_STRENGTH_q = 1.
     time_arr = np.arange(0, num_iter*dt, dt)
 
     #consts for control function -> amplitude*cos(omega*t)
-    omega = 0.2
-    amplitude = 0.5
+    omega = 5.
+    amplitude = 50.
 
     #initial conditions
     spin_initial_val = 3.
@@ -137,9 +137,9 @@ def run__atomic_sensor(*args):
     filtered_atoms = np.zeros(num_iter)
     for index, time in enumerate(time_arr):
         z = zs[index]
-        B = eval_matrix_of_functions(model.Gamma_control_transition_matrix, time)  # B, F are time independent
-        u = integrate_matrix_of_functions(model.u_control_vec, from_x=time-dt, to_x=time)
-        filterpy.predict(B=B, u=u)
+        # B = eval_matrix_of_functions(model.Gamma_control_transition_matrix, time)  # B, F are time independent
+        # u = integrate_matrix_of_functions(model.u_control_vec, from_x=time-dt, to_x=time)
+        filterpy.predict()
         filterpy.update(z)
         filtered_light[index] = filterpy.x[1]
         filtered_atoms[index] = filterpy.x[0]
@@ -152,7 +152,7 @@ def run__atomic_sensor(*args):
     filtered_atoms_homemade = np.zeros(num_iter)
     for index, time in enumerate(time_arr):
         z = zs[index]
-        home_made_kf.predict(from_time=time-dt, to_time=time)
+        home_made_kf.predict(from_time=time, to_time=time+dt)
         home_made_kf.update(z)
         filtered_light_homemade[index] = home_made_kf.x[1]
         filtered_atoms_homemade[index] = home_made_kf.x[0]
@@ -164,6 +164,7 @@ def run__atomic_sensor(*args):
     plt.plot(time_arr, sensor.quadrature_full_history, label='Exact data')
     # plt.plot(time_arr, sensor.spin_no_noise_full_history, label='Mean data')
     plt.plot(time_arr, filtered_light_homemade, label="Homemade_filter")
+    plt.title("Light")
     plt.legend()
     plt.show()
 
@@ -171,8 +172,9 @@ def run__atomic_sensor(*args):
     logger.info("Plotting data")
     plt.plot(time_arr, filtered_atoms, label='Filtered data (filterpy)')
     plt.plot(time_arr, sensor.spin_full_history, label='Exact data')
-    plt.plot(time_arr, sensor.spin_mean_full_history, label='Mean data')
-    plt.plot(time_arr, filtered_atoms_homemade, label="Homemade_filter")
+    # plt.plot(time_arr, sensor.spin_mean_full_history, label='Mean data')
+    # plt.plot(time_arr, filtered_atoms_homemade, label="Homemade_filter")
+    plt.title("Atoms")
     plt.legend()
     plt.show()
 
