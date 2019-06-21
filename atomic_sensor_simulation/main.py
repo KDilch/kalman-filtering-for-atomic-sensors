@@ -83,9 +83,10 @@ def run__atomic_sensor(*args):
     SCALAR_STRENGTH_q = 1.
     time_arr = np.arange(0, num_iter*dt, dt)
 
-    #consts for control function -> amplitude*cos(omega*t)
+    #consts for coupling function -> amplitude*cos(omega*t)
     omega = 5.
-    amplitude = 50.
+    amplitude = 0.
+    phase_shift = 0.
 
     #initial conditions
     spin_initial_val = 3.
@@ -109,8 +110,9 @@ def run__atomic_sensor(*args):
                               atoms_wiener_const=atoms_correlation_const,
                               g_a_coupling_const=g_a_COUPLING_CONST,
                               spin_correlation_const=spin_correlation_const,
-                              control_amplitude=amplitude,
-                              control_freq=omega)
+                              coupling_amplitude=amplitude,
+                              coupling_freq=omega,
+                              coupling_phase_shift=phase_shift)
 
     sensor = AtomicSensor(state,
                           scalar_strenght_y=SCALAR_STREGTH_z,

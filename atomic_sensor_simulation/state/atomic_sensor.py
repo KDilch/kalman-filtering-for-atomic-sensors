@@ -34,11 +34,12 @@ class AtomicSensorState(State):
         self.__time = initial_time
         self.__atoms_wiener_correlation_const = kwargs['atoms_wiener_const']
         self.__g_a_coupling_const = kwargs['g_a_coupling_const']
-        self.__control_amplitude = kwargs['control_amplitude']
-        self.__control_freq = kwargs['control_freq']
+        self.__coupling_amplitude = kwargs['coupling_amplitude']
+        self.__coupling_freq = kwargs['coupling_freq']
         self.__spin_correlation_const = kwargs['spin_correlation_const']
+        self.__coupling_phase_shift = kwargs['coupling_phase_shift']
         self.__dt = dt
-        F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const), create_operable_cos_func(amplitude=self.__control_amplitude, omega=self.__control_freq, phase_shift=5.)],
+        F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const), create_operable_cos_func(amplitude=self.__coupling_amplitude, omega=self.__coupling_freq, phase_shift=self.__coupling_phase_shift)],
                                         [create_operable_const_func(0), create_operable_const_func(-self.__atoms_wiener_correlation_const)]])
 
         State.__init__(self,
