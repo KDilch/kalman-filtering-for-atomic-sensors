@@ -1,21 +1,24 @@
 import numpy as np
 import logging
-from atomic_sensor_simulation.CONSTANTS import g_d_COUPLING_CONST
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
+from numpy.random import randn
 
 
-class AtomicSensor(object):
+
+class PosSensor(object):
     """Implementation of measurement made by a sensor."""
     def __init__(self, state, dt, scalar_strenght_y, logger=None):
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.info('Initializing an instance of a AtomicSensor class.')
         self.__state = state
         self.__dt = dt
-        from atomic_sensor_simulation.CONSTANTS import g_d_COUPLING_CONST
-        initial_reading = g_d_COUPLING_CONST*state.spin + state.quadrature
+        initial_reading = np.array([state.position_x, state.position_y])
         self.__noise = GaussianWhiteNoise(initial_reading, scalar_strenght_y, dt)
         self.__z = initial_reading  # photocurrent value with noise (measured by the atomic sensor)
         self.__z_no_noise = initial_reading  # photocurrent value without noise
+        self.__position_x_history = []
+        self.__position_x_no_noise_history = []
+        self.__noise_std = scalar_strenght_y
 
     @property
     def noise(self):
@@ -25,11 +28,22 @@ class AtomicSensor(object):
     def z_no_noise(self):
         return self.__z_no_noise
 
+    @property
+    def pos_x_full_history(self):
+        return self.__position_x_history
+
+    @property
+    def pos_x_no_noise_full_history(self):
+        return self.__position_x_no_noise_history
+
     def read(self, t):
         self.__state.step(t)
-        self.__z = self.__z_no_noise + g_d_COUPLING_CONST * self.__state.spin * self.__dt + self.__noise.step()
-        self.__z_no_noise += g_d_COUPLING_CONST * self.__state.spin_no_noise * self.__dt
-        return self.__z, self.__state.quadrature
+        self.__z = np.array([self.__z_no_noise[0] + self.__state.velocity_x * self.__dt + randn() * self.__noise_std,
+                             self.__z_no_noise[1] + self.__state.velocity_y * self.__dt + + randn() * self.__noise_std])
+        self.__z_no_noise += np.array([self.__state.velocity_x * self.__dt, self.__state.velocity_y * self.__dt])
+        self.__position_x_history.append([self.__state.position_x])
+        self.__position_x_no_noise_history.append([self.__state.position_x_no_noise])
+        return self.__z
 
     def generate(self, num_steps):
         results = np.empty(num_steps)

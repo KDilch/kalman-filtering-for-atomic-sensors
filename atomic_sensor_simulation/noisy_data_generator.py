@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from atomic_sensor_simulation.noise import Noise, GaussianWhiteNoise
-from atomic_sensor_simulation.state import Signal
+from atomic_sensor_simulation.state.state import Signal
 import numpy as np
 import logging
 
