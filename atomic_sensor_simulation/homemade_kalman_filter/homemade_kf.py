@@ -27,7 +27,7 @@ class HomeMadeKalmanFilter(object):
     def predict(self, from_time, to_time, Phi_delta):
         if Phi_delta is not None:
             self.Phi_delta = Phi_delta
-        x = np.dot(self.Phi_delta, self.x) + self.Phi_delta.dot(integrate_matrix_of_functions(self.Gamma.dot(self.u), from_time, to_time))
+        x = np.dot(self.Phi_delta, self.x) + self.Phi_delta.dot(integrate_matrix_of_functions(self.Gamma.dot(self.u), from_time, to_time)) #only for time independent Phi_delta
         P = np.dot(np.dot(self.Phi_delta, self.P), np.transpose(self.Phi_delta)) + self.Q_delta
         self.x = x
         self.P = P

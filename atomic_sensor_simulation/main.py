@@ -59,6 +59,7 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
+    from atomic_sensor_simulation.utilities import eval_matrix_of_functions, integrate_matrix_of_functions
 
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-atomic-sensor command.')
@@ -87,7 +88,7 @@ def run__atomic_sensor(*args):
 
     #consts for coupling function -> amplitude*cos(omega*t)
     omega = 50.
-    amplitude = 1000.
+    amplitude = 0.
 
     #initial conditions
     spin_y_initial_val = 1.
@@ -152,7 +153,7 @@ def run__atomic_sensor(*args):
     filtered_atoms = np.zeros(num_iter)
     for index, time in enumerate(time_arr):
         z = zs[index]
-        # B = eval_matrix_of_functions(model.Gamma_control_transition_matrix, time)  # B, F are time independent
+        # B = np.dot(model.Phi_delta, eval_matrix_of_functions(model.Gamma_control_transition_matrix, time))  # B, F are time independent
         # u = integrate_matrix_of_functions(model.u_control_vec, from_x=time-dt, to_x=time)
         filterpy.predict(F=model.compute_Phi_delta(from_time=time-dt))
         filterpy.update(z)
@@ -209,6 +210,7 @@ def run_position_speed(*args):
 
     from atomic_sensor_simulation.state.pos_vel_state import PosVelSensorState
     from atomic_sensor_simulation.model.pos_vel_model import PosVelModel
+    from atomic_sensor_simulation.sensor import pos_sensor
 
     state = PosVelSensorState(initial_vec=np.array([0., 0., 2., 1.]),
                               noise_vec=np.array([GaussianWhiteNoise(0,
@@ -226,7 +228,6 @@ def run_position_speed(*args):
                                                   ]),
                               initial_time=0,
                               dt=dt)
-    from atomic_sensor_simulation.sensor import pos_sensor
 
     sensor = pos_sensor.PosSensor(state,
                                   scalar_strenght_y=1.,
@@ -241,6 +242,7 @@ def run_position_speed(*args):
                         u=state.u_control_vec,
                         z0=zs[0],
                         dt=dt)
+
     filterpy_kf = model.initialize_filterpy()
     (mu, cov, _, _) = filterpy_kf.batch_filter(zs)
     zs *= .3048
@@ -250,7 +252,7 @@ def run_position_speed(*args):
     plt.plot(zs[:, 0], zs[:, 1], label='Noisy signal')
     plt.legend()
     plt.show()
-    
+
 
 def run_tests(*args):
     #:TODO implement

@@ -14,8 +14,8 @@ class PosSensor(object):
         self.__dt = dt
         initial_reading = np.array([state.position_x, state.position_y])
         self.__noise = GaussianWhiteNoise(initial_reading, scalar_strenght_y, dt)
-        self.__z = initial_reading  # photocurrent value with noise (measured by the atomic sensor)
-        self.__z_no_noise = initial_reading  # photocurrent value without noise
+        self.__z = np.transpose(initial_reading)
+        self.__z_no_noise = np.transpose(initial_reading)
         self.__position_x_history = []
         self.__position_x_no_noise_history = []
         self.__noise_std = scalar_strenght_y
@@ -33,14 +33,15 @@ class PosSensor(object):
         return self.__position_x_history
 
     @property
-    def pos_x_no_noise_full_history(self):
+    def pos_x_no_noise_full_history(self):#TODO
         return self.__position_x_no_noise_history
 
     def read(self, t):
         self.__state.step(t)
-        self.__z = np.array([self.__z_no_noise[0] + self.__state.velocity_x * self.__dt + randn() * self.__noise_std,
-                             self.__z_no_noise[1] + self.__state.velocity_y * self.__dt + + randn() * self.__noise_std])
-        self.__z_no_noise += np.array([self.__state.velocity_x * self.__dt, self.__state.velocity_y * self.__dt])
+        self.__z = [self.__z_no_noise[0] + self.__state.velocity_x * self.__dt + randn() * self.__noise_std,
+                    self.__z_no_noise[1] + self.__state.velocity_y * self.__dt + randn() * self.__noise_std]
+        self.__z_no_noise = np.array([self.__z_no_noise[0] + self.__state.velocity_x * self.__dt,
+                                      self.__z_no_noise[1] + self.__state.velocity_y * self.__dt])
         self.__position_x_history.append([self.__state.position_x])
         self.__position_x_no_noise_history.append([self.__state.mean_position_x])
         return self.__z
