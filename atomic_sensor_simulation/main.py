@@ -13,7 +13,7 @@ def main():
     # setup a logger
     load_logging_config()
     logger = logging.getLogger(__name__)
-    logger.info('Starting execution of Atomic Sensor Simulation.')
+    logger.info('Starting execution of the simulation.')
 
     # create the top-level parser
     parser = argparse.ArgumentParser(prog='Atomic Sensor Simulation')

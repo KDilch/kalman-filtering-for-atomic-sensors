@@ -1,5 +1,5 @@
 import unittest
-from tests import test_noise
+from tests import test_noise, test_smoke_tests
 # initialize the test suite
 loader = unittest.TestLoader()
 suite = unittest.TestSuite()
@@ -13,3 +13,4 @@ result = runner.run(suite)
 
 if __name__ == '__main__':
     unittest.main()
+    test_smoke_tests.run_smoke_tests()
