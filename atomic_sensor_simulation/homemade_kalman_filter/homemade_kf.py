@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.linalg import solve_discrete_are
-from scipy.integrate import quad
 
-from atomic_sensor_simulation.utilities import eval_matrix_of_functions, integrate_matrix_of_functions
+from atomic_sensor_simulation.utilities import integrate_matrix_of_functions
 
 
 class HomeMadeKalmanFilter(object):
 
     def __init__(self, x0, P0, Phi_delta, Q_delta, H, R_delta, G=None, Gamma=None, u=None):
         self.x = x0
+        self.dim_x = len(self.x)
         self.P = P0
         self.Phi_delta = Phi_delta
         self.dim_x = len(x0)
@@ -24,8 +24,10 @@ class HomeMadeKalmanFilter(object):
         self.Gamma = Gamma
         self.u = u
 
-    def predict(self, from_time, to_time):
-        x = np.dot(self.Phi_delta, self.x) + self.Phi_delta.dot(integrate_matrix_of_functions(self.Gamma.dot(self.u), from_time, to_time))
+    def predict(self, from_time, to_time, Phi_delta):
+        if Phi_delta is not None:
+            self.Phi_delta = Phi_delta
+        x = np.dot(self.Phi_delta, self.x) + self.Phi_delta.dot(integrate_matrix_of_functions(self.Gamma.dot(self.u), from_time, to_time)) #only for time independent Phi_delta
         P = np.dot(np.dot(self.Phi_delta, self.P), np.transpose(self.Phi_delta)) + self.Q_delta
         self.x = x
         self.P = P
@@ -37,7 +39,7 @@ class HomeMadeKalmanFilter(object):
         S_inverse = np.linalg.inv(S)
         K = np.dot(np.dot(self.P, np.transpose(self.H)), S_inverse)
         self.x = self.x + np.dot(K, y)
-        self.P = np.dot((np.identity(2) - np.dot(K, self.H)), self.P)
+        self.P = np.dot((np.identity(self.dim_x) - np.dot(K, self.H)), self.P)
 
     def steady_state(self):
         steady_cov_predict = solve_discrete_are(a=np.transpose(self.Phi_delta),

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from abc import ABC, abstractmethod
+from abc import ABC
+import logging
 
+from atomic_sensor_simulation.utilities import eval_matrix_of_functions, operable
+from atomic_sensor_simulation.operable_functions import create_operable_const_func
 
 class State(ABC):
     """An abstract class representing any state vector."""
@@ -10,9 +13,12 @@ class State(ABC):
                  noise_vec,
                  coordinates_enum,
                  F_transition_matrix,
+                 dt,
+                 time,
                  u_control_vec=None,
                  Gamma_control_evolution_matrix=None,
-                 initial_control_vec=None):
+                 initial_control_vec=None,
+                 logger=None):
         """
         :param initial_vec: numpy array
         :param noise_vec: numpy array
@@ -20,18 +26,26 @@ class State(ABC):
         :param Phi_evolution_matrix: 
         :param u_control_vec:
         """
+        self._logger = logger or logging.getLogger(__name__)
         self._state_vec = initial_vec
         self._mean_state_vec = initial_vec
+        self._dt = dt
         if initial_control_vec:
             self._control_state_vec = initial_control_vec
         else:
-            self._control_state_vec = np.zeros(len(self._state_vec))
+            self._control_state_vec = np.zeros_like(self._state_vec)
         self._noise_vec = noise_vec
         self._F_transition_matrix = F_transition_matrix
-        self._u_control_vec = u_control_vec
-        self._Gamma_control_evolution_matrix = Gamma_control_evolution_matrix
+        if u_control_vec is not None:
+            self._u_control_vec = u_control_vec
+        else:
+            self._u_control_vec = np.array([create_operable_const_func(0.)for j in range(np.shape(self._state_vec)[0])])
+        if Gamma_control_evolution_matrix is not None:
+            self._Gamma_control_evolution_matrix = Gamma_control_evolution_matrix
+        else:
+            self._Gamma_control_evolution_matrix = np.array([[create_operable_const_func(0.) for i in range(np.shape(self._F_transition_matrix)[0])] for j in range(np.shape(self._F_transition_matrix)[0])])
         self._coordinates = coordinates_enum
-        self._time = None
+        self._time = time
 
     @property
     def state_vec(self):
@@ -62,10 +76,21 @@ class State(ABC):
         return self.noise_vec
 
     @property
-    @abstractmethod
     def time(self):
-        raise NotImplementedError
+        return self._time
 
-    @abstractmethod
-    def step(self, time):
-        raise NotImplementedError
+    def step(self, t):
+        self._logger.debug('Updating time and dt.')
+        self._time = t
+        self._logger.debug('Performing a step for time %r' % str(self._time))
+        self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self._dt
+        self._control_state_vec = self._control_state_vec + eval_matrix_of_functions(self._Gamma_control_evolution_matrix, t).dot(eval_matrix_of_functions(self._u_control_vec, t)) * self._dt
+        self._state_vec = self._mean_state_vec + self._control_state_vec + self._noise_step()
+        return
+
+    def _noise_step(self):
+        noise_val_vec = np.zeros(len(self.noise_vec))
+        for n in range(len(self.noise_vec)):
+            self.noise_vec[n].step()
+            noise_val_vec[n] = self.noise_vec[n].value
+        return np.array(noise_val_vec)

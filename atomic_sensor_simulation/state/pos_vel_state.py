@@ -4,8 +4,7 @@ import logging
 from enum import Enum
 
 from atomic_sensor_simulation.state.state import State
-from atomic_sensor_simulation.utilities import create_matrix_of_functions, exp_matrix_of_functions
-from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func
+from atomic_sensor_simulation.operable_functions import create_operable_const_func
 
 
 class PosVelSensorCoordinates(Enum):
@@ -35,7 +34,7 @@ class PosVelSensorState(State):
         self.__logger.info('Initializing an instance of a PosVelSensor class.')
         self.__time = initial_time
 
-        F_transition_matrix = create_matrix_of_functions(np.array(
+        F_transition_matrix = np.array(
                            [
                                [create_operable_const_func(1.),
                                 create_operable_const_func(dt),
@@ -56,22 +55,25 @@ class PosVelSensorState(State):
                                 create_operable_const_func(0.),
                                 create_operable_const_func(0.),
                                 create_operable_const_func(1.)]
-                           ]))
+                           ])
 
-        State.__init__(self, initial_vec, noise_vec, PosVelSensorCoordinates,
-                       Phi_evolution_matrix=F_transition_matrix,
-                       u_control_vec=0,
-                       u_control_evolution_matrix=0)
+        State.__init__(self,
+                       np.transpose(initial_vec),
+                       np.transpose(noise_vec),
+                       PosVelSensorCoordinates,
+                       F_transition_matrix=F_transition_matrix,
+                       dt=dt,
+                       time=initial_time)
 
     @property
     def state_vec(self):
-        """Returns a numpy array representing a state vector x=(spin, quadrature)."""
+        """Returns a numpy array representing a state vector x=(posx, posy, velx, vely)."""
         return self._state_vec
 
     @property
     def mean_state_vec(self):
         """Returns a numpy array representing a state vector x without any noise."""
-        return self._state_vec_no_noise
+        return self._mean_state_vec
 
     @property
     def noise_vec(self):
@@ -95,42 +97,17 @@ class PosVelSensorState(State):
         return self._state_vec[self._coordinates.VELOCITY_Y.value]
 
     @property
-    def position_x_no_noise(self):
-        return self._state_vec[self._coordinates.POSITION_X.value]
+    def mean_position_x(self):
+        return self._mean_state_vec[self._coordinates.POSITION_X.value]
 
     @property
-    def position_y_no_noise(self):
-        return self._state_vec[self._coordinates.POSITION_Y.value]
+    def mean_position_y(self):
+        return self._mean_state_vec[self._coordinates.POSITION_Y.value]
 
     @property
-    def velocity_x_no_noise(self):
-        return self._state_vec[self._coordinates.VELOCITY_X.value]
+    def mean_velocity_x(self):
+        return self._mean_state_vec[self._coordinates.VELOCITY_X.value]
 
     @property
-    def velocity_y_no_noise(self):
-        return self._state_vec[self._coordinates.VELOCITY_Y.value]
-
-    @property
-    def time(self):
-        return self._time
-
-    def __noise_step(self):
-        noise_val_vec = np.zeros(len(self.noise_vec))
-        for n in range(len(self.noise_vec)):
-            self.noise_vec[n].step()
-            noise_val_vec[n] = self.noise_vec[n].value
-        return np.array(noise_val_vec)
-
-    def step(self, t):
-        self.__logger.debug('Updating time and dt.')
-        self._time = t
-        self.__logger.debug('Performing a step for time %r' % str(self._time))
-        F = self._Phi_evolution_matrix(self._time)
-        # u = self._control_vec(self._time)
-        # B = self._control_evolution_matrix(self._time)
-        from numpy.random import randn
-
-        self._state_vec = F.dot(self.mean_state_vec) + \
-                          np.array([randn() *1., randn() * 1., 0., 0.])
-        self._state_vec_no_noise = F.dot(self.mean_state_vec)
-        return
+    def mean_velocity_y(self):
+        return self._mean_state_vec[self._coordinates.VELOCITY_Y.value]
