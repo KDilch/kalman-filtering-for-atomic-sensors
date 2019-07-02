@@ -59,36 +59,40 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
-    from atomic_sensor_simulation.utilities import eval_matrix_of_functions, integrate_matrix_of_functions
 
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-atomic-sensor command.')
 
     # SIMULATION=====================================================
     # simulation parameters
-    num_iter = 100
-    dt = 0.1
+    num_iter_sensor = 1000
+    dt_sensor = 0.001
+    dt_filter = 0.05
+    num_iter_filter = np.int(np.floor_divide(num_iter_sensor*dt_sensor, dt_filter))
+    every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
+
     light_correlation_const = 0.3333
-    lamour_freq = 0.1
-    atoms_correlation_const = 0.666  # 1/T2
-    logger.info('Setting simulation parameters to num_iter = %r, delta_t = %r, light_correlation_const=%r.' %
-                (str(num_iter),
-                 str(dt),
+    lamour_freq = 6.
+    atoms_correlation_const = 0.1 # 1/T2
+    logger.info('Setting simulation parameters to num_iter_sensor = %r, delta_t_sensor = %r, light_correlation_const=%r.' %
+                (str(num_iter_sensor),
+                 str(dt_sensor),
                  str(light_correlation_const)
                  )
                 )
-    g_d_COUPLING_CONST = 10.
+    g_d_COUPLING_CONST = 100.
     SCALAR_STREGTH_z = 1.
-    SCALAR_STREGTH_jy = 1.
-    SCALAR_STREGTH_jz = 0.3
-    SCALAR_STRENGTH_qp = 1.
-    SCALAR_STRENGTH_qq = 1.
+    SCALAR_STREGTH_jy = 5.
+    SCALAR_STREGTH_jz = 5.
+    SCALAR_STRENGTH_qp = 1.0
+    SCALAR_STRENGTH_qq = 1.0
 
-    time_arr = np.arange(0, num_iter*dt, dt)
+    time_arr = np.arange(0, num_iter_sensor*dt_sensor, dt_sensor)
+    time_arr_filter = np.arange(0, num_iter_filter*dt_filter, dt_filter)
 
     #consts for coupling function -> amplitude*cos(omega*t)
-    omega = 50.
-    amplitude = 0.
+    omega = 0.
+    amplitude = 0.0
 
     #initial conditions
     spin_y_initial_val = 1.
@@ -107,19 +111,19 @@ def run__atomic_sensor(*args):
     state = AtomicSensorState(initial_vec=np.array([spin_y_initial_val, spin_z_initial_val, quadrature_p_initial_val, quadrature_q_initial_val]),
                               noise_vec=np.array([GaussianWhiteNoise(spin_y_initial_val,
                                                                      scalar_strength=SCALAR_STREGTH_jy,
-                                                                     dt=dt),
+                                                                     dt=dt_sensor),
                                                   GaussianWhiteNoise(spin_z_initial_val,
                                                                      scalar_strength=SCALAR_STREGTH_jz,
-                                                                     dt=dt),
+                                                                     dt=dt_sensor),
                                                   GaussianWhiteNoise(quadrature_q_initial_val,
                                                                      scalar_strength=SCALAR_STRENGTH_qp,
-                                                                     dt=dt),
+                                                                     dt=dt_sensor),
                                                   GaussianWhiteNoise(quadrature_q_initial_val,
                                                                      scalar_strength=SCALAR_STRENGTH_qq,
-                                                                     dt=dt)
+                                                                     dt=dt_sensor)
                                                   ]),
                               initial_time=0,
-                              dt=dt,
+                              dt=dt_sensor,
                               light_correlation_const=light_correlation_const,
                               spin_correlation_const=atoms_correlation_const,
                               lamour_freq=lamour_freq,
@@ -129,9 +133,10 @@ def run__atomic_sensor(*args):
     sensor = AtomicSensor(state,
                           scalar_strenght_z=SCALAR_STREGTH_z,
                           g_d_COUPLING_CONST=g_d_COUPLING_CONST,
-                          dt=dt)
+                          dt=dt_sensor)
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
+    zs_filter_freq = zs[::every_nth_z]
 
     # KALMAN FILTER====================================================
     model = AtomicSensorModel(F=state.F_transition_matrix,
@@ -144,61 +149,86 @@ def run__atomic_sensor(*args):
                               scalar_strength_qp=SCALAR_STRENGTH_qp,
                               scalar_strength_qq=SCALAR_STRENGTH_qq,
                               g_d_COUPLING_CONST=g_d_COUPLING_CONST,
-                              dt=dt)
+                              dt=dt_filter)
 
     # RUN FILTERPY KALMAN FILTER
     logger.info("Initializing filterpy Kalman Filter")
     filterpy = model.initialize_filterpy()
-    filtered_light = np.zeros(num_iter)
-    filtered_atoms = np.zeros(num_iter)
-    for index, time in enumerate(time_arr):
-        z = zs[index]
-        # B = np.dot(model.Phi_delta, eval_matrix_of_functions(model.Gamma_control_transition_matrix, time))  # B, F are time independent
-        # u = integrate_matrix_of_functions(model.u_control_vec, from_x=time-dt, to_x=time)
-        filterpy.predict(F=model.compute_Phi_delta(from_time=time-dt))
+    filtered_light_p = np.zeros(num_iter_filter)
+    filtered_atoms_jy = np.zeros(num_iter_filter)
+    filtered_light_q = np.zeros(num_iter_filter)
+    filtered_atoms_jz = np.zeros(num_iter_filter)
+    for index, time in enumerate(time_arr_filter):
+        z = zs_filter_freq[index]
+        filterpy.predict(F=model.compute_Phi_delta(from_time=time-dt_filter))
         filterpy.update(z)
-        filtered_light[index] = filterpy.x[3]
-        filtered_atoms[index] = filterpy.x[1]
+        filtered_light_q[index] = filterpy.x[2]
+        filtered_light_p[index] = filterpy.x[3]
+        filtered_atoms_jy[index] = filterpy.x[0]
+        filtered_atoms_jz[index] = filterpy.x[1]
 
     # RUN HOMEMADE KALMAN FILTER
     logger.info("Initializing homemade Kalman Filter")
     home_made_kf = model.initialize_homemade_filter()
     logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (home_made_kf.steady_state()))
-    filtered_light_homemade = np.zeros(num_iter)
-    filtered_atoms_homemade = np.zeros(num_iter)
-    for index, time in enumerate(time_arr):
-        z = zs[index]
-        home_made_kf.predict(from_time=time, to_time=time+dt, Phi_delta=model.compute_Phi_delta(from_time=time-dt))
+    filtered_light_p_homemade = np.zeros(num_iter_filter)
+    filtered_atoms_jy_homemade = np.zeros(num_iter_filter)
+    filtered_light_q_homemade = np.zeros(num_iter_filter)
+    filtered_atoms_jz_homemade = np.zeros(num_iter_filter)
+    for index, time in enumerate(time_arr_filter):
+        z = zs_filter_freq[index]
+        home_made_kf.predict(from_time=time, to_time=time+dt_sensor, Phi_delta=model.compute_Phi_delta(from_time=time-dt_sensor))
         home_made_kf.update(z)
-        filtered_light_homemade[index] = home_made_kf.x[3]
-        filtered_atoms_homemade[index] = home_made_kf.x[1]
+        filtered_light_q_homemade[index] = filterpy.x[2]
+        filtered_light_p_homemade[index] = filterpy.x[3]
+        filtered_atoms_jy_homemade[index] = filterpy.x[0]
+        filtered_atoms_jz_homemade[index] = filterpy.x[1]
+
 
     # PLOTS=========================================================
     j_y_full_history, j_z_full_history, q_p_full_history, q_q_full_history = zip(*sensor.state_vec_full_history)
 
-    # plot light (noisy, exact and filtered)
+    # plot light p (noisy, exact and filtered)
     logger.info("Plotting data")
-    plt.plot(time_arr, filtered_light, label='Filtered data (filterpy)')
-    plt.plot(time_arr, q_q_full_history, label='Exact data')
-    plt.plot(time_arr, filtered_light_homemade, label="Homemade_filter")
-    plt.title("Light")
+    plt.title("Light p")
+    # plt.plot(time_arr_filter, filtered_light_p_homemade, label='Homemade')
+    plt.plot(time_arr_filter, filtered_light_p, label='Filterpy')
+    plt.plot(time_arr, q_p_full_history, label='Exact data')
     plt.legend()
     plt.show()
 
-    #plot atoms
+    # plot light q (noisy, exact and filtered)
     logger.info("Plotting data")
-    plt.plot(time_arr, filtered_atoms, label='Filtered data (filterpy)')
+    plt.title("Light q")
+    # plt.plot(time_arr_filter, filtered_light_q_homemade, label='Homemade')
+    plt.plot(time_arr_filter, filtered_light_q, label='Filterpy')
+    plt.plot(time_arr, q_q_full_history, label='Exact data')
+    plt.legend()
+    plt.show()
+
+    #plot atoms jy
+    logger.info("Plotting data jy")
+    plt.title("Atoms jy")
+    # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
+    plt.plot(time_arr_filter, filtered_atoms_jy, label='Filterpy')
+    plt.plot(time_arr, j_y_full_history, label='Exact data')
+    plt.legend()
+    plt.show()
+
+    #plot atoms jz
+    logger.info("Plotting data jz")
+    plt.title("Atoms jz")
+    # plt.plot(time_arr_filter, filtered_atoms_jz_homemade, label='Homemade')
+    plt.plot(time_arr_filter, filtered_atoms_jz, label='Filterpy')
     plt.plot(time_arr, j_z_full_history, label='Exact data')
-    plt.plot(time_arr, filtered_atoms_homemade, label="Homemade_filter")
-    plt.title("Atoms")
     plt.legend()
     plt.show()
 
     # plot zs
-    plt.plot(time_arr, sensor.z_no_noise_arr, label='Exact sensor data')
-    plt.plot(time_arr, zs, label='Noisy sensor readings')
-    plt.legend()
-    plt.show()
+    # plt.plot(time_arr, sensor.z_no_noise_arr, label='Exact sensor data')
+    # plt.plot(time_arr, zs, label='Noisy sensor readings')
+    # plt.legend()
+    # plt.show()
 
 
 def run_position_speed(*args):

@@ -38,8 +38,8 @@ class AtomicSensor(object):
 
     def read(self, t):
         self.__state.step(t)
-        self.__z = self.g_d_COUPLING_CONST * self.__state.spin[1] + self.__noise.step()
-        self.__z_no_noise = self.g_d_COUPLING_CONST * self.__state.spin[1]
+        self.__z = self.g_d_COUPLING_CONST * self.__state.spin[0] + self.__noise.step()
+        self.__z_no_noise = self.g_d_COUPLING_CONST * self.__state.spin[0]
         self.__state_history.append(self.__state.state_vec)
         self.__state_mean_history.append([self.__state.mean_state_vec])
         self.z_no_noise_arr.append(self.__z_no_noise)

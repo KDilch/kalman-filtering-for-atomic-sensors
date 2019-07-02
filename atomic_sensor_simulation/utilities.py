@@ -4,11 +4,10 @@ import os
 import json
 import numpy as np
 import logging.config
-import operator
 import matplotlib.pyplot as plt
 import logging
 from scipy.linalg import expm
-from  scipy.integrate import quad
+from scipy.integrate import quad
 
 
 def stringify_namespace(namespace):
