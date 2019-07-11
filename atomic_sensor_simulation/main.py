@@ -60,45 +60,62 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
 
+    # Logger for storing errors and logs in seprate file, creates separate folder
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-atomic-sensor command.')
 
-    # SIMULATION=====================================================
-    # simulation parameters
-    num_iter_sensor = 1000
-    dt_sensor = 0.001
-    dt_filter = 0.05
+    # PARAMETERS=====================================================
+
+    ## physical parameters
+    #Larmour?
+    lamour_freq = 6.
+    #TODO: change name to spins_...
+    atoms_correlation_const = 0.5 # 1/T2
+    light_correlation_const = 0.3333
+    g_d_COUPLING_CONST = 100.
+    SCALAR_STREGTH_z = 1.
+    SCALAR_STREGTH_jy = 1.
+    SCALAR_STREGTH_jz = 1.
+    SCALAR_STRENGTH_qp = 1.0
+    SCALAR_STRENGTH_qq = 1.0
+
+    #consts for coupling function -> amplitude*cos(omega*t)
+    omega = 0.
+    amplitude = 0.0
+
+    #simulation parameters
+    number_periods = 0.5
+    dt_sensor = 0.005
+    num_iter_sensor = (2*np.pi*number_periods/lamour_freq)/dt_sensor
+    print(num_iter_sensor)
+    #num_iter_sensor = 5000
+    
+    #filter parameters
+    dt_filter = 0.01
     num_iter_filter = np.int(np.floor_divide(num_iter_sensor*dt_sensor, dt_filter))
     every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
 
-    light_correlation_const = 0.3333
-    lamour_freq = 6.
-    atoms_correlation_const = 0.1 # 1/T2
+
+    # SIMULATING DYNAMICS=====================================================
+
     logger.info('Setting simulation parameters to num_iter_sensor = %r, delta_t_sensor = %r, light_correlation_const=%r.' %
                 (str(num_iter_sensor),
                  str(dt_sensor),
                  str(light_correlation_const)
                  )
                 )
-    g_d_COUPLING_CONST = 100.
-    SCALAR_STREGTH_z = 1.
-    SCALAR_STREGTH_jy = 5.
-    SCALAR_STREGTH_jz = 5.
-    SCALAR_STRENGTH_qp = 1.0
-    SCALAR_STRENGTH_qq = 1.0
-
+    
     time_arr = np.arange(0, num_iter_sensor*dt_sensor, dt_sensor)
     time_arr_filter = np.arange(0, num_iter_filter*dt_filter, dt_filter)
 
-    #consts for coupling function -> amplitude*cos(omega*t)
-    omega = 0.
-    amplitude = 0.0
-
+    
     #initial conditions
     spin_y_initial_val = 1.
     spin_z_initial_val = 1.
     quadrature_p_initial_val = 1.
     quadrature_q_initial_val = 1.
+
+    #TODO: Now should be definitions of global Q and H
 
     logger.info('Setting initial conditions to spin = [%r, %r], quadrature = [%r, %r]' %
                 (str(spin_y_initial_val),
@@ -139,6 +156,7 @@ def run__atomic_sensor(*args):
     zs_filter_freq = zs[::every_nth_z]
 
     # KALMAN FILTER====================================================
+    #Definning dynamical equations for the filter
     model = AtomicSensorModel(F=state.F_transition_matrix,
                               Gamma=state.Gamma_control_evolution_matrix,
                               u=state.u_control_vec,
@@ -186,25 +204,26 @@ def run__atomic_sensor(*args):
 
 
     # PLOTS=========================================================
+    #Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_p_full_history, q_q_full_history = zip(*sensor.state_vec_full_history)
 
-    # plot light p (noisy, exact and filtered)
-    logger.info("Plotting data")
-    plt.title("Light p")
-    # plt.plot(time_arr_filter, filtered_light_p_homemade, label='Homemade')
-    plt.plot(time_arr_filter, filtered_light_p, label='Filterpy')
-    plt.plot(time_arr, q_p_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+    # # plot light p (noisy, exact and filtered)
+    # logger.info("Plotting data")
+    # plt.title("Light p")
+    # # plt.plot(time_arr_filter, filtered_light_p_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, filtered_light_p, label='Filterpy')
+    # plt.plot(time_arr, q_p_full_history, label='Exact data')
+    # plt.legend()
+    # plt.show()
 
-    # plot light q (noisy, exact and filtered)
-    logger.info("Plotting data")
-    plt.title("Light q")
-    # plt.plot(time_arr_filter, filtered_light_q_homemade, label='Homemade')
-    plt.plot(time_arr_filter, filtered_light_q, label='Filterpy')
-    plt.plot(time_arr, q_q_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+    # # plot light q (noisy, exact and filtered)
+    # logger.info("Plotting data")
+    # plt.title("Light q")
+    # # plt.plot(time_arr_filter, filtered_light_q_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, filtered_light_q, label='Filterpy')
+    # plt.plot(time_arr, q_q_full_history, label='Exact data')
+    # plt.legend()
+    # plt.show()
 
     #plot atoms jy
     logger.info("Plotting data jy")
