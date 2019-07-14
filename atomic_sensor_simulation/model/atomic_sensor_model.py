@@ -23,7 +23,7 @@ class AtomicSensorModel(Model):
                            [0., scalar_strength_jz**2, 0., 0.],
                            [0., 0., scalar_strength_qp**2, 0.],
                            [0., 0., 0., scalar_strength_qq**2]])
-        H = np.array([[g_d_COUPLING_CONST, 0., 0.,  0.]])
+        H = np.array([[0., g_d_COUPLING_CONST, 0.,  0.]])
         R_delta = [[scalar_strength_z ** 2 / dt]]
         Model.__init__(self,
                        F=F,
