@@ -59,7 +59,7 @@ class PosVelSensorState(State):
 
         State.__init__(self,
                        np.transpose(initial_vec),
-                       np.transpose(noise_vec),
+                       noise_vec,
                        PosVelSensorCoordinates,
                        F_transition_matrix=F_transition_matrix,
                        dt=dt,

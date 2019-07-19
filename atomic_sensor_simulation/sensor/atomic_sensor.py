@@ -5,15 +5,15 @@ from atomic_sensor_simulation.noise import GaussianWhiteNoise
 
 class AtomicSensor(object):
     """Implementation of measurement made by a sensor."""
-    def __init__(self, state, dt, scalar_strenght_z, logger=None, g_d_COUPLING_CONST=1.):
+    def __init__(self, state, sensor_noise, H, dt, logger=None):
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.info('Initializing an instance of a AtomicSensor class.')
         self.__state = state
         self.__dt = dt
-        self.g_d_COUPLING_CONST = g_d_COUPLING_CONST
+        self.__H = H
+        self.__noise = sensor_noise
 
-        initial_reading = self.g_d_COUPLING_CONST*state.spin[1] + state.quadrature[1]
-        self.__noise = GaussianWhiteNoise(initial_reading, scalar_strenght_z, dt)
+        initial_reading = self.__H.dot(state.state_vec)
         self.__z = initial_reading
         self.__z_no_noise = initial_reading
         self.__state_history = []
@@ -37,9 +37,10 @@ class AtomicSensor(object):
         return self.__state_mean_history
 
     def read(self, t):
+        #TODO create abstract class Sensor
         self.__state.step(t)
-        self.__z = self.g_d_COUPLING_CONST * self.__state.spin[1] + self.__noise.step()
-        self.__z_no_noise = self.g_d_COUPLING_CONST * self.__state.spin[1]
+        self.__z_no_noise = self.__H.dot(self.__state.state_vec)
+        self.__z = self.__z_no_noise + self.__noise.step()
 
         #append to history
         self.__state_history.append(self.__state.state_vec)

@@ -16,9 +16,6 @@ class PosVelModel(Model):
                  z0,
                  dt,
                  ):
-        H = np.array([[1. / 0.3048, 0., 0., 0.], [0., 0., 1. / 0.3048, 0.]], dtype='float64')
-        R = np.eye(2) * 5.
-        q = Q_discrete_white_noise(dim=2, dt=dt, var=0.05)
-        Q = block_diag(q, q)
+
 
         Model.__init__(self, F=F, H=H, Q=Q, R=R, Gamma=Gamma, u=u, z0=z0, dt=dt)
