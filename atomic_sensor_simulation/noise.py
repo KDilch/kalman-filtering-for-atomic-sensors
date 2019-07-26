@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from abc import ABC, abstractmethod  # abstract class
 import numpy as np
-from scipy.stats import norm
+from scipy.stats import multivariate_normal
 import logging
 from atomic_sensor_simulation.utilities import plot_data
 
@@ -21,18 +21,17 @@ class GaussianWhiteNoise(Noise):
      A class representing Wiener process: X(t + dt) = X(t) + N(0, Q * dt; t, t+dt), where Q is scalar strength.
      """
 
-    def __init__(self, initial_value, scalar_strength, dt, mean=0, logger=None):
+    def __init__(self, mean, cov, dt, logger=None):
         """
-        :param initial_value: float
-        :param scalar_strength: float
-        :param dt: float
-        :param mean: float, default 0
+        :param cov:
+        :param dt:
+        :param mean:
         :param logger: instance of logging.Logger or None (if None a new instance of this class will be created)
         """
+        #TODO matrix size checks
         self.__logger = logger if logger else logging.getLogger(__name__)
-        self.__initial_state = initial_value
-        self.__value = initial_value
-        self.__scalar_strength = scalar_strength
+        self.__value = None
+        self.__cov = cov
         self.__mean = mean
         self.__dt = dt
 
@@ -41,7 +40,7 @@ class GaussianWhiteNoise(Noise):
         return self.__value
 
     def step(self):
-        self.__value = norm.rvs(loc=self.__mean, size=1, scale=np.sqrt(self.__scalar_strength * self.__dt))[0]
+        self.__value = multivariate_normal.rvs(mean=self.__mean, cov=self.__cov)
         return self.__value
 
     def generate(self, num_steps):
@@ -50,7 +49,6 @@ class GaussianWhiteNoise(Noise):
         for x in range(num_steps):
             self.step()
             results[x] = self.__value
-        results += np.expand_dims(self.__initial_state, axis=-1)
         times = np.arange(0, num_steps * self.__dt, self.__dt)
         return times, results
 

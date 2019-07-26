@@ -67,44 +67,42 @@ def run__atomic_sensor(*args):
     # PARAMETERS=====================================================
 
     ## physical parameters
-    #Larmour?
-    lamour_freq = 6.
-    #TODO: change name to spins_...
-    atoms_correlation_const = 0.5 # 1/T2
+    larmour_freq = 6.
+    spin_correlation_const = 0.5  # 1/T2
     light_correlation_const = 0.3333
-    g_d_COUPLING_CONST = 100.
-    SCALAR_STREGTH_z = 1.
-    SCALAR_STREGTH_jy = 1.
-    SCALAR_STREGTH_jz = 1.
-    SCALAR_STRENGTH_qp = 1.0
-    SCALAR_STRENGTH_qq = 1.0
+    logger.info('Setting physical parameters to larmour_freq = %r, spin_correlation_const = %r, light_correlation_const=%r.' %
+                (str(larmour_freq),
+                 str(spin_correlation_const),
+                 str(light_correlation_const)
+                 )
+                )
 
     #consts for coupling function -> amplitude*cos(omega*t)
     omega = 0.
     amplitude = 0.0
 
     #simulation parameters
-    number_periods = 0.5
+    number_periods = 1.5
     dt_sensor = 0.005
-    num_iter_sensor = (2*np.pi*number_periods/lamour_freq)/dt_sensor
-    print(num_iter_sensor)
-    #num_iter_sensor = 5000
-    
+    num_iter_sensor = (2*np.pi*number_periods/larmour_freq)/dt_sensor
+    logger.info('Setting simulation parameters to num_iter_sensor = %r, delta_t_sensor = %r, number_periods=%r.' %
+                (str(num_iter_sensor),
+                 str(dt_sensor),
+                 str(number_periods)
+                 )
+                )
+
     #filter parameters
     dt_filter = 0.01
     num_iter_filter = np.int(np.floor_divide(num_iter_sensor*dt_sensor, dt_filter))
     every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
-
-
-    # SIMULATING DYNAMICS=====================================================
-
-    logger.info('Setting simulation parameters to num_iter_sensor = %r, delta_t_sensor = %r, light_correlation_const=%r.' %
-                (str(num_iter_sensor),
-                 str(dt_sensor),
-                 str(light_correlation_const)
+    logger.info('Setting filter parameters to num_iter_filter = %r, delta_t_filter = %r.' %
+                (str(num_iter_filter),
+                 str(dt_filter),
                  )
                 )
-    
+
+    # SIMULATING DYNAMICS=====================================================
     time_arr = np.arange(0, num_iter_sensor*dt_sensor, dt_sensor)
     time_arr_filter = np.arange(0, num_iter_filter*dt_filter, dt_filter)
 
@@ -114,10 +112,7 @@ def run__atomic_sensor(*args):
     spin_z_initial_val = 1.
     quadrature_p_initial_val = 1.
     quadrature_q_initial_val = 1.
-
-    #TODO: Now should be definitions of global Q and H
-
-    logger.info('Setting initial conditions to spin = [%r, %r], quadrature = [%r, %r]' %
+    logger.info('Setting initial state vec to  [%r, %r, %r, %r].' %
                 (str(spin_y_initial_val),
                  str(spin_z_initial_val),
                  str(quadrature_p_initial_val),
@@ -125,31 +120,35 @@ def run__atomic_sensor(*args):
                  )
                 )
 
+    #Q, H and R definitions
+    Q = np.array([[1., 0., 0., 0.],
+                  [0., 1., 0., 0.],
+                  [0., 0., 1., 0.],
+                  [0., 0., 0., 1.]])
+
+    H = np.array([[0., 100., 0., 0.]])
+    R = np.array([[1.]])
+
+    logger.info('Setting Q, H and R to Q = %r, H = %r, R = %r' %
+                (str(Q),
+                 str(H),
+                 str(R)
+                 )
+                )
+
     state = AtomicSensorState(initial_vec=np.array([spin_y_initial_val, spin_z_initial_val, quadrature_p_initial_val, quadrature_q_initial_val]),
-                              noise_vec=np.array([GaussianWhiteNoise(spin_y_initial_val,
-                                                                     scalar_strength=SCALAR_STREGTH_jy,
-                                                                     dt=dt_sensor),
-                                                  GaussianWhiteNoise(spin_z_initial_val,
-                                                                     scalar_strength=SCALAR_STREGTH_jz,
-                                                                     dt=dt_sensor),
-                                                  GaussianWhiteNoise(quadrature_q_initial_val,
-                                                                     scalar_strength=SCALAR_STRENGTH_qp,
-                                                                     dt=dt_sensor),
-                                                  GaussianWhiteNoise(quadrature_q_initial_val,
-                                                                     scalar_strength=SCALAR_STRENGTH_qq,
-                                                                     dt=dt_sensor)
-                                                  ]),
+                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.], cov=Q, dt=dt_sensor),
                               initial_time=0,
                               dt=dt_sensor,
                               light_correlation_const=light_correlation_const,
-                              spin_correlation_const=atoms_correlation_const,
-                              lamour_freq=lamour_freq,
+                              spin_correlation_const=spin_correlation_const,
+                              larmour_freq=larmour_freq,
                               coupling_amplitude=amplitude,
                               coupling_freq=omega)
 
     sensor = AtomicSensor(state,
-                          scalar_strenght_z=SCALAR_STREGTH_z,
-                          g_d_COUPLING_CONST=g_d_COUPLING_CONST,
+                          sensor_noise=GaussianWhiteNoise(mean=0., cov=R/dt_sensor, dt=dt_sensor),
+                          H=H,
                           dt=dt_sensor)
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
@@ -158,15 +157,12 @@ def run__atomic_sensor(*args):
     # KALMAN FILTER====================================================
     #Definning dynamical equations for the filter
     model = AtomicSensorModel(F=state.F_transition_matrix,
+                              Q=Q,
+                              H=H,
+                              R=R/dt_filter,
                               Gamma=state.Gamma_control_evolution_matrix,
                               u=state.u_control_vec,
                               z0=[zs[0]],
-                              scalar_strength_z=SCALAR_STREGTH_z,
-                              scalar_strength_jy=SCALAR_STREGTH_jy,
-                              scalar_strength_jz=SCALAR_STREGTH_jz,
-                              scalar_strength_qp=SCALAR_STRENGTH_qp,
-                              scalar_strength_qq=SCALAR_STRENGTH_qq,
-                              g_d_COUPLING_CONST=g_d_COUPLING_CONST,
                               dt=dt_filter)
 
     # RUN FILTERPY KALMAN FILTER
@@ -261,20 +257,15 @@ def run_position_speed(*args):
     from atomic_sensor_simulation.model.pos_vel_model import PosVelModel
     from atomic_sensor_simulation.sensor import pos_sensor
 
+    H = np.array([[1. / 0.3048, 0., 0., 0.], [0., 0., 1. / 0.3048, 0.]], dtype='float64')
+    R = np.eye(2) * 5.
+    Q = np.array([[0.05, 0., 0., 0.],
+                 [0., 0.05, 0., 0.],
+                 [0., 0., 0.05, 0.],
+                 [0., 0., 0., 0.05]])
+
     state = PosVelSensorState(initial_vec=np.array([0., 0., 2., 1.]),
-                              noise_vec=np.array([GaussianWhiteNoise(0,
-                                                                     scalar_strength=0.05,
-                                                                     dt=dt),
-                                                  GaussianWhiteNoise(0,
-                                                                     scalar_strength=0.05,
-                                                                     dt=dt),
-                                                  GaussianWhiteNoise(0,
-                                                                     scalar_strength=0.05,
-                                                                     dt=dt),
-                                                  GaussianWhiteNoise(0,
-                                                                     scalar_strength=0.05,
-                                                                     dt=dt)
-                                                  ]),
+                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.], cov=Q, dt=dt),
                               initial_time=0,
                               dt=dt)
 

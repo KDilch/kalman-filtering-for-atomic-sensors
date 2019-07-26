@@ -37,6 +37,7 @@ class PosSensor(object):
         return self.__position_x_no_noise_history
 
     def read(self, t):
+        #TODO redo using H
         self.__state.step(t)
         self.__z = [self.__z_no_noise[0] + self.__state.velocity_x * self.__dt + randn() * self.__noise_std,
                     self.__z_no_noise[1] + self.__state.velocity_y * self.__dt + randn() * self.__noise_std]
