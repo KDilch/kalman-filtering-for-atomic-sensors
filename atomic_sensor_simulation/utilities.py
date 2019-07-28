@@ -98,8 +98,10 @@ def eval_matrix_of_functions(matrix, x):
         evaluated_matrix[index] = matrix_flat[index](x)
     return np.reshape(evaluated_matrix, shape)
 
+
 def exp_matrix_of_functions(matrix):
     return lambda time: expm(matrix(time))
+
 
 def integrate_matrix_of_functions(matrix, from_x, to_x):
     matrix_flat = matrix.flatten()
@@ -108,3 +110,11 @@ def integrate_matrix_of_functions(matrix, from_x, to_x):
     for index, element in np.ndenumerate(matrix_flat):
         integrated_matrix[index] = quad(matrix_flat[index], from_x, to_x)[0]
     return np.reshape(integrated_matrix, shape)
+
+
+def calculate_error(W, x, x_est):
+    x = np.array([x]).T
+    Sigma = np.dot((x-x_est), (x-x_est).T)
+    # print("x", x,"x_est", x_est)
+    print("Diff", np.trace(np.dot(W, Sigma)))
+    return np.trace(np.dot(W, Sigma))
