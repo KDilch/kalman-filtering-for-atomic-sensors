@@ -68,9 +68,9 @@ def run__atomic_sensor(*args):
     # PARAMETERS=====================================================
 
     ## physical parameters
-    larmour_freq = 6.
-    spin_correlation_const = 0.5  # 1/T2
-    light_correlation_const = 1.
+    larmour_freq = 6.  #6.
+    spin_correlation_const = 0.33 #25  # 1/T2
+    light_correlation_const = 0.2
     logger.info('Setting physical parameters to larmour_freq = %r, spin_correlation_const = %r, light_correlation_const=%r.' %
                 (str(larmour_freq),
                  str(spin_correlation_const),
@@ -80,11 +80,11 @@ def run__atomic_sensor(*args):
 
     #consts for coupling function -> amplitude*cos(omega*t)
     omega = 6.0 #\omega_p
-    amplitude = 30. #g_p
+    amplitude = 30. #30. #g_p
 
     #simulation parameters
-    number_periods = 1.5
-    dt_sensor = 0.005
+    number_periods = 10.
+    dt_sensor = 0.01
     num_iter_sensor = (2*np.pi*number_periods/larmour_freq)/dt_sensor
     logger.info('Setting simulation parameters to num_iter_sensor = %r, delta_t_sensor = %r, number_periods=%r.' %
                 (str(num_iter_sensor),
@@ -94,7 +94,7 @@ def run__atomic_sensor(*args):
                 )
 
     #filter parameters
-    dt_filter = 0.01
+    dt_filter = 0.02
     num_iter_filter = np.int(np.floor_divide(num_iter_sensor*dt_sensor, dt_filter))
     every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
     print('every nth ', every_nth_z)
@@ -104,16 +104,19 @@ def run__atomic_sensor(*args):
                  )
                 )
 
+    #initial conditions for the filter
+    #TO DO
+
     # SIMULATING DYNAMICS=====================================================
     time_arr = np.arange(0, num_iter_sensor*dt_sensor, dt_sensor)
     time_arr_filter = np.arange(0, num_iter_filter*dt_filter, dt_filter)
 
     
-    #initial conditions
-    spin_y_initial_val = 1.
-    spin_z_initial_val = 1.
-    quadrature_p_initial_val = 1.
-    quadrature_q_initial_val = 1.
+    #initial conditions for simulation
+    spin_y_initial_val = 2.
+    spin_z_initial_val = 2.
+    quadrature_p_initial_val = 0.
+    quadrature_q_initial_val = 0.
     logger.info('Setting initial state vec to  [%r, %r, %r, %r].' %
                 (str(spin_y_initial_val),
                  str(spin_z_initial_val),
@@ -122,14 +125,26 @@ def run__atomic_sensor(*args):
                  )
                 )
 
-    #Q, H and R definitions
-    Q = np.array([[1., 0., 0., 0.],
-                  [0., 1., 0., 0.],
-                  [0., 0., 1., 0.],
-                  [0., 0., 0., 1.]])
 
-    H = np.array([[0., 10., 0., 0.]])
-    R = np.array([[1.]])
+
+
+    #noise and measurement strengths
+    QJy = 0.1
+    QJz = 0.1
+    Qp = 0.02
+    Qq = 0.05
+    
+    gD = 100
+    QD = 0.01
+
+    #Q, H and R definitions
+    Q = np.array([[QJy, 0., 0., 0.],
+                  [0., QJz, 0., 0.],
+                  [0., 0., Qp, 0.],
+                  [0., 0., 0., Qq]])
+
+    H = np.array([[0., gD, 0., 0.]])
+    R = np.array([[QD]])
 
     #W definition
     W_jy = np.array([[1., 0., 0., 0.],
@@ -237,22 +252,22 @@ def run__atomic_sensor(*args):
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_p_full_history, q_q_full_history = zip(*sensor.state_vec_full_history)
 
-    # plot light p (noisy, exact and filtered)
-    logger.info("Plotting data")
-    plt.title("Light p")
-    # plt.plot(time_arr_filter, filtered_light_p_homemade, label='Homemade')
-    plt.plot(time_arr_filter, filtered_light_p, label='Filterpy')
-    plt.plot(time_arr, q_p_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+    # # plot light p (noisy, exact and filtered)
+    # logger.info("Plotting data")
+    # plt.title("Light p")
+    # # plt.plot(time_arr_filter, filtered_light_p_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, filtered_light_p, label='Filterpy')
+    # plt.plot(time_arr, q_p_full_history, label='Exact data')
+    # plt.legend()
+    # plt.show()
 
-    # plot error for atoms jy
-    logger.info("Plotting error p")
-    plt.title("Error p")
-    # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
-    plt.plot(time_arr_filter, error_p, label='Filterpy')
-    plt.legend()
-    plt.show()
+    # # plot error p 
+    # logger.info("Plotting error p")
+    # plt.title("Squared error p")
+    # # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, error_p, label='Filterpy')
+    # plt.legend()
+    # plt.show()
 
     # plot light q (noisy, exact and filtered)
     logger.info("Plotting data")
@@ -263,9 +278,9 @@ def run__atomic_sensor(*args):
     plt.legend()
     plt.show()
 
-    # plot error for atoms jy
+    # plot error q
     logger.info("Plotting error q")
-    plt.title("Error jy")
+    plt.title("Squared error q")
     # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
     plt.plot(time_arr_filter, error_q, label='Filterpy')
     plt.legend()
@@ -282,7 +297,7 @@ def run__atomic_sensor(*args):
 
     # plot error for atoms jy
     logger.info("Plotting error jy")
-    plt.title("Error jy")
+    plt.title("Squared error jy")
     # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
     plt.plot(time_arr_filter, error_jy, label='Filterpy')
     plt.legend()
@@ -299,7 +314,7 @@ def run__atomic_sensor(*args):
 
     # plot error for atoms jy
     logger.info("Plotting error jz")
-    plt.title("Error jz")
+    plt.title("Squared error jz")
     # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
     plt.plot(time_arr_filter, error_jz, label='Filterpy')
     plt.legend()
