@@ -34,9 +34,10 @@ class AtomicSensorState(State):
         self.__light_correlation_const = kwargs['light_correlation_const']
         self.__coupling_amplitude = kwargs['coupling_amplitude']
         self.__coupling_freq = kwargs['coupling_freq']
+        self.__coupling_phase_shift = kwargs['coupling_phase_shift']
         self.__larmour_freq = kwargs['larmour_freq']
         self.__spin_correlation_const = kwargs['spin_correlation_const']
-        
+
         # F is a matrix with entries being functions. This wa can be integrated easily. Keep funcitons defined in "operable_functions"
         F_transition_matrix = np.array([[create_operable_const_func(-self.__spin_correlation_const),
                                          create_operable_const_func(self.__larmour_freq),
@@ -47,10 +48,10 @@ class AtomicSensorState(State):
                                           create_operable_const_func(-self.__spin_correlation_const),
                                           create_operable_cos_func(amplitude=self.__coupling_amplitude,
                                                                    omega=self.__coupling_freq,
-                                                                   phase_shift=0.),
+                                                                   phase_shift=self.__coupling_phase_shift),
                                           create_operable_sin_func(amplitude=self.__coupling_amplitude,
                                                                    omega=self.__coupling_freq,
-                                                                   phase_shift=0.)],
+                                                                   phase_shift=self.__coupling_phase_shift)],
 
                                         [create_operable_const_func(0),
                                          create_operable_const_func(0),

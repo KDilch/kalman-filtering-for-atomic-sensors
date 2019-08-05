@@ -115,6 +115,7 @@ def integrate_matrix_of_functions(matrix, from_x, to_x):
 def calculate_error(W, x, x_est):
     x = np.array([x]).T
     Sigma = np.dot((x-x_est), (x-x_est).T)
-    # print("x", x,"x_est", x_est)
-    print("Diff", np.trace(np.dot(W, Sigma)))
     return np.trace(np.dot(W, Sigma))
+
+def compute_squred_error_from_covariance(Sigma, index):
+    return Sigma[index][index]
