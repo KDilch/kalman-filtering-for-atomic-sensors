@@ -59,7 +59,8 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
-    from atomic_sensor_simulation.utilities import calculate_error, compute_squred_error_from_covariance
+    from atomic_sensor_simulation.utilities import calculate_error, compute_squred_error_from_covariance, eval_matrix_of_functions
+    from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
 
     # Logger for storing errors and logs in seprate file, creates separate folder
     logger = logging.getLogger(__name__)
@@ -242,62 +243,34 @@ def run__atomic_sensor(*args):
         filter_error_q_post[index] = compute_squred_error_from_covariance(filterpy.P_post, index=2)
         filter_error_p_post[index] = compute_squred_error_from_covariance(filterpy.P_post, index=3)
 
-    # RUN HOMEMADE KALMAN FILTER
-    logger.info("Initializing homemade Kalman Filter")
-    home_made_kf = model.initialize_homemade_filter()
-    logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (home_made_kf.steady_state()))
-    filtered_light_p_homemade = np.zeros(num_iter_filter)
-    filtered_atoms_jy_homemade = np.zeros(num_iter_filter)
-    filtered_light_q_homemade = np.zeros(num_iter_filter)
-    filtered_atoms_jz_homemade = np.zeros(num_iter_filter)
-    for index, time in enumerate(time_arr_filter):
-        z = zs_filter_freq[index]
-        home_made_kf.predict(from_time=time, to_time=time+dt_sensor, Phi_delta=model.compute_Phi_delta(from_time=time-dt_sensor))
-        home_made_kf.update(z)
-        filtered_atoms_jy_homemade[index] = filterpy.x[0]
-        filtered_atoms_jz_homemade[index] = filterpy.x[1]
-        filtered_light_q_homemade[index] = filterpy.x[2]
-        filtered_light_p_homemade[index] = filterpy.x[3]
+    # # RUN HOMEMADE KALMAN FILTER
+    # logger.info("Initializing homemade Kalman Filter")
+    # home_made_kf = model.initialize_homemade_filter()
+    #
+    # filtered_light_p_homemade = np.zeros(num_iter_filter)
+    # filtered_atoms_jy_homemade = np.zeros(num_iter_filter)
+    # filtered_light_q_homemade = np.zeros(num_iter_filter)
+    # filtered_atoms_jz_homemade = np.zeros(num_iter_filter)
+    # for index, time in enumerate(time_arr_filter):
+    #     z = zs_filter_freq[index]
+    #     home_made_kf.predict(from_time=time, to_time=time+dt_sensor, Phi_delta=model.compute_Phi_delta(from_time=time-dt_sensor))
+    #     home_made_kf.update(z)
+    #     filtered_atoms_jy_homemade[index] = filterpy.x[0]
+    #     filtered_atoms_jz_homemade[index] = filterpy.x[1]
+    #     filtered_light_q_homemade[index] = filterpy.x[2]
+    #     filtered_light_p_homemade[index] = filterpy.x[3]
 
+
+    #FIND STEADY STATE SOLUTION
+    steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(coupling_freq=omega,
+                                                                                coupling_phase_shift=phase_shift,
+                                                                                t=0.,
+                                                                                F=eval_matrix_of_functions(state.F_transition_matrix, 0.),
+                                                                                model=model)
+    logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
     # PLOTS=========================================================
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
-
-    # # plot light p (noisy, exact and filtered)
-    # logger.info("Plotting data")
-    # plt.title("Light p")
-    # # plt.plot(time_arr_filter, filtered_light_p_homemade, label='Homemade')
-    # plt.plot(time_arr_filter, filtered_light_p, label='Filterpy')
-    # plt.plot(time_arr, q_p_full_history, label='Exact data')
-    # plt.legend()
-    # plt.show()
-
-    # # plot error p 
-    # logger.info("Plotting error p")
-    # plt.title("Squared error p")
-    # plt.plot(time_arr_filter, filter_error_p_prior, label='Filter error prior')
-    # plt.plot(time_arr_filter, filter_error_p_post, label='Filter error post')
-    # plt.plot(time_arr_filter, error_p, label='Filterpy')
-    # plt.legend()
-    # plt.show()
-
-    # plot light q (noisy, exact and filtered)
-    logger.info("Plotting data")
-    plt.title("Light q")
-    # plt.plot(time_arr_filter, filtered_light_q_homemade, label='Homemade')
-    plt.plot(time_arr_filter, filtered_light_q, label='Filterpy')
-    plt.plot(time_arr, q_q_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
-
-    # plot error q
-    logger.info("Plotting error q")
-    plt.title("Squared error q")
-    plt.plot(time_arr_filter, filter_error_q_prior, label='Prior')
-    plt.plot(time_arr_filter, filter_error_q_post, label='Post')
-    plt.plot(time_arr_filter, error_q, label='Filterpy')
-    plt.legend()
-    plt.show()
 
     #plot atoms jy
     logger.info("Plotting data jy")
@@ -313,7 +286,9 @@ def run__atomic_sensor(*args):
     plt.title("Squared error jy")
     plt.plot(time_arr_filter, filter_error_jy_prior, label='Prior')
     plt.plot(time_arr_filter, filter_error_jy_post, label='Post')
-    plt.plot(time_arr_filter, error_jy, label='Filterpy')
+    # plt.plot(time_arr_filter, error_jy, label='Filterpy')
+    plt.axhline(y=steady_post[0][0], color='r', linestyle='-', label='steady_post')
+    plt.axhline(y=steady_prior[0][0], color='b', linestyle='-', label='steady_prior')
     plt.legend()
     plt.show()
 
@@ -331,9 +306,49 @@ def run__atomic_sensor(*args):
     plt.title("Squared error jz")
     plt.plot(time_arr_filter, filter_error_jz_prior, label='Prior')
     plt.plot(time_arr_filter, filter_error_jz_post, label='Post')
-    plt.plot(time_arr_filter, error_jz, label='Squared error jz')
+    # plt.plot(time_arr_filter, error_jz, label='Squared error jz')
+    plt.axhline(y=steady_post[1][1], color='r', linestyle='-', label='steady_post')
+    plt.axhline(y=steady_prior[1][1], color='b', linestyle='-', label='steady_prior')
     plt.legend()
     plt.show()
+
+    # plot light q (noisy, exact and filtered)
+    logger.info("Plotting data")
+    plt.title("Light q")
+    # plt.plot(time_arr_filter, filtered_light_q_homemade, label='Homemade')
+    plt.plot(time_arr_filter, filtered_light_q, label='Filterpy')
+    plt.plot(time_arr, q_q_full_history, label='Exact data')
+    plt.legend()
+    plt.show()
+
+    # plot error q
+    logger.info("Plotting error q")
+    plt.title("Squared error q")
+    plt.plot(time_arr_filter, filter_error_q_prior, label='Prior')
+    plt.plot(time_arr_filter, filter_error_q_post, label='Post')
+    # plt.plot(time_arr_filter, error_q, label='Filterpy')
+    plt.axhline(y=steady_post[2][2], color='r', linestyle='-', label='steady_post')
+    plt.axhline(y=steady_prior[2][2], color='b', linestyle='-', label='steady_prior')
+    plt.legend()
+    plt.show()
+
+    # # plot light p (noisy, exact and filtered)
+    # logger.info("Plotting data")
+    # plt.title("Light p")
+    # # plt.plot(time_arr_filter, filtered_light_p_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, filtered_light_p, label='Filterpy')
+    # plt.plot(time_arr, q_p_full_history, label='Exact data')
+    # plt.legend()
+    # plt.show()
+
+    # # plot error p
+    # logger.info("Plotting error p")
+    # plt.title("Squared error p")
+    # plt.plot(time_arr_filter, filter_error_p_prior, label='Filter error prior')
+    # plt.plot(time_arr_filter, filter_error_p_post, label='Filter error post')
+    # plt.plot(time_arr_filter, error_p, label='Filterpy')
+    # plt.legend()
+    # plt.show()
 
     # # plot zs
     # plt.plot(time_arr, sensor.z_no_noise_arr, label='Exact sensor data')

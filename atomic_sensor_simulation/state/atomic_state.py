@@ -102,7 +102,7 @@ class AtomicSensorState(State):
 
     @property
     def quadrature(self):
-        return [self._state_vec[self._coordinates.QUADRATURE_P.value], self._state_vec[self._coordinates.QUADRATURE_Q.value]]
+        return [self._state_vec[self._coordinates.QUADRATURE_Q.value], self._state_vec[self._coordinates.QUADRATURE_P.value]]
 
     @property
     def spin_mean(self):
@@ -110,4 +110,4 @@ class AtomicSensorState(State):
 
     @property
     def quadrature_mean(self):
-        return [self._mean_state_vec[self._coordinates.QUADRATURE_P.value], self._mean_state_vec[self._coordinates.QUADRATURE_Q.value]]
+        return [self._mean_state_vec[self._coordinates.QUADRATURE_Q.value], self._mean_state_vec[self._coordinates.QUADRATURE_P.value]]
