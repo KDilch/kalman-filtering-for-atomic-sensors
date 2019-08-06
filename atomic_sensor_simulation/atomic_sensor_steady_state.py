@@ -18,8 +18,8 @@ def compute_steady_state_solution_for_atomic_sensor(coupling_freq, coupling_phas
     steady_cov_update_RF = np.dot(np.identity(model.dim_x) - np.dot(K_steady, model.H), steady_cov_predict_RF)
 
     #go back to not rotating RF
-    steady_cov_predict = change_reference_frame_rotating(steady_cov_predict_RF, coupling_freq, coupling_phase_shift, t+3.)
-    steady_cov_update = change_reference_frame_rotating(steady_cov_update_RF, coupling_freq, coupling_phase_shift, t+3.)
+    steady_cov_predict = change_reference_frame_rotating(steady_cov_predict_RF, coupling_freq, coupling_phase_shift, t)
+    steady_cov_update = change_reference_frame_rotating(steady_cov_update_RF, coupling_freq, coupling_phase_shift, t)
 
     return steady_cov_predict, steady_cov_update
 

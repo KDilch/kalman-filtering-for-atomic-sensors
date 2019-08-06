@@ -80,13 +80,13 @@ def run__atomic_sensor(*args):
                 )
 
     #consts for coupling function -> amplitude*cos(omega*t)
-    omega = 6.0 #\omega_p
-    amplitude = 30. #30. #g_p
+    omega = 0.#6.0 #\omega_p
+    amplitude =0.# 30. #30. #g_p
     phase_shift = 0.0 #rad
 
     #simulation parameters
-    number_periods = 10.
-    dt_sensor = 0.01
+    number_periods = 1.
+    dt_sensor = 0.001
     num_iter_sensor = (2*np.pi*number_periods/larmour_freq)/dt_sensor
     logger.info('Setting simulation parameters to num_iter_sensor = %r, delta_t_sensor = %r, number_periods=%r.' %
                 (str(num_iter_sensor),
@@ -116,8 +116,8 @@ def run__atomic_sensor(*args):
     #initial conditions for simulation
     spin_y_initial_val = 2.
     spin_z_initial_val = 2.
-    quadrature_q_initial_val = 0.
-    quadrature_p_initial_val = 0.
+    quadrature_q_initial_val = 1.
+    quadrature_p_initial_val = 1.
     logger.info('Setting initial state vec to  [%r, %r, %r, %r].' %
                 (str(spin_y_initial_val),
                  str(spin_z_initial_val),
@@ -127,8 +127,8 @@ def run__atomic_sensor(*args):
                 )
 
     #noise and measurement strengths
-    QJy = 0.1
-    QJz = 0.1
+    QJy = 0.01
+    QJz = 0.01
     Qq = 0.05
     Qp = 0.02
 
@@ -272,65 +272,65 @@ def run__atomic_sensor(*args):
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
 
-    #plot atoms jy
-    logger.info("Plotting data jy")
-    plt.title("Atoms jy")
-    # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
-    plt.plot(time_arr_filter, filtered_atoms_jy, label='Filterpy')
-    plt.plot(time_arr, j_y_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+    # #plot atoms jy
+    # logger.info("Plotting data jy")
+    # plt.title("Atoms jy")
+    # # plt.plot(time_arr_filter, filtered_atoms_jy_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, filtered_atoms_jy, label='Filterpy')
+    # plt.plot(time_arr, j_y_full_history, label='Exact data')
+    # plt.legend()
+    # plt.show()
 
     # plot error for atoms jy
     logger.info("Plotting error jy")
     plt.title("Squared error jy")
+    plt.plot(time_arr_filter, error_jy, label='Squared error jy')
     plt.plot(time_arr_filter, filter_error_jy_prior, label='Prior')
     plt.plot(time_arr_filter, filter_error_jy_post, label='Post')
-    # plt.plot(time_arr_filter, error_jy, label='Filterpy')
     plt.axhline(y=steady_post[0][0], color='r', linestyle='-', label='steady_post')
     plt.axhline(y=steady_prior[0][0], color='b', linestyle='-', label='steady_prior')
     plt.legend()
     plt.show()
 
-    #plot atoms jz
-    logger.info("Plotting data jz")
-    plt.title("Atoms jz")
-    # plt.plot(time_arr_filter, filtered_atoms_jz_homemade, label='Homemade')
-    plt.plot(time_arr_filter, filtered_atoms_jz, label='Filterpy')
-    plt.plot(time_arr, j_z_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+    # # plot atoms jz
+    # logger.info("Plotting data jz")
+    # plt.title("Atoms jz")
+    # # plt.plot(time_arr_filter, filtered_atoms_jz_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, filtered_atoms_jz, label='Filterpy')
+    # plt.plot(time_arr, j_z_full_history, label='Exact data')
+    # plt.legend()
+    # plt.show()
 
     # plot error for atoms jz
     logger.info("Plotting error jz")
     plt.title("Squared error jz")
+    plt.plot(time_arr_filter, error_jz, label='Squared error jz')
     plt.plot(time_arr_filter, filter_error_jz_prior, label='Prior')
     plt.plot(time_arr_filter, filter_error_jz_post, label='Post')
-    # plt.plot(time_arr_filter, error_jz, label='Squared error jz')
     plt.axhline(y=steady_post[1][1], color='r', linestyle='-', label='steady_post')
     plt.axhline(y=steady_prior[1][1], color='b', linestyle='-', label='steady_prior')
     plt.legend()
     plt.show()
 
-    # plot light q (noisy, exact and filtered)
-    logger.info("Plotting data")
-    plt.title("Light q")
-    # plt.plot(time_arr_filter, filtered_light_q_homemade, label='Homemade')
-    plt.plot(time_arr_filter, filtered_light_q, label='Filterpy')
-    plt.plot(time_arr, q_q_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+    # # plot light q (noisy, exact and filtered)
+    # logger.info("Plotting data")
+    # plt.title("Light q")
+    # # plt.plot(time_arr_filter, filtered_light_q_homemade, label='Homemade')
+    # plt.plot(time_arr_filter, filtered_light_q, label='Filterpy')
+    # plt.plot(time_arr, q_q_full_history, label='Exact data')
+    # plt.legend()
+    # plt.show()
 
-    # plot error q
-    logger.info("Plotting error q")
-    plt.title("Squared error q")
-    plt.plot(time_arr_filter, filter_error_q_prior, label='Prior')
-    plt.plot(time_arr_filter, filter_error_q_post, label='Post')
-    # plt.plot(time_arr_filter, error_q, label='Filterpy')
-    plt.axhline(y=steady_post[2][2], color='r', linestyle='-', label='steady_post')
-    plt.axhline(y=steady_prior[2][2], color='b', linestyle='-', label='steady_prior')
-    plt.legend()
-    plt.show()
+    # # plot error q
+    # logger.info("Plotting error q")
+    # plt.title("Squared error q")
+    # plt.plot(time_arr_filter, filter_error_q_prior, label='Prior')
+    # plt.plot(time_arr_filter, filter_error_q_post, label='Post')
+    # # plt.plot(time_arr_filter, error_q, label='Filterpy')
+    # plt.axhline(y=steady_post[2][2], color='r', linestyle='-', label='steady_post')
+    # plt.axhline(y=steady_prior[2][2], color='b', linestyle='-', label='steady_prior')
+    # plt.legend()
+    # plt.show()
 
     # # plot light p (noisy, exact and filtered)
     # logger.info("Plotting data")
