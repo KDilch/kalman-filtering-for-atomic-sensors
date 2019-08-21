@@ -25,7 +25,7 @@ def main():
     tests_parser.set_defaults(func=run_tests)
 
     # create the parser for the "run-simulation" command
-    simulation_parser = subparsers.add_parser('run-simulation', help='Run atomic sensor simulation')
+    simulation_parser = subparsers.add_parser('run-atomic-sensor', help='Run atomic sensor simulation')
     simulation_parser.add_argument('-o',
                                    '--output_path',
                                    action='store',
@@ -33,8 +33,8 @@ def main():
                                    default='./')
     simulation_parser.add_argument('--config',
                                    action='store',
-                                   help='A string representing path to a config file. Config is a python file.',
-                                   default='./config.py')
+                                   help='A string representing a module name of a config file. Config is a python file.',
+                                   default='config')
     simulation_parser.add_argument('--save_plots',
                                    action='store_true',
                                    help='Bool specifying if you want to save plots',
@@ -45,8 +45,8 @@ def main():
                                    default=False)
     simulation_parser.set_defaults(func=run__atomic_sensor)
 
-    tests_parser = subparsers.add_parser('run-atomic-sensor', help='')
-    tests_parser.set_defaults(func=run__atomic_sensor)
+    tests_parser = subparsers.add_parser('run-tests', help='')
+    tests_parser.set_defaults(func=run_tests)
 
     position_speed_parser = subparsers.add_parser('run-position-speed', help='')
     position_speed_parser.set_defaults(func=run_position_speed)
@@ -60,7 +60,7 @@ def main():
 
 
 def run__atomic_sensor(*args):
-    from config import config
+    from atomic_sensor_simulation.utilities import import_config_from_path
     from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
@@ -71,7 +71,8 @@ def run__atomic_sensor(*args):
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-atomic-sensor command.')
 
-    logger.info('Loading a config file from path') # TODO
+    logger.info('Loading a config file from path %r' % args[0].config)
+    config = import_config_from_path(args[0].config)
 
     logger.info('Setting physical parameters to larmour_freq = %r, spin_correlation_const = %r, light_correlation_const=%r.' %
                 (str(config.physical_parameters['larmour_freq']),

@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import logging
 from scipy.linalg import expm
 from scipy.integrate import quad
+from pathlib import Path
+from importlib import import_module
 
 
 def stringify_namespace(namespace):
@@ -20,6 +22,11 @@ def stringify_namespace(namespace):
         if arg:
             __str += " --" + arg + ": " + str(namespace.__dict__[arg])
     return __str
+
+
+def import_config_from_path(module_name):
+    module_object = import_module(module_name)
+    return getattr(module_object, 'config')
 
 
 def load_logging_config(default_path='logging.json', default_level=logging.INFO):
