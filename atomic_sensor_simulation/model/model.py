@@ -4,6 +4,7 @@ from abc import ABC
 import numpy as np
 from scipy.linalg import expm
 from filterpy.kalman import KalmanFilter
+import logging
 
 from atomic_sensor_simulation.utilities import integrate_matrix_of_functions
 from atomic_sensor_simulation.homemade_kalman_filter.homemade_kf import HomeMadeKalmanFilter
@@ -20,7 +21,11 @@ class Model(ABC):
                  Gamma,
                  u,
                  z0,
-                 dt):
+                 dt,
+                 x0,
+                 P0,
+                 logger=None):
+        self._logger = logger or logging.getLogger(__name__)
         self.dt = dt
         self._F = F
         self.Phi_delta = self.compute_Phi_delta(from_time=0)
@@ -29,8 +34,12 @@ class Model(ABC):
         self.H = H
         self.H_inverse = np.linalg.pinv(self.H)
         self.R_delta = R
-
-        self.x0, self.P0 = self.calculate_x0_and_P0(z0)
+        if any(x0) is None or P0 is None:
+            self.x0, self.P0 = self.calculate_x0_and_P0(z0)
+            self._logger.info('Setting default values for x0 and P0...')
+        else:
+            self.x0 = x0
+            self.P0 = P0
         self.dim_x = len(self.x0)
         self.dim_z = len(z0)
 
@@ -46,6 +55,7 @@ class Model(ABC):
         return expm(integrate_matrix_of_functions(self._F, from_time, from_time + self.dt))
 
     def initialize_filterpy(self):
+        self._logger.info('Initializing Linear Kalman Filter (filtepy)...')
         filterpy = KalmanFilter(dim_x=len(self.x0), dim_z=self.dim_z)
         filterpy.x = self.x0
         filterpy.P = self.P0

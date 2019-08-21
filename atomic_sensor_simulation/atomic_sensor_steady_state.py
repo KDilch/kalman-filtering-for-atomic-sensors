@@ -4,21 +4,19 @@ import numpy as np
 from sympy import *
 from scipy.linalg import solve_discrete_are, expm
 
-from atomic_sensor_simulation.utilities import integrate_matrix_of_functions
+from atomic_sensor_simulation.utilities import eval_matrix_of_functions
+from config import config
 
+R = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0.],
+              [lambda t: 0., lambda t: 1., lambda t: 0., lambda t: 0.],
+              [lambda t: 0., lambda t: 0., lambda t: np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
+                lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift'])],
+              [lambda t: 0., lambda t: 0., lambda t: -np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
+               lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift'])]])
+R_T = R.transpose()
 
-
-def compute_steady_state_solution_for_atomic_sensor(coupling_freq, coupling_phase_shift, t, F, model):
-    #TODO do it properly
-    R = np.array([[1., 0., 0., 0.],
-                      [0., 1., 0., 0.],
-                      [0., 0., np.sin(coupling_freq * t + coupling_phase_shift),
-                       np.cos(coupling_freq * t + coupling_phase_shift)],
-                      [0., 0., -np.sin(coupling_freq * t + coupling_phase_shift),
-                       np.cos(coupling_freq * t + coupling_phase_shift)]])
-    R_T = R.transpose()
-
-    F_RF = change_reference_frame_rotating(F, R, R_T)
+def compute_steady_state_solution_for_atomic_sensor(t, F, model):
+    F_RF = change_reference_frame_rotating(F, eval_matrix_of_functions(R, t), eval_matrix_of_functions(R_T, t))
     Phi_delta_RF = expm(F_RF * model.dt)
     Q_delta = compute_Q_delta_sympy(F_RF, Matrix(model.Q), model.dt, 5)
     steady_cov_predict_RF = solve_discrete_are(a=np.transpose(Phi_delta_RF),
@@ -30,8 +28,12 @@ def compute_steady_state_solution_for_atomic_sensor(coupling_freq, coupling_phas
     steady_cov_update_RF = np.dot(np.identity(model.dim_x) - np.dot(K_steady, model.H), steady_cov_predict_RF)
 
     #go back to not rotating RF
-    steady_cov_predict = change_reference_frame_rotating(steady_cov_predict_RF, R, R_T)
-    steady_cov_update = change_reference_frame_rotating(steady_cov_update_RF, R, R_T)
+    steady_cov_predict = change_reference_frame_rotating(steady_cov_predict_RF,
+                                                         eval_matrix_of_functions(R, t),
+                                                         eval_matrix_of_functions(R_T, t))
+    steady_cov_update = change_reference_frame_rotating(steady_cov_update_RF,
+                                                        eval_matrix_of_functions(R, t),
+                                                        eval_matrix_of_functions(R_T, t))
 
     return steady_cov_predict, steady_cov_update
 

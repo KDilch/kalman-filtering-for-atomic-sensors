@@ -31,6 +31,10 @@ def main():
                                    action='store',
                                    help='A string representing path where the output should be saved.',
                                    default='./')
+    simulation_parser.add_argument('--config',
+                                   action='store',
+                                   help='A string representing path to a config file. Config is a python file.',
+                                   default='./config.py')
     simulation_parser.add_argument('--save_plots',
                                    action='store_true',
                                    help='Bool specifying if you want to save plots',
@@ -56,6 +60,7 @@ def main():
 
 
 def run__atomic_sensor(*args):
+    from config import config
     from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
@@ -66,103 +71,44 @@ def run__atomic_sensor(*args):
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-atomic-sensor command.')
 
-    # PARAMETERS=====================================================
+    logger.info('Loading a config file from path') # TODO
 
-    ## physical parameters
-    larmour_freq = 6.  #6.
-    spin_correlation_const = 0.33 #25  # 1/T2
-    light_correlation_const = 0.2
     logger.info('Setting physical parameters to larmour_freq = %r, spin_correlation_const = %r, light_correlation_const=%r.' %
-                (str(larmour_freq),
-                 str(spin_correlation_const),
-                 str(light_correlation_const)
+                (str(config.physical_parameters['larmour_freq']),
+                 str(config.physical_parameters['spin_correlation_const']),
+                 str(config.physical_parameters['light_correlation_const'])
                  )
                 )
 
-    #consts for coupling function -> amplitude*cos(omega*t)
-    omega = 6.0 #\omega_p
-    amplitude = 30. #30. #g_p
-    phase_shift = 0.0 #rad
-
-    #simulation parameters
-    number_periods = 10.
-    dt_sensor = 0.01
-    num_iter_sensor = (2*np.pi*number_periods/larmour_freq)/dt_sensor
-    logger.info('Setting simulation parameters to num_iter_sensor = %r, delta_t_sensor = %r, number_periods=%r.' %
-                (str(num_iter_sensor),
-                 str(dt_sensor),
-                 str(number_periods)
+    logger.info('Setting simulation parameters to delta_t_sensor = %r, number_periods=%r.' %
+                (str(config.simulation['dt_sensor']),
+                 str(config.simulation['number_periods'])
                  )
                 )
 
-    #filter parameters
-    dt_filter = 0.02
-    num_iter_filter = np.int(np.floor_divide(num_iter_sensor*dt_sensor, dt_filter))
-    every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
-    logger.info('Setting filter parameters to num_iter_filter = %r, delta_t_filter = %r.' %
-                (str(num_iter_filter),
-                 str(dt_filter),
+    logger.info('Setting filter parameters to delta_t_filter = %r.' %
+                (str(config.filter['dt_filter'])
                  )
                 )
-
-    #initial conditions for the filter
-    #TO DO
-
-    # SIMULATING DYNAMICS=====================================================
-    time_arr = np.arange(0, num_iter_sensor*dt_sensor, dt_sensor)
-    time_arr_filter = np.arange(0, num_iter_filter*dt_filter, dt_filter)
-
     
-    #initial conditions for simulation
-    spin_y_initial_val = 2.
-    spin_z_initial_val = 2.
-    quadrature_q_initial_val = 0.
-    quadrature_p_initial_val = 0.
     logger.info('Setting initial state vec to  [%r, %r, %r, %r].' %
-                (str(spin_y_initial_val),
-                 str(spin_z_initial_val),
-                 str(quadrature_q_initial_val),
-                 str(quadrature_p_initial_val)
+                (str(config.simulation['spin_y_initial_val']),
+                 str(config.simulation['spin_z_initial_val']),
+                 str(config.simulation['q_initial_val']),
+                 str(config.simulation['p_initial_val'])
                  )
                 )
 
-    #noise and measurement strengths
-    QJy = 0.1
-    QJz = 0.1
-    Qq = 0.05
-    Qp = 0.02
-
-    gD = 100
-    QD = 0.01
-
-    #Q, H and R definitions
-    Q = np.array([[QJy, 0., 0., 0.],
-                  [0., QJz, 0., 0.],
-                  [0., 0., Qq, 0.],
-                  [0., 0., 0., Qp]])
-
-    H = np.array([[0., gD, 0., 0.]])
-    R = np.array([[QD]])
-
-    #W definition
-    W_jy = np.array([[1., 0., 0., 0.],
-                  [0., 0., 0., 0.],
-                  [0., 0., 0., 0.],
-                  [0., 0., 0., 0.]])
-    W_jz = np.array([[0., 0., 0., 0.],
-                     [0., 1., 0., 0.],
-                     [0., 0., 0., 0.],
-                     [0., 0., 0., 0.]])
-    W_q = np.array([[0., 0., 0., 0.],
-                     [0., 0., 0., 0.],
-                     [0., 0., 1., 0.],
-                     [0., 0., 0., 0.]])
-    W_p = np.array([[0., 0., 0., 0.],
-                     [0., 0., 0., 0.],
-                     [0., 0., 0., 0.],
-                     [0., 0., 0., 1.]])
-
-
+    num_iter_sensor = (2 * np.pi * config.simulation['number_periods'] / config.physical_parameters['larmour_freq']) / config.simulation['dt_sensor']
+    num_iter_filter = np.int(np.floor_divide(num_iter_sensor * config.simulation['dt_sensor'],
+                                              config.filter['dt_filter']))
+    every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
+    Q = np.array([[config.noise_and_measurement['QJy'], 0., 0., 0.],
+                  [0., config.noise_and_measurement['QJz'], 0., 0.],
+                  [0., 0., config.noise_and_measurement['Qq'], 0.],
+                  [0., 0., 0., config.noise_and_measurement['Qp']]])
+    H = np.array([[0., config.noise_and_measurement['gD'], 0., 0.]])
+    R = np.array([[config.noise_and_measurement['QD']]])
 
     logger.info('Setting Q, H and R to Q = %r, H = %r, R = %r' %
                 (str(Q),
@@ -171,21 +117,33 @@ def run__atomic_sensor(*args):
                  )
                 )
 
-    state = AtomicSensorState(initial_vec=np.array([spin_y_initial_val, spin_z_initial_val, quadrature_q_initial_val, quadrature_p_initial_val]),
-                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.], cov=Q, dt=dt_sensor),
+    time_arr = np.arange(0, num_iter_sensor*config.simulation['dt_sensor'], config.simulation['dt_sensor'])
+    time_arr_filter = np.arange(0, num_iter_filter*config.filter['dt_filter'], config.filter['dt_filter'])
+
+    # SIMULATING DYNAMICS=====================================================
+
+    state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
+                                                    config.simulation['spin_z_initial_val'],
+                                                    config.simulation['q_initial_val'],
+                                                    config.simulation['p_initial_val']]),
+                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.],
+                                                           cov=Q,
+                                                           dt=config.simulation['dt_sensor']),
                               initial_time=0,
-                              dt=dt_sensor,
-                              light_correlation_const=light_correlation_const,
-                              spin_correlation_const=spin_correlation_const,
-                              larmour_freq=larmour_freq,
-                              coupling_amplitude=amplitude,
-                              coupling_freq=omega,
-                              coupling_phase_shift=phase_shift)
+                              dt=config.simulation['dt_sensor'],
+                              light_correlation_const=config.physical_parameters['light_correlation_const'],
+                              spin_correlation_const=config.physical_parameters['spin_correlation_const'],
+                              larmour_freq=config.physical_parameters['larmour_freq'],
+                              coupling_amplitude=config.coupling['g_p'],
+                              coupling_freq=config.coupling['omega_p'],
+                              coupling_phase_shift=config.coupling['phase_shift'])
 
     sensor = AtomicSensor(state,
-                          sensor_noise=GaussianWhiteNoise(mean=0., cov=R/dt_sensor, dt=dt_sensor),
+                          sensor_noise=GaussianWhiteNoise(mean=0.,
+                                                          cov=R/config.simulation['dt_sensor'],
+                                                          dt=config.simulation['dt_sensor']),
                           H=H,
-                          dt=dt_sensor)
+                          dt=config.simulation['dt_sensor'])
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
     zs_filter_freq = zs[::every_nth_z]
@@ -196,11 +154,16 @@ def run__atomic_sensor(*args):
     model = AtomicSensorModel(F=state.F_transition_matrix,
                               Q=Q,
                               H=H,
-                              R=R/dt_filter,
+                              R=R/config.filter['dt_filter'],
                               Gamma=state.Gamma_control_evolution_matrix,
                               u=state.u_control_vec,
                               z0=[zs[0]],
-                              dt=dt_filter)
+                              dt=config.filter['dt_filter'],
+                              x0=np.array([config.filter['spin_y_initial_val'],
+                                           config.filter['spin_z_initial_val'],
+                                           config.filter['q_initial_val'],
+                                           config.filter['p_initial_val']]),
+                              P0=config.filter['P0'])
 
     # RUN FILTERPY KALMAN FILTER
     logger.info("Initializing filterpy Kalman Filter")
@@ -224,16 +187,16 @@ def run__atomic_sensor(*args):
 
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
-        filterpy.predict(F=model.compute_Phi_delta(from_time=time-dt_filter))
+        filterpy.predict(F=model.compute_Phi_delta(from_time=time-config.filter['dt_filter']))
         filterpy.update(z)
         filtered_atoms_jy[index] = filterpy.x[0]
         filtered_atoms_jz[index] = filterpy.x[1]
         filtered_light_q[index] = filterpy.x[2]
         filtered_light_p[index] = filterpy.x[3]
-        error_jy[index] = calculate_error(W_jy, x=x_filter_freq[index], x_est=filterpy.x)
-        error_jz[index] = calculate_error(W_jz, x=x_filter_freq[index], x_est=filterpy.x)
-        error_q[index] = calculate_error(W_q, x=x_filter_freq[index], x_est=filterpy.x)
-        error_p[index] = calculate_error(W_p, x=x_filter_freq[index], x_est=filterpy.x)
+        error_jy[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=filterpy.x)
+        error_jz[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=filterpy.x)
+        error_q[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=filterpy.x)
+        error_p[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=filterpy.x)
         filter_error_jy_prior[index] = compute_squred_error_from_covariance(filterpy.P_prior, index=0)
         filter_error_jz_prior[index] = compute_squred_error_from_covariance(filterpy.P_prior, index=1)
         filter_error_q_prior[index] = compute_squred_error_from_covariance(filterpy.P_prior, index=2)
@@ -243,28 +206,9 @@ def run__atomic_sensor(*args):
         filter_error_q_post[index] = compute_squred_error_from_covariance(filterpy.P_post, index=2)
         filter_error_p_post[index] = compute_squred_error_from_covariance(filterpy.P_post, index=3)
 
-    # # RUN HOMEMADE KALMAN FILTER
-    # logger.info("Initializing homemade Kalman Filter")
-    # home_made_kf = model.initialize_homemade_filter()
-    #
-    # filtered_light_p_homemade = np.zeros(num_iter_filter)
-    # filtered_atoms_jy_homemade = np.zeros(num_iter_filter)
-    # filtered_light_q_homemade = np.zeros(num_iter_filter)
-    # filtered_atoms_jz_homemade = np.zeros(num_iter_filter)
-    # for index, time in enumerate(time_arr_filter):
-    #     z = zs_filter_freq[index]
-    #     home_made_kf.predict(from_time=time, to_time=time+dt_sensor, Phi_delta=model.compute_Phi_delta(from_time=time-dt_sensor))
-    #     home_made_kf.update(z)
-    #     filtered_atoms_jy_homemade[index] = filterpy.x[0]
-    #     filtered_atoms_jz_homemade[index] = filterpy.x[1]
-    #     filtered_light_q_homemade[index] = filterpy.x[2]
-    #     filtered_light_p_homemade[index] = filterpy.x[3]
-
 
     #FIND STEADY STATE SOLUTION
-    steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(coupling_freq=omega,
-                                                                                coupling_phase_shift=phase_shift,
-                                                                                t=0.,
+    steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(t=0.,
                                                                                 F=eval_matrix_of_functions(state.F_transition_matrix, 0.),
                                                                                 model=model)
     logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))

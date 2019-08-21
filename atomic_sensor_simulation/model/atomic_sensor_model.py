@@ -13,7 +13,9 @@ class AtomicSensorModel(Model):
                  Gamma,
                  u,
                  z0,
-                 dt
+                 dt,
+                 x0,
+                 P0
                  ):
 
         Model.__init__(self,
@@ -24,4 +26,6 @@ class AtomicSensorModel(Model):
                        Gamma=Gamma,
                        u=u,
                        z0=z0,
-                       dt=dt)
+                       dt=dt,
+                       x0=x0,
+                       P0=P0)
