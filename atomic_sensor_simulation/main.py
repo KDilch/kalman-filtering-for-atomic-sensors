@@ -63,7 +63,7 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.utilities import import_config_from_path
     from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
-    from atomic_sensor_simulation.model.atomic_sensor_model import AtomicSensorModel
+    from atomic_sensor_simulation.linear_KF_model.atomic_sensor_model import AtomicSensorModel
     from atomic_sensor_simulation.utilities import calculate_error, compute_squred_error_from_covariance, eval_matrix_of_functions
     from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
 
@@ -311,7 +311,7 @@ def run_position_speed(*args):
     num_iter = 20
 
     from atomic_sensor_simulation.state.pos_vel_state import PosVelSensorState
-    from atomic_sensor_simulation.model.pos_vel_model import PosVelModel
+    from atomic_sensor_simulation.linear_KF_model.pos_vel_model import PosVelModel
     from atomic_sensor_simulation.sensor import pos_sensor
 
     H = np.array([[1. / 0.3048, 0., 0., 0.], [0., 0., 1. / 0.3048, 0.]], dtype='float64')

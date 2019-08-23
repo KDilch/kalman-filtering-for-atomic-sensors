@@ -11,7 +11,7 @@ from atomic_sensor_simulation.homemade_kalman_filter.homemade_kf import HomeMade
 
 
 class Model(ABC):
-    """An abstract class representing any model (noise+measurement+process)."""
+    """An abstract class representing any linear_KF_model (noise+measurement+process)."""
 
     def __init__(self,
                  F,
@@ -27,6 +27,8 @@ class Model(ABC):
                  logger=None):
         self._logger = logger or logging.getLogger(__name__)
         self.dt = dt
+        self.fx = None
+        self.hx = None
         self._F = F
         self.Phi_delta = self.compute_Phi_delta(from_time=0)
         self.Q = Q
@@ -65,6 +67,13 @@ class Model(ABC):
         filterpy.H = self.H
         filterpy.R = self.R_delta
         return filterpy
+
+    def initialize_fx(self):
+        pass
+
+    def initialize_hx(self):
+        pass
+
 
     def initialize_homemade_filter(self):
         return HomeMadeKalmanFilter(x0=self.x0,

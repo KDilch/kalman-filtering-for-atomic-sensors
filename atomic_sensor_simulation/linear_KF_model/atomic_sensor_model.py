@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from atomic_sensor_simulation.model.model import Model
+from atomic_sensor_simulation.linear_KF_model.model import Model
 
 
 class AtomicSensorModel(Model):

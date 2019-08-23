@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import block_diag
 from filterpy.common import Q_discrete_white_noise
 
-from atomic_sensor_simulation.model.model import Model
+from atomic_sensor_simulation.linear_KF_model.model import Model
 
 
 class PosVelModel(Model):
