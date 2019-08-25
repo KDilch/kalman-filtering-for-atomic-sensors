@@ -11,7 +11,7 @@ from atomic_sensor_simulation.homemade_kalman_filter.homemade_kf import HomeMade
 
 
 class Model(ABC):
-    """An abstract class representing any linear_KF_model (noise+measurement+process)."""
+    """An abstract class representing any filter_model (noise+measurement+process)."""
 
     def __init__(self,
                  F,

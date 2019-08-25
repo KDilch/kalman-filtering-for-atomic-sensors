@@ -89,4 +89,3 @@ class State(ABC):
         #self._control_state_vec = self._control_state_vec + eval_matrix_of_functions(self._Gamma_control_evolution_matrix, t).dot(eval_matrix_of_functions(self._u_control_vec, t)) * self._dt
         # self._state_vec = self._mean_state_vec + self._control_state_vec + self._noise_step()
         return
-
