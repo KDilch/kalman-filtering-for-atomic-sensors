@@ -65,7 +65,7 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
     from atomic_sensor_simulation.filter_model.linear_kf import Linear_KF
     from atomic_sensor_simulation.filter_model.unscented_kf import Unscented_KF
-    from atomic_sensor_simulation.filter_model.extented_kf import Extended_KF
+    # from atomic_sensor_simulation.filter_model.extended_kf import Extended_KF
     from atomic_sensor_simulation.utilities import calculate_error, compute_squred_error_from_covariance, eval_matrix_of_functions
     from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
 
@@ -192,18 +192,18 @@ def run__atomic_sensor(*args):
                                                x0=linear_kf_model.x0,
                                                P0=linear_kf_model.P0)
 
-    extended_kf_model = Extended_KF(F=state.F_transition_matrix,
-                                    Q=linear_kf_model.Q_delta,
-                                    hx=hx,
-                                    R=R / config.filter['dt_filter'],
-                                    Gamma=state.Gamma_control_evolution_matrix,
-                                    u=state.u_control_vec,
-                                    z0=[zs[0]],
-                                    dt=config.filter['dt_filter'],
-                                    x0=linear_kf_model.x0,
-                                    P0=linear_kf_model.P0,
-                                    num_terms=3
-                                    )
+    # extended_kf_model = Extended_KF(F=state.F_transition_matrix,
+    #                                 Q=linear_kf_model.Q_delta,
+    #                                 hx=hx,
+    #                                 R=R / config.filter['dt_filter'],
+    #                                 Gamma=state.Gamma_control_evolution_matrix,
+    #                                 u=state.u_control_vec,
+    #                                 z0=[zs[0]],
+    #                                 dt=config.filter['dt_filter'],
+    #                                 x0=linear_kf_model.x0,
+    #                                 P0=linear_kf_model.P0,
+    #                                 num_terms=3
+    #                                 )
 
     # RUN FILTERPY KALMAN FILTER
     logger.info("Initializing linear_kf_filterpy Kalman Filter")
@@ -236,26 +236,26 @@ def run__atomic_sensor(*args):
     unscented_kf_error_q_post = np.zeros(num_iter_filter)
     unscented_kf_error_p_post = np.zeros(num_iter_filter)
 
-    logger.info("Initializing extended_kf_filterpy Unscented Filter")
-    extended_kf_filterpy = extended_kf_model.initialize_filterpy(
-                              light_correlation_const=config.physical_parameters['light_correlation_const'],
-                              spin_correlation_const=config.physical_parameters['spin_correlation_const'],
-                              larmour_freq=config.physical_parameters['larmour_freq'],
-                              coupling_amplitude=config.coupling['g_p'],
-                              coupling_freq=config.coupling['omega_p'],
-                              coupling_phase_shift=config.coupling['phase_shift'])
-    extended_kf_light_p = np.zeros(num_iter_filter)
-    extended_kf_atoms_jy = np.zeros(num_iter_filter)
-    extended_kf_light_q = np.zeros(num_iter_filter)
-    extended_kf_atoms_jz = np.zeros(num_iter_filter)
-    extended_kf_error_jy_prior = np.zeros(num_iter_filter)
-    extended_kf_error_jz_prior = np.zeros(num_iter_filter)
-    extended_kf_error_q_prior = np.zeros(num_iter_filter)
-    extended_kf_error_p_prior = np.zeros(num_iter_filter)
-    extended_kf_error_jy_post = np.zeros(num_iter_filter)
-    extended_kf_error_jz_post = np.zeros(num_iter_filter)
-    extended_kf_error_q_post = np.zeros(num_iter_filter)
-    extended_kf_error_p_post = np.zeros(num_iter_filter)
+    # logger.info("Initializing extended_kf_filterpy Extended Filter")
+    # extended_kf_filterpy = extended_kf_model.initialize_filterpy(
+    #                           light_correlation_const=config.physical_parameters['light_correlation_const'],
+    #                           spin_correlation_const=config.physical_parameters['spin_correlation_const'],
+    #                           larmour_freq=config.physical_parameters['larmour_freq'],
+    #                           coupling_amplitude=config.coupling['g_p'],
+    #                           coupling_freq=config.coupling['omega_p'],
+    #                           coupling_phase_shift=config.coupling['phase_shift'])
+    # extended_kf_light_p = np.zeros(num_iter_filter)
+    # extended_kf_atoms_jy = np.zeros(num_iter_filter)
+    # extended_kf_light_q = np.zeros(num_iter_filter)
+    # extended_kf_atoms_jz = np.zeros(num_iter_filter)
+    # extended_kf_error_jy_prior = np.zeros(num_iter_filter)
+    # extended_kf_error_jz_prior = np.zeros(num_iter_filter)
+    # extended_kf_error_q_prior = np.zeros(num_iter_filter)
+    # extended_kf_error_p_prior = np.zeros(num_iter_filter)
+    # extended_kf_error_jy_post = np.zeros(num_iter_filter)
+    # extended_kf_error_jz_post = np.zeros(num_iter_filter)
+    # extended_kf_error_q_post = np.zeros(num_iter_filter)
+    # extended_kf_error_p_post = np.zeros(num_iter_filter)
 
     error_jy = np.zeros(num_iter_filter)
     error_jz = np.zeros(num_iter_filter)
@@ -295,20 +295,20 @@ def run__atomic_sensor(*args):
         unscented_kf_error_q_post[index] = compute_squred_error_from_covariance(unscented_kf_filterpy.P_post, index=2)
         unscented_kf_error_p_post[index] = compute_squred_error_from_covariance(unscented_kf_filterpy.P_post, index=3)
 
-        extended_kf_filterpy.predict()
-        extended_kf_filterpy.update(z, hx, hx)
-        extended_kf_atoms_jy[index] = extended_kf_filterpy.x[0]
-        extended_kf_atoms_jz[index] = extended_kf_filterpy.x[1]
-        extended_kf_light_q[index] = extended_kf_filterpy.x[2]
-        extended_kf_light_p[index] = extended_kf_filterpy.x[3]
-        extended_kf_error_jy_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=0)
-        extended_kf_error_jz_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=1)
-        extended_kf_error_q_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=2)
-        extended_kf_error_p_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=3)
-        extended_kf_error_jy_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=0)
-        extended_kf_error_jz_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=1)
-        extended_kf_error_q_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=2)
-        extended_kf_error_p_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=3)
+        # extended_kf_filterpy.predict()
+        # extended_kf_filterpy.update(z, hx, hx)
+        # extended_kf_atoms_jy[index] = extended_kf_filterpy.x[0]
+        # extended_kf_atoms_jz[index] = extended_kf_filterpy.x[1]
+        # extended_kf_light_q[index] = extended_kf_filterpy.x[2]
+        # extended_kf_light_p[index] = extended_kf_filterpy.x[3]
+        # extended_kf_error_jy_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=0)
+        # extended_kf_error_jz_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=1)
+        # extended_kf_error_q_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=2)
+        # extended_kf_error_p_prior[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_prior, index=3)
+        # extended_kf_error_jy_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=0)
+        # extended_kf_error_jz_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=1)
+        # extended_kf_error_q_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=2)
+        # extended_kf_error_p_post[index] = compute_squred_error_from_covariance(extended_kf_filterpy.P_post, index=3)
 
         error_jy[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=linear_kf_filterpy.x)
         error_jz[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=linear_kf_filterpy.x)
@@ -321,6 +321,8 @@ def run__atomic_sensor(*args):
                                                                                 F=eval_matrix_of_functions(state.F_transition_matrix, 0.),
                                                                                 model=linear_kf_model)
     logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
+
+
     # PLOTS=========================================================
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
@@ -330,7 +332,7 @@ def run__atomic_sensor(*args):
     plt.title("Atoms jy")
     plt.plot(time_arr_filter, linear_kf_atoms_jy, label='Linear kf')
     plt.plot(time_arr_filter, unscented_kf_atoms_jy, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
+    # plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
     plt.plot(time_arr, j_y_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -343,9 +345,9 @@ def run__atomic_sensor(*args):
     plt.plot(time_arr_filter, linear_kf_error_jy_post, label='Post linear kf')
     plt.plot(time_arr_filter, unscented_kf_error_jy_prior, label='Prior unscented kf')
     plt.plot(time_arr_filter, unscented_kf_error_jy_post, label='Post unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_jy_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_jy_post, label='Post extended kf')
-    plt.axhline(y=steady_post[0][0], color='r', linestyle='-', label='steady_post')
+    # plt.plot(time_arr_filter, extended_kf_error_jy_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_jy_post, label='Post extended kf')
+    # plt.axhline(y=steady_post[0][0], color='r', linestyle='-', label='steady_post')
     plt.axhline(y=steady_prior[0][0], color='b', linestyle='-', label='steady_prior')
     plt.legend()
     plt.show()
@@ -355,7 +357,7 @@ def run__atomic_sensor(*args):
     plt.title("Atoms jz")
     plt.plot(time_arr_filter, linear_kf_atoms_jz, label='Linear kf')
     plt.plot(time_arr_filter, unscented_kf_atoms_jz, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_atoms_jz, label='Extended kf')
+    # plt.plot(time_arr_filter, extended_kf_atoms_jz, label='Extended kf')
     plt.plot(time_arr, j_z_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -368,8 +370,8 @@ def run__atomic_sensor(*args):
     plt.plot(time_arr_filter, linear_kf_error_jz_post, label='Post linear kf')
     plt.plot(time_arr_filter, unscented_kf_error_jz_prior, label='Prior unscented kf')
     plt.plot(time_arr_filter, unscented_kf_error_jz_post, label='Post unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_jz_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_jz_post, label='Post extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_jz_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_jz_post, label='Post extended kf')
     plt.axhline(y=steady_post[1][1], color='r', linestyle='-', label='steady_post')
     plt.axhline(y=steady_prior[1][1], color='b', linestyle='-', label='steady_prior')
     plt.legend()
@@ -380,7 +382,7 @@ def run__atomic_sensor(*args):
     plt.title("Light q")
     plt.plot(time_arr_filter, linear_kf_light_q, label='Linear kf')
     plt.plot(time_arr_filter, unscented_kf_light_q, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_light_q, label='Extended kf')
+    # plt.plot(time_arr_filter, extended_kf_light_q, label='Extended kf')
     plt.plot(time_arr, q_q_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -392,8 +394,8 @@ def run__atomic_sensor(*args):
     plt.plot(time_arr_filter, linear_kf_error_q_post, label='Post linear kf')
     plt.plot(time_arr_filter, unscented_kf_error_q_prior, label='Prior unscented kf')
     plt.plot(time_arr_filter, unscented_kf_error_q_post, label='Post unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_q_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_q_post, label='Post extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_q_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_q_post, label='Post extended kf')
     # plt.plot(time_arr_filter, error_q, label='Squared error q')
     plt.axhline(y=steady_post[2][2], color='r', linestyle='-', label='steady_post')
     plt.axhline(y=steady_prior[2][2], color='b', linestyle='-', label='steady_prior')
@@ -405,7 +407,7 @@ def run__atomic_sensor(*args):
     plt.title("Light p")
     plt.plot(time_arr_filter, linear_kf_light_p, label='Linear kf')
     plt.plot(time_arr_filter, unscented_kf_light_p, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_light_p, label='Extended kf')
+    # plt.plot(time_arr_filter, extended_kf_light_p, label='Extended kf')
     plt.plot(time_arr, q_p_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -417,8 +419,8 @@ def run__atomic_sensor(*args):
     plt.plot(time_arr_filter, linear_kf_error_p_post, label='Post linear kf')
     plt.plot(time_arr_filter, unscented_kf_error_p_prior, label='Prior unscented kf')
     plt.plot(time_arr_filter, unscented_kf_error_p_post, label='Prior unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_p_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_p_post, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_p_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_p_post, label='Prior extended kf')
     plt.plot(time_arr_filter, error_p, label='Squared error p')
     plt.legend()
     plt.show()
