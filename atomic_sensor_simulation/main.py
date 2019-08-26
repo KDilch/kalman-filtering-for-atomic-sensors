@@ -201,7 +201,8 @@ def run__atomic_sensor(*args):
                                     z0=[zs[0]],
                                     dt=config.filter['dt_filter'],
                                     x0=linear_kf_model.x0,
-                                    P0=linear_kf_model.P0
+                                    P0=linear_kf_model.P0,
+                                    num_terms=3
                                     )
 
     # RUN FILTERPY KALMAN FILTER
@@ -236,7 +237,13 @@ def run__atomic_sensor(*args):
     unscented_kf_error_p_post = np.zeros(num_iter_filter)
 
     logger.info("Initializing extended_kf_filterpy Unscented Filter")
-    extended_kf_filterpy = extended_kf_model.initialize_filterpy()
+    extended_kf_filterpy = extended_kf_model.initialize_filterpy(
+                              light_correlation_const=config.physical_parameters['light_correlation_const'],
+                              spin_correlation_const=config.physical_parameters['spin_correlation_const'],
+                              larmour_freq=config.physical_parameters['larmour_freq'],
+                              coupling_amplitude=config.coupling['g_p'],
+                              coupling_freq=config.coupling['omega_p'],
+                              coupling_phase_shift=config.coupling['phase_shift'])
     extended_kf_light_p = np.zeros(num_iter_filter)
     extended_kf_atoms_jy = np.zeros(num_iter_filter)
     extended_kf_light_q = np.zeros(num_iter_filter)
