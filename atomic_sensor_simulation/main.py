@@ -181,6 +181,9 @@ def run__atomic_sensor(*args):
     def hx(x):
         return H.dot(x)
 
+    def HJacobianat(x):
+        return H
+
     unscented_kf_model = Unscented_KF(fx=compute_fx_at_time_t(0),
                                                Q=linear_kf_model.Q_delta,
                                                hx=hx,
@@ -296,7 +299,7 @@ def run__atomic_sensor(*args):
         unscented_kf_error_p_post[index] = compute_squred_error_from_covariance(unscented_kf_filterpy.P_post, index=3)
 
         extended_kf_filterpy.predict()
-        extended_kf_filterpy.update(z, hx, hx)
+        extended_kf_filterpy.update(z, HJacobianat, hx)
         extended_kf_atoms_jy[index] = extended_kf_filterpy.x[0]
         extended_kf_atoms_jz[index] = extended_kf_filterpy.x[1]
         extended_kf_light_q[index] = extended_kf_filterpy.x[2]
@@ -330,8 +333,8 @@ def run__atomic_sensor(*args):
     plt.title("Atoms jy")
     plt.plot(time_arr_filter, linear_kf_atoms_jy, label='Linear kf')
     plt.plot(time_arr_filter, unscented_kf_atoms_jy, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
-    plt.plot(time_arr, j_y_full_history, label='Exact data')
+    # plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
+    # plt.plot(time_arr, j_y_full_history, label='Exact data')
     plt.legend()
     plt.show()
 

@@ -82,26 +82,10 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         jy, jz, q, p, deltat, time = symbols('jy, jz, q, p, deltat, time')
         self.fxu = Matrix([[]])
         self.num_terms = num_terms
-        A = Matrix([[-self.__spin_correlation_const,
-                                         self.__larmour_freq,
-                                         0,
-                                         0],
-
-                                        [-self.__larmour_freq,
-                                          -self.__spin_correlation_const,
-                                          self.__coupling_amplitude*sympy.cos(self.__coupling_freq*time + self.__coupling_phase_shift),
-                                          self.__coupling_amplitude*sympy.sin(self.__coupling_freq*time + self.__coupling_phase_shift)],
-
-                                        [0,
-                                         0,
-                                         -self.__light_correlation_const,
-                                         0
-                                         ],
-
-                                        [0,
-                                         0,
-                                         0,
-                                         -self.__light_correlation_const]])
+        A = Matrix([[-self.__spin_correlation_const, self.__larmour_freq, 0, 0],
+                    [-self.__larmour_freq, -self.__spin_correlation_const, self.__coupling_amplitude*sympy.cos(self.__coupling_freq*time + self.__coupling_phase_shift), self.__coupling_amplitude*sympy.sin(self.__coupling_freq*time + self.__coupling_phase_shift)],
+                    [0, 0, -self.__light_correlation_const, 0],
+                    [0, 0, 0, -self.__light_correlation_const]])
 
         self.A = A
         self.F_j = compute_expm_approx(Matrix(A*time), num_terms)
@@ -116,7 +100,7 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.subs[self.jz] = self.x[1]
         self.subs[self.q] = self.x[2]
         self.subs[self.p] = self.x[3]
-        self.F_j = compute_expm_approx(Matrix(self.A*self.t), self.num_terms)
+        self.F_j = compute_expm_approx(Matrix(self.A*self.dt), self.num_terms)
         self.subs[self.time] = self.t
 
         self.x = self.move(self.x, u, self.dt)
@@ -126,8 +110,8 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.P = np.dot(F, self.P).dot(F.T)
 
     def move(self, x, u, dt):
-        A = self.A.evalf(self.subs)
-        return x + A.dot(x) * dt
+        A = self.A.evalf(subs=self.subs)
+        return x + A*x * dt
 
 def compute_expm_approx(matrix, num_terms):
     out = zeros(*(matrix.shape))
