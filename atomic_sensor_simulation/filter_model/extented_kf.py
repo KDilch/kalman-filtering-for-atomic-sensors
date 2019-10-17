@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from filterpy.kalman import ExtendedKalmanFilter
-from sympy import *
 import sympy
 import numpy as np
 from scipy.linalg import expm
@@ -34,7 +33,6 @@ class Extended_KF(Model):
                        z0=z0,
                        dt=dt)
         self.F = F
-        self.Phi = expm(eval_matrix_of_functions(self.F, 0)*self.dt)
         self.hx = hx
         self.x0 = x0
         self.P0 = P0
@@ -55,20 +53,8 @@ class Extended_KF(Model):
 
         return filterpy
 
-    def compute_F_extended(self):
-        #TODO sympy version
-        jy = symbols('jy')
-        jz = symbols('jz')
-        q = symbols('q')
-        p = symbols('p')
-        x = Matrix(np.array([jy, jz, q, p]).T)
-        F_ext = Matrix(eval_matrix_of_functions(self.F, 0)*x + x)
-        print('F_ext', F_ext.jacobian(x))
-        return F_ext
-
-
 class AtomicSensorEKF(ExtendedKalmanFilter):
-    def __init__(self, dim_x, dim_z, num_terms, dt, **kwargs):
+    def __init__(self, dim_x, dim_z, dt, **kwargs):
         ExtendedKalmanFilter.__init__(self, dim_x, dim_z)
         self.dt = dt
         self.t = 0
@@ -79,44 +65,35 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.__coupling_phase_shift = kwargs['coupling_phase_shift']
         self.__larmour_freq = kwargs['larmour_freq']
         self.__spin_correlation_const = kwargs['spin_correlation_const']
-        jy, jz, q, p, deltat, time = symbols('jy, jz, q, p, deltat, time')
-        self.fxu = Matrix([[]])
-        self.num_terms = num_terms
-        A = Matrix([[-self.__spin_correlation_const, self.__larmour_freq, 0, 0],
+
+        jy, jz, q, p, deltat, time = sympy.symbols('jy, jz, q, p, deltat, time')
+        self.x = sympy.Matrix([[jy], [jz], [q], [p]])
+
+        self.A = sympy.Matrix([[-self.__spin_correlation_const, self.__larmour_freq, 0, 0],
                     [-self.__larmour_freq, -self.__spin_correlation_const, self.__coupling_amplitude*sympy.cos(self.__coupling_freq*time + self.__coupling_phase_shift), self.__coupling_amplitude*sympy.sin(self.__coupling_freq*time + self.__coupling_phase_shift)],
                     [0, 0, -self.__light_correlation_const, 0],
                     [0, 0, 0, -self.__light_correlation_const]])
 
-        self.A = A
-        self.F_j = compute_expm_approx(Matrix(A*time), num_terms)
-        self.subs = {jy: 0, jz: 0, q: 0, p: 0, time: 0, deltat: self.dt}
+        self.fxu = self.x + self.A*self.x*self.dt
+        self.fJacobian_at_x = self.fxu.jacobian(self.x)
+        #TODO set initial conditions similarly to LKF
+        self.subs = {jy: 0, jz: 1.8551798826515542, q: 0, p: 0, time: 0}
         self.jy, self.jz, self.q, self.p = jy, jz, q, p
         self.time = time
 
     def predict(self, u=0):
+        self.x = self.move()
         self.t += self.dt
 
         self.subs[self.jy] = self.x[0]
         self.subs[self.jz] = self.x[1]
         self.subs[self.q] = self.x[2]
         self.subs[self.p] = self.x[3]
-        self.F_j = compute_expm_approx(Matrix(self.A*self.dt), self.num_terms)
         self.subs[self.time] = self.t
-
-        self.x = self.move(self.x, u, self.dt)
-
-        F = np.array(self.F_j.evalf(subs=self.subs)).astype(float)
-
+        F = np.array(self.fJacobian_at_x.evalf(subs=self.subs)).astype(float)
         self.P = np.dot(F, self.P).dot(F.T)
 
-    def move(self, x, u, dt):
-        A = self.A.evalf(subs=self.subs)
-        return x + A*x * dt
-
-def compute_expm_approx(matrix, num_terms):
-    out = zeros(*(matrix.shape))
-    for n in range(num_terms):
-        out += matrix ** n / factorial(n)
-    return out
-
+    def move(self):
+        fxu_current = self.x + self.A*self.x*self.dt
+        return fxu_current.evalf(subs=self.subs)
 

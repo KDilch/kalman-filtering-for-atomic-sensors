@@ -74,5 +74,7 @@ class Linear_KF(Model):
 
     def calculate_x0_and_P0(self, z0):
         x0 = np.dot(self.H_inverse, z0)
+        print(x0)
         cov_x0 = self.Q + np.dot(np.dot(self.H_inverse, self.R_delta), np.transpose(self.H_inverse))
+        print(cov_x0)
         return x0, cov_x0

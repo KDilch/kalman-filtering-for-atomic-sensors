@@ -333,8 +333,8 @@ def run__atomic_sensor(*args):
     plt.title("Atoms jy")
     plt.plot(time_arr_filter, linear_kf_atoms_jy, label='Linear kf')
     plt.plot(time_arr_filter, unscented_kf_atoms_jy, label='Unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
-    # plt.plot(time_arr, j_y_full_history, label='Exact data')
+    plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
+    plt.plot(time_arr, j_y_full_history, label='Exact data')
     plt.legend()
     plt.show()
 
