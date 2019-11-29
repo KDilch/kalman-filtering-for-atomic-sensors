@@ -64,11 +64,37 @@ class AtomicSensorState(State):
                                          create_operable_const_func(0),
                                          create_operable_const_func(-self.__light_correlation_const)]])
 
+        x_JACOBIAN = np.array([[create_operable_const_func(-self.__spin_correlation_const),
+                                         create_operable_const_func(self.__larmour_freq),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(0)],
+
+                                        [create_operable_const_func(-self.__larmour_freq),
+                                         create_operable_const_func(-self.__spin_correlation_const),
+                                         create_operable_sin_func(amplitude=-self.__coupling_amplitude*self.__coupling_freq,
+                                                                  omega=self.__coupling_freq,
+                                                                  phase_shift=self.__coupling_phase_shift),
+                                         create_operable_cos_func(amplitude=self.__coupling_amplitude+self.__coupling_freq,
+                                                                  omega=self.__coupling_freq,
+                                                                  phase_shift=self.__coupling_phase_shift)],
+
+                                        [create_operable_const_func(0),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(-self.__light_correlation_const),
+                                         create_operable_const_func(0)
+                                         ],
+
+                                        [create_operable_const_func(0),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(0),
+                                         create_operable_const_func(-self.__light_correlation_const)]])
+
         State.__init__(self,
                        initial_vec,
                        noise_vec,
                        AtomicSensorCoordinates,
                        F_transition_matrix=F_transition_matrix,
+                       x_jacobian= x_JACOBIAN,
                        dt=dt,
                        time=initial_time,
                        u_control_vec=np.array([create_operable_const_func(0.),

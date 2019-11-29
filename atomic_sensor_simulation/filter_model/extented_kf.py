@@ -90,6 +90,7 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.subs[self.q] = self.x[2]
         self.subs[self.p] = self.x[3]
         self.subs[self.time] = self.t
+
         F = np.array(self.fJacobian_at_x.evalf(subs=self.subs)).astype(float)
         self.P = np.dot(F, self.P).dot(F.T)
 

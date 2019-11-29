@@ -48,9 +48,6 @@ def main():
     tests_parser = subparsers.add_parser('run-tests', help='')
     tests_parser.set_defaults(func=run_tests)
 
-    position_speed_parser = subparsers.add_parser('run-position-speed', help='')
-    position_speed_parser.set_defaults(func=run_position_speed)
-
     # parse some argument lists
     args = parser.parse_args()
     logger.info('Parsed input arguments %r' % stringify_namespace(args))
@@ -169,7 +166,15 @@ def run__atomic_sensor(*args):
                                            config.filter['spin_z_initial_val'],
                                            config.filter['q_initial_val'],
                                            config.filter['p_initial_val']]),
-                      P0=config.filter['P0'])
+                      P0=config.filter['P0'],
+                      x_jac=state.x_Jacobian,
+                                light_correlation_const=config.physical_parameters['light_correlation_const'],
+                                spin_correlation_const=config.physical_parameters['spin_correlation_const'],
+                                larmour_freq=config.physical_parameters['larmour_freq'],
+                                coupling_amplitude=config.coupling['g_p'],
+                                coupling_freq=config.coupling['omega_p'],
+                                coupling_phase_shift=config.coupling['phase_shift']
+                                )
 
 
     def compute_fx_at_time_t(t):
@@ -265,10 +270,13 @@ def run__atomic_sensor(*args):
     error_q = np.zeros(num_iter_filter)
     error_p = np.zeros(num_iter_filter)
 
-
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
-        linear_kf_filterpy.predict(F=linear_kf_model.compute_Phi_delta(from_time=time-config.filter['dt_filter']))
+        linear_kf_filterpy.predict(F=linear_kf_model.compute_Phi_delta(from_time=time))
+        # linear_kf_filterpy.predict()
+        # linear_kf_filterpy.F = linear_kf_model.compute_Phi_delta_odeint(from_time=time,
+        #                                                                 Phi_0=linear_kf_filterpy.F)
+        # logger.info('Setting Phi to [%r]' % str(linear_kf_filterpy.F))
         linear_kf_filterpy.update(z)
         linear_kf_atoms_jy[index] = linear_kf_filterpy.x[0]
         linear_kf_atoms_jz[index] = linear_kf_filterpy.x[1]
@@ -320,10 +328,28 @@ def run__atomic_sensor(*args):
 
 
     #FIND STEADY STATE SOLUTION
-    steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(t=0.,
-                                                                                F=eval_matrix_of_functions(state.F_transition_matrix, 0.),
-                                                                                model=linear_kf_model)
-    logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
+    steady_priors_jy = []
+    steady_posts_jy = []
+    steady_priors_jz = []
+    steady_posts_jz = []
+    steady_priors_p = []
+    steady_posts_p = []
+    steady_priors_q = []
+    steady_posts_q = []
+    for time_filter in time_arr_filter:
+        steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(t=time_filter,
+                                                                                    F=eval_matrix_of_functions(state.F_transition_matrix, time_filter),
+                                                                                    model=linear_kf_model)
+        logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
+        steady_priors_jy.append(steady_prior[0][0])
+        steady_posts_jy.append(steady_post[0][0])
+        steady_priors_jz.append(steady_prior[1][1])
+        steady_posts_jz.append(steady_post[1][1])
+        steady_priors_q.append(steady_prior[2][2])
+        steady_posts_q.append(steady_post[2][2])
+        steady_priors_p.append(steady_prior[3][3])
+        steady_posts_p.append(steady_post[3][3])
+
     # PLOTS=========================================================
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
@@ -332,8 +358,8 @@ def run__atomic_sensor(*args):
     logger.info("Plotting data jy")
     plt.title("Atoms jy")
     plt.plot(time_arr_filter, linear_kf_atoms_jy, label='Linear kf')
-    plt.plot(time_arr_filter, unscented_kf_atoms_jy, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
+    # plt.plot(time_arr_filter, unscented_kf_atoms_jy, label='Unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_atoms_jy, label='Extended kf')
     plt.plot(time_arr, j_y_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -341,15 +367,17 @@ def run__atomic_sensor(*args):
     # plot error for atoms jy
     logger.info("Plotting error jy")
     plt.title("Squared error jy")
-    plt.plot(time_arr_filter, error_jy, label='Squared error jy')
-    plt.plot(time_arr_filter, linear_kf_error_jy_prior, label='Prior linear kf')
+    # plt.plot(time_arr_filter, error_jy, label='Squared error jy')
+    # plt.plot(time_arr_filter, linear_kf_error_jy_prior, label='Prior linear kf')
     plt.plot(time_arr_filter, linear_kf_error_jy_post, label='Post linear kf')
-    plt.plot(time_arr_filter, unscented_kf_error_jy_prior, label='Prior unscented kf')
-    plt.plot(time_arr_filter, unscented_kf_error_jy_post, label='Post unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_jy_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_jy_post, label='Post extended kf')
-    plt.axhline(y=steady_post[0][0], color='r', linestyle='-', label='steady_post')
-    plt.axhline(y=steady_prior[0][0], color='b', linestyle='-', label='steady_prior')
+    # plt.plot(time_arr_filter, unscented_kf_error_jy_prior, label='Prior unscented kf')
+    # plt.plot(time_arr_filter, unscented_kf_error_jy_post, label='Post unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_error_jy_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_jy_post, label='Post extended kf')
+    # plt.plot(time_arr_filter, steady_priors_jy, color='r', label='steady_prior')
+    plt.plot(time_arr_filter, steady_posts_jy, color='b', label="steady_post")
+    # plt.axhline(y=steady_post[0][0], color='r', linestyle='-', label='steady_post')
+    # plt.axhline(y=steady_prior[0][0], color='b', linestyle='-', label='steady_prior')
     plt.legend()
     plt.show()
 
@@ -357,8 +385,8 @@ def run__atomic_sensor(*args):
     logger.info("Plotting data jz")
     plt.title("Atoms jz")
     plt.plot(time_arr_filter, linear_kf_atoms_jz, label='Linear kf')
-    plt.plot(time_arr_filter, unscented_kf_atoms_jz, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_atoms_jz, label='Extended kf')
+    # plt.plot(time_arr_filter, unscented_kf_atoms_jz, label='Unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_atoms_jz, label='Extended kf')
     plt.plot(time_arr, j_z_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -366,15 +394,15 @@ def run__atomic_sensor(*args):
     # plot error for atoms jz
     logger.info("Plotting error jz")
     plt.title("Squared error jz")
-    plt.plot(time_arr_filter, error_jz, label='Squared error jz')
-    plt.plot(time_arr_filter, linear_kf_error_jz_prior, label='Prior linear kf')
+    # plt.plot(time_arr_filter, error_jz, label='Squared error jz')
+    # plt.plot(time_arr_filter, linear_kf_error_jz_prior, label='Prior linear kf')
     plt.plot(time_arr_filter, linear_kf_error_jz_post, label='Post linear kf')
-    plt.plot(time_arr_filter, unscented_kf_error_jz_prior, label='Prior unscented kf')
-    plt.plot(time_arr_filter, unscented_kf_error_jz_post, label='Post unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_jz_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_jz_post, label='Post extended kf')
-    plt.axhline(y=steady_post[1][1], color='r', linestyle='-', label='steady_post')
-    plt.axhline(y=steady_prior[1][1], color='b', linestyle='-', label='steady_prior')
+    # plt.plot(time_arr_filter, unscented_kf_error_jz_prior, label='Prior unscented kf')
+    # plt.plot(time_arr_filter, unscented_kf_error_jz_post, label='Post unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_error_jz_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_jz_post, label='Post extended kf')
+    # plt.plot(time_arr_filter, steady_priors_jz, color='r', label='steady_prior')
+    plt.plot(time_arr_filter, steady_posts_jz, color='b', label="steady_posts")
     plt.legend()
     plt.show()
 
@@ -382,8 +410,8 @@ def run__atomic_sensor(*args):
     logger.info("Plotting data")
     plt.title("Light q")
     plt.plot(time_arr_filter, linear_kf_light_q, label='Linear kf')
-    plt.plot(time_arr_filter, unscented_kf_light_q, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_light_q, label='Extended kf')
+    # plt.plot(time_arr_filter, unscented_kf_light_q, label='Unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_light_q, label='Extended kf')
     plt.plot(time_arr, q_q_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -391,15 +419,15 @@ def run__atomic_sensor(*args):
     # plot error q
     logger.info("Plotting error q")
     plt.title("Squared error q")
-    plt.plot(time_arr_filter, linear_kf_error_q_prior, label='Prior linear kf')
+    # plt.plot(time_arr_filter, linear_kf_error_q_prior, label='Prior linear kf')
     plt.plot(time_arr_filter, linear_kf_error_q_post, label='Post linear kf')
-    plt.plot(time_arr_filter, unscented_kf_error_q_prior, label='Prior unscented kf')
-    plt.plot(time_arr_filter, unscented_kf_error_q_post, label='Post unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_q_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_q_post, label='Post extended kf')
+    # plt.plot(time_arr_filter, unscented_kf_error_q_prior, label='Prior unscented kf')
+    # plt.plot(time_arr_filter, unscented_kf_error_q_post, label='Post unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_error_q_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_q_post, label='Post extended kf')
     # plt.plot(time_arr_filter, error_q, label='Squared error q')
-    plt.axhline(y=steady_post[2][2], color='r', linestyle='-', label='steady_post')
-    plt.axhline(y=steady_prior[2][2], color='b', linestyle='-', label='steady_prior')
+    # plt.plot(time_arr_filter, steady_priors_q, color='r', label='steady_prior')
+    plt.plot(time_arr_filter, steady_posts_q, color='b', label="steady_posts")
     plt.legend()
     plt.show()
 
@@ -407,8 +435,8 @@ def run__atomic_sensor(*args):
     logger.info("Plotting data")
     plt.title("Light p")
     plt.plot(time_arr_filter, linear_kf_light_p, label='Linear kf')
-    plt.plot(time_arr_filter, unscented_kf_light_p, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_light_p, label='Extended kf')
+    # plt.plot(time_arr_filter, unscented_kf_light_p, label='Unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_light_p, label='Extended kf')
     plt.plot(time_arr, q_p_full_history, label='Exact data')
     plt.legend()
     plt.show()
@@ -416,13 +444,15 @@ def run__atomic_sensor(*args):
     # plot error p
     logger.info("Plotting error p")
     plt.title("Squared error p")
-    plt.plot(time_arr_filter, linear_kf_error_p_prior, label='Prior linear kf')
+    # plt.plot(time_arr_filter, linear_kf_error_p_prior, label='Prior linear kf')
     plt.plot(time_arr_filter, linear_kf_error_p_post, label='Post linear kf')
-    plt.plot(time_arr_filter, unscented_kf_error_p_prior, label='Prior unscented kf')
-    plt.plot(time_arr_filter, unscented_kf_error_p_post, label='Prior unscented kf')
-    plt.plot(time_arr_filter, extended_kf_error_p_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_error_p_post, label='Prior extended kf')
-    plt.plot(time_arr_filter, error_p, label='Squared error p')
+    # plt.plot(time_arr_filter, steady_priors_p, color='r', label='steady_prior')
+    plt.plot(time_arr_filter, steady_posts_p, color='b', label="steady_posts")
+    # plt.plot(time_arr_filter, unscented_kf_error_p_prior, label='Prior unscented kf')
+    # plt.plot(time_arr_filter, unscented_kf_error_p_post, label='Prior unscented kf')
+    # plt.plot(time_arr_filter, extended_kf_error_p_prior, label='Prior extended kf')
+    # plt.plot(time_arr_filter, extended_kf_error_p_post, label='Prior extended kf')
+    # plt.plot(time_arr_filter, error_p, label='Squared error p')
     plt.legend()
     plt.show()
 
@@ -431,55 +461,6 @@ def run__atomic_sensor(*args):
     # plt.plot(time_arr, zs, label='Noisy sensor readings')
     # plt.legend()
     # plt.show()
-
-
-def run_position_speed(*args):
-
-    logger = logging.getLogger(__name__)
-    logger.info('Starting execution of run_position_speed command.')
-    dt = 0.5
-    num_iter = 20
-
-    from atomic_sensor_simulation.state.pos_vel_state import PosVelSensorState
-    from atomic_sensor_simulation.filter_model.linear_kf import Linear_KF
-    from atomic_sensor_simulation.sensor import pos_sensor
-
-    H = np.array([[1. / 0.3048, 0., 0., 0.], [0., 0., 1. / 0.3048, 0.]], dtype='float64')
-    R = np.eye(2) * 5.
-    Q = np.array([[0.05, 0., 0., 0.],
-                 [0., 0.05, 0., 0.],
-                 [0., 0., 0.05, 0.],
-                 [0., 0., 0., 0.05]])
-
-    state = PosVelSensorState(initial_vec=np.array([0., 0., 2., 1.]),
-                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.], cov=Q, dt=dt),
-                              initial_time=0,
-                              dt=dt)
-
-    sensor = pos_sensor.PosSensor(state,
-                                  scalar_strenght_y=1.,
-                                  dt=dt)
-    time_arr = np.arange(0, num_iter, dt)
-
-    zs = np.array([np.array((sensor.read(_))) for _ in time_arr])
-
-    # KALMAN FILTER============================================================================
-    model = Linear_KF(state.F_transition_matrix,
-                      Gamma=state.Gamma_control_evolution_matrix,
-                      u=state.u_control_vec,
-                      z0=zs[0],
-                      dt=dt)
-
-    filterpy_kf = model.initialize_filterpy()
-    (mu, cov, _, _) = filterpy_kf.batch_filter(zs)
-    zs *= .3048
-
-    # plot position
-    plt.plot(mu[:, 0], mu[:, 2], label='Filtered signal')
-    plt.plot(zs[:, 0], zs[:, 1], label='Noisy signal')
-    plt.legend()
-    plt.show()
-
 
 def run_tests(*args):
     #:TODO implement

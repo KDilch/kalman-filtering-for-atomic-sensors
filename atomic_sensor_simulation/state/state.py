@@ -18,6 +18,7 @@ class State(ABC):
                  u_control_vec=None,
                  Gamma_control_evolution_matrix=None,
                  initial_control_vec=None,
+                 x_jacobian=None,
                  logger=None):
         """
         :param initial_vec: numpy array
@@ -36,6 +37,7 @@ class State(ABC):
             self._control_state_vec = np.zeros_like(self._state_vec)
         self._noise_vec = noise_vec
         self._F_transition_matrix = F_transition_matrix
+        self._x_jacobian = x_jacobian
         if u_control_vec is not None:
             self._u_control_vec = u_control_vec
         else:
@@ -54,6 +56,10 @@ class State(ABC):
     @property
     def F_transition_matrix(self):
         return self._F_transition_matrix
+
+    @property
+    def x_Jacobian(self):
+        return self._x_jacobian
 
     @property
     def u_control_vec(self):
