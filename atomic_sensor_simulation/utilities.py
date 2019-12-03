@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import logging
 from scipy.linalg import expm
 from scipy.integrate import quad
-from pathlib import Path
 from importlib import import_module
 
 

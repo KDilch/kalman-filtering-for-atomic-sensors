@@ -91,7 +91,4 @@ class State(ABC):
         self._logger.debug('Performing a step for time %r' % str(self._time))
         self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self._dt
         self._state_vec = self._mean_state_vec + self.noise_vec.step()
-        # Incorporating u(t) into the dynamics
-        #self._control_state_vec = self._control_state_vec + eval_matrix_of_functions(self._Gamma_control_evolution_matrix, t).dot(eval_matrix_of_functions(self._u_control_vec, t)) * self._dt
-        # self._state_vec = self._mean_state_vec + self._control_state_vec + self._noise_step()
         return
