@@ -49,11 +49,7 @@ def change_reference_frame_rotating(object, R, R_T):
     return np.dot(np.dot(R, object), R_T)
 
 def compute_Q_delta_sympy(F_RF, Q, delta_t, num_terms):
-    # tau = symbols('tau', real=True, positive=True)
-    # Phi_tau_matrix = compute_expm_approx(Matrix(F_RF*(-tau)), num_terms)
     Phi_delta_t = expm(F_RF*delta_t)
-    # Phi_tau_matrix_T = transpose(compute_expm_approx(Matrix(F_RF*(-tau)), num_terms))
-    # integral = integrate(Phi_tau_matrix*Q*Phi_tau_matrix_T, (tau, 0, delta_t))
     integral = np.dot(np.dot(Phi_delta_t, Q), Phi_delta_t.T)*delta_t
     return np.array(integral).astype(np.float64)
 

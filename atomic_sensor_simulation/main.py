@@ -35,6 +35,26 @@ def main():
                                    action='store',
                                    help='A string representing a module name of a config file. Config is a python file.',
                                    default='config')
+    simulation_parser.add_argument('--lkf_num',
+                                   action='store_true',
+                                   help='Plot Linear kf',
+                                   default=False)
+    simulation_parser.add_argument('--lkf_expint',
+                                   action='store_true',
+                                   help='Plot Linear kf with solving for Phi using exp(integral Fdt) approx.',
+                                   default=False)
+    simulation_parser.add_argument('--lkf_exp',
+                                   action='store_true',
+                                   help='Plot Linear kf with solving for Phi using exp(Fdt) approx.',
+                                   default=False)
+    simulation_parser.add_argument('--ekf',
+                                   action='store_true',
+                                   help='Extended kf.',
+                                   default=False)
+    simulation_parser.add_argument('--ukf',
+                                   action='store_true',
+                                   help='Unscented kf.',
+                                   default=False)
     simulation_parser.add_argument('--save_plots',
                                    action='store_true',
                                    help='Bool specifying if you want to save plots',
@@ -63,12 +83,10 @@ def run__atomic_sensor(*args):
     from atomic_sensor_simulation.filter_model.linear_kf import Linear_KF
     from atomic_sensor_simulation.filter_model.unscented_kf import Unscented_KF
     from atomic_sensor_simulation.filter_model.extented_kf import Extended_KF
-    from atomic_sensor_simulation.utilities import calculate_error, compute_squred_error_from_covariance, \
-        eval_matrix_of_functions
-    from atomic_sensor_simulation.history_manager import Filter_History_Manager
+    from atomic_sensor_simulation.utilities import calculate_error, eval_matrix_of_functions, plot_data, generate_data_arr_for_plotting
+    from atomic_sensor_simulation.history_manager import Filter_History_Manager, SteadyStateHistoryManager
     from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
 
-    from scipy.linalg import expm
 
     # Logger for storing errors and logs in seprate file, creates separate folder
     logger = logging.getLogger(__name__)
@@ -220,8 +238,15 @@ def run__atomic_sensor(*args):
 
     # RUN FILTERPY KALMAN FILTER
     logger.info("Initializing linear_kf_filterpy Kalman Filter")
-    linear_kf_filterpy = linear_kf_model.initialize_filterpy()
-    linear_kf_history_manager = Filter_History_Manager(linear_kf_filterpy, num_iter_filter)
+
+    lkf_exp_approx = linear_kf_model.initialize_filterpy()
+    lkf_exp_approx_history_manager = Filter_History_Manager(lkf_exp_approx, num_iter_filter)
+
+    lkf_expint_approx = linear_kf_model.initialize_filterpy()
+    lkf_expint_approx_history_manager = Filter_History_Manager(lkf_expint_approx, num_iter_filter)
+
+    lkf_num = linear_kf_model.initialize_filterpy()
+    lkf_num_history_manager = Filter_History_Manager(lkf_num, num_iter_filter)
 
     logger.info("Initializing unscented_kf_filterpy Unscented Filter")
     unscented_kf_filterpy = unscented_kf_model.initialize_filterpy()
@@ -244,13 +269,23 @@ def run__atomic_sensor(*args):
 
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
-        # linear_kf_filterpy.predict(F=linear_kf_model.compute_Phi_delta_exp_Fdt_approx(from_time=time))
-        linear_kf_filterpy.predict()
-        linear_kf_filterpy.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time,
-                                                                                       Phi_0=linear_kf_filterpy.F)
-        logger.info('Setting Phi to [%r]' % str(linear_kf_filterpy.F))
-        linear_kf_filterpy.update(z)
-        linear_kf_history_manager.add_entry(index)
+        lkf_num.predict()
+        lkf_num.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time,
+                                                                            Phi_0=lkf_num.F)
+        lkf_expint_approx.predict()
+        lkf_expint_approx.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time,
+                                                                                      Phi_0=lkf_expint_approx.F)
+        lkf_exp_approx.predict()
+        lkf_exp_approx.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time,
+                                                                                       Phi_0=lkf_exp_approx.F)
+        logger.debug('Setting Phi to [%r]' % str(lkf_num.F))
+        lkf_num.update(z)
+        lkf_expint_approx.update(z)
+        lkf_exp_approx.update(z)
+
+        lkf_num_history_manager.add_entry(index)
+        lkf_expint_approx_history_manager.add_entry(index)
+        lkf_exp_approx_history_manager.add_entry(index)
 
         unscented_kf_filterpy.predict(fx=compute_fx_at_time_t(time))
         unscented_kf_filterpy.update(z)
@@ -260,147 +295,213 @@ def run__atomic_sensor(*args):
         extended_kf_filterpy.update(z, HJacobianat, hx)
         extended_kf_history_manager.add_entry(index)
 
-        error_jy[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=linear_kf_filterpy.x)
-        error_jz[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=linear_kf_filterpy.x)
-        error_q[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=linear_kf_filterpy.x)
-        error_p[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=linear_kf_filterpy.x)
+        error_jy[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_jz[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_q[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_p[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=lkf_num.x)
 
     # FIND STEADY STATE SOLUTION
-    steady_priors_jy = []
-    steady_posts_jy = []
-    steady_priors_jz = []
-    steady_posts_jz = []
-    steady_priors_p = []
-    steady_posts_p = []
-    steady_priors_q = []
-    steady_posts_q = []
-    for time_filter in time_arr_filter:
+    steady_state_history_manager = SteadyStateHistoryManager(num_iter_filter)
+    for index, time_filter in enumerate(time_arr_filter):
         steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(t=time_filter,
                                                                                     F=eval_matrix_of_functions(
                                                                                         state.F_transition_matrix,
                                                                                         time_filter),
                                                                                     model=linear_kf_model)
-        logger.info("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
-        steady_priors_jy.append(steady_prior[0][0])
-        steady_posts_jy.append(steady_post[0][0])
-        steady_priors_jz.append(steady_prior[1][1])
-        steady_posts_jz.append(steady_post[1][1])
-        steady_priors_q.append(steady_prior[2][2])
-        steady_posts_q.append(steady_post[2][2])
-        steady_priors_p.append(steady_prior[3][3])
-        steady_posts_p.append(steady_post[3][3])
+        logger.debug("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
+        steady_state_history_manager.add_entry(steady_prior, steady_post, index)
+
 
     # PLOTS=========================================================
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
 
+    labels = ['Linear kf num', 'Linear kf expint', 'Linear kf exp', 'Extended kf',  'Unscented kf', 'Exact data']
+
     # plot atoms jy
-    logger.info("Plotting data jy")
-    plt.title("Atoms jy")
-    plt.plot(time_arr_filter, linear_kf_history_manager.jys, label='Linear kf')
-    plt.plot(time_arr_filter, unscented_kf_history_manager.jys, label='Unscented kf')
-    plt.plot(time_arr_filter, extended_kf_history_manager.jys, label='Extended kf')
-    plt.plot(time_arr, j_y_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+    if np.any([args[0].lkf_num, args[0].lkf_exp, args[0].lkf_expint, args[0].ekf, args[0].ukf]):
+        logger.info("Plotting data jy")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                 time_arr_filter,
+                                                 time_arr_filter,
+                                                 time_arr_filter,
+                                                 time_arr_filter,
+                                                 time_arr]),
+                                       np.array([lkf_num_history_manager.jys,
+                                                 lkf_expint_approx_history_manager.jys,
+                                                 lkf_exp_approx_history_manager.jys,
+                                                 extended_kf_history_manager.jys,
+                                                 unscented_kf_history_manager.jys,
+                                                 j_y_full_history]),
+                                       labels=labels,
+                                       bools=[args[0].lkf_num,
+                                              args[0].lkf_exp,
+                                              args[0].lkf_expint,
+                                              args[0].ekf,
+                                              args[0].ukf,
+                                              True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Atoms jy", is_show=True, is_legend=True)
 
-    # plot error for atoms jy
-    logger.info("Plotting error jy")
-    plt.title("Squared error jy")
-    # plt.plot(time_arr_filter, error_jy, label='Squared error jy')
-    # plt.plot(time_arr_filter, linear_kf_error_jy_prior, label='Prior linear kf')
-    plt.plot(time_arr_filter, linear_kf_history_manager.jys_err_post, label='Post linear kf')
-    # plt.plot(time_arr_filter, unscented_kf_error_jy_prior, label='Prior unscented kf')
-    plt.plot(time_arr_filter, unscented_kf_history_manager.jys_err_post, label='Post unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_error_jy_prior, label='Prior extended kf')
-    plt.plot(time_arr_filter, extended_kf_history_manager.jys_err_post, label='Post extended kf')
-    # plt.plot(time_arr_filter, steady_priors_jy, color='r', label='steady_prior')
-    plt.plot(time_arr_filter, steady_posts_jy, color='b', label="steady_post")
-    # plt.axhline(y=steady_post[0][0], color='r', linestyle='-', label='steady_post')
-    # plt.axhline(y=steady_prior[0][0], color='b', linestyle='-', label='steady_prior')
-    plt.legend()
-    plt.show()
+        # plot error for atoms jy
+        logger.info("Plotting error jy")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter]),
+                                                                    np.array([lkf_num_history_manager.jys_err_post,
+                                                                              lkf_expint_approx_history_manager.jys_err_post,
+                                                                              lkf_exp_approx_history_manager.jys_err_post,
+                                                                              extended_kf_history_manager.jys_err_post,
+                                                                              unscented_kf_history_manager.jys_err_post,
+                                                                              steady_state_history_manager.steady_posts_jy]),
+                                                                    labels=labels,
+                                                                    bools=[args[0].lkf_num,
+                                                                           args[0].lkf_exp,
+                                                                           args[0].lkf_expint,
+                                                                           args[0].ekf,
+                                                                           args[0].ukf,
+                                                                           True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Squared error jy", is_show=True, is_legend=True)
 
-    # plot atoms jz
-    logger.info("Plotting data jz")
-    plt.title("Atoms jz")
-    plt.plot(time_arr_filter, linear_kf_history_manager.jzs, label='Linear kf')
-    # plt.plot(time_arr_filter, unscented_kf_atoms_jz, label='Unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_atoms_jz, label='Extended kf')
-    plt.plot(time_arr, j_z_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+        # plot atoms jz
+        logger.info("Plotting data jz")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr]),
+                                                                    np.array([lkf_num_history_manager.jzs,
+                                                                              lkf_expint_approx_history_manager.jzs,
+                                                                              lkf_exp_approx_history_manager.jzs,
+                                                                              extended_kf_history_manager.jzs,
+                                                                              unscented_kf_history_manager.jzs,
+                                                                              j_y_full_history]),
+                                                                    labels=labels,
+                                                                    bools=[args[0].lkf_num,
+                                                                           args[0].lkf_exp,
+                                                                           args[0].lkf_expint,
+                                                                           args[0].ekf,
+                                                                           args[0].ukf,
+                                                                           True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Atoms jz", is_show=True, is_legend=True)
 
-    # plot error for atoms jz
-    logger.info("Plotting error jz")
-    plt.title("Squared error jz")
-    # plt.plot(time_arr_filter, error_jz, label='Squared error jz')
-    # plt.plot(time_arr_filter, linear_kf_error_jz_prior, label='Prior linear kf')
-    plt.plot(time_arr_filter, linear_kf_history_manager.jzs_err_post, label='Post linear kf')
-    # plt.plot(time_arr_filter, unscented_kf_error_jz_prior, label='Prior unscented kf')
-    # plt.plot(time_arr_filter, unscented_kf_error_jz_post, label='Post unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_error_jz_prior, label='Prior extended kf')
-    # plt.plot(time_arr_filter, extended_kf_error_jz_post, label='Post extended kf')
-    # plt.plot(time_arr_filter, steady_priors_jz, color='r', label='steady_prior')
-    plt.plot(time_arr_filter, steady_posts_jz, color='b', label="steady_posts")
-    plt.legend()
-    plt.show()
+        # plot error for atoms jz
+        logger.info("Plotting error jz")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter]),
+                                                                    np.array([lkf_num_history_manager.jzs_err_post,
+                                                                              lkf_expint_approx_history_manager.jzs_err_post,
+                                                                              lkf_exp_approx_history_manager.jzs_err_post,
+                                                                              extended_kf_history_manager.jzs_err_post,
+                                                                              unscented_kf_history_manager.jzs_err_post,
+                                                                              steady_state_history_manager.steady_posts_jy]),
+                                                                    labels=labels,
+                                                                    bools=[args[0].lkf_num,
+                                                                           args[0].lkf_exp,
+                                                                           args[0].lkf_expint,
+                                                                           args[0].ekf,
+                                                                           args[0].ukf,
+                                                                           True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Squared error jz", is_show=True, is_legend=True)
 
-    # plot light q (noisy, exact and filtered)
-    logger.info("Plotting data")
-    plt.title("Light q")
-    plt.plot(time_arr_filter, linear_kf_history_manager.qs, label='Linear kf')
-    # plt.plot(time_arr_filter, unscented_kf_light_q, label='Unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_light_q, label='Extended kf')
-    plt.plot(time_arr, q_q_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+        # plot light q (noisy, exact and filtered)
+        logger.info("Plotting data q")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr]),
+                                                                    np.array([lkf_num_history_manager.qs,
+                                                                              lkf_expint_approx_history_manager.qs,
+                                                                              lkf_exp_approx_history_manager.qs,
+                                                                              extended_kf_history_manager.qs,
+                                                                              unscented_kf_history_manager.qs,
+                                                                              q_q_full_history]),
+                                                                    labels=labels,
+                                                                    bools=[args[0].lkf_num,
+                                                                           args[0].lkf_exp,
+                                                                           args[0].lkf_expint,
+                                                                           args[0].ekf,
+                                                                           args[0].ukf,
+                                                                           True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Atoms jz", is_show=True, is_legend=True)
 
-    # plot error q
-    logger.info("Plotting error q")
-    plt.title("Squared error q")
-    # plt.plot(time_arr_filter, linear_kf_error_q_prior, label='Prior linear kf')
-    plt.plot(time_arr_filter, linear_kf_history_manager.qs_err_post, label='Post linear kf')
-    # plt.plot(time_arr_filter, unscented_kf_error_q_prior, label='Prior unscented kf')
-    # plt.plot(time_arr_filter, unscented_kf_error_q_post, label='Post unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_error_q_prior, label='Prior extended kf')
-    # plt.plot(time_arr_filter, extended_kf_error_q_post, label='Post extended kf')
-    # plt.plot(time_arr_filter, error_q, label='Squared error q')
-    # plt.plot(time_arr_filter, steady_priors_q, color='r', label='steady_prior')
-    plt.plot(time_arr_filter, steady_posts_q, color='b', label="steady_posts")
-    plt.legend()
-    plt.show()
+        # plot error for light q
+        logger.info("Plotting error q")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter]),
+                                                                    np.array([lkf_num_history_manager.qs_err_post,
+                                                                              lkf_expint_approx_history_manager.qs_err_post,
+                                                                              lkf_exp_approx_history_manager.qs_err_post,
+                                                                              extended_kf_history_manager.qs_err_post,
+                                                                              unscented_kf_history_manager.qs_err_post,
+                                                                              steady_state_history_manager.steady_posts_q]),
+                                                                    labels=labels,
+                                                                    bools=[args[0].lkf_num,
+                                                                           args[0].lkf_exp,
+                                                                           args[0].lkf_expint,
+                                                                           args[0].ekf,
+                                                                           args[0].ukf,
+                                                                           True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Squared error jz", is_show=True, is_legend=True)
 
-    # plot light p (noisy, exact and filtered)
-    logger.info("Plotting data")
-    plt.title("Light p")
-    plt.plot(time_arr_filter, linear_kf_history_manager.ps, label='Linear kf')
-    # plt.plot(time_arr_filter, unscented_kf_light_p, label='Unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_light_p, label='Extended kf')
-    plt.plot(time_arr, q_p_full_history, label='Exact data')
-    plt.legend()
-    plt.show()
+        # plot light p (noisy, exact and filtered)
+        logger.info("Plotting data p")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr]),
+                                                                    np.array([lkf_num_history_manager.ps,
+                                                                              lkf_expint_approx_history_manager.ps,
+                                                                              lkf_exp_approx_history_manager.ps,
+                                                                              extended_kf_history_manager.ps,
+                                                                              unscented_kf_history_manager.ps,
+                                                                              q_p_full_history]),
+                                                                    labels=labels,
+                                                                    bools=[args[0].lkf_num,
+                                                                           args[0].lkf_exp,
+                                                                           args[0].lkf_expint,
+                                                                           args[0].ekf,
+                                                                           args[0].ukf,
+                                                                           True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Atoms p", is_show=True, is_legend=True)
 
-    # plot error p
-    logger.info("Plotting error p")
-    plt.title("Squared error p")
-    # plt.plot(time_arr_filter, linear_kf_error_p_prior, label='Prior linear kf')
-    plt.plot(time_arr_filter, linear_kf_history_manager.ps_err_post, label='Post linear kf')
-    # plt.plot(time_arr_filter, steady_priors_p, color='r', label='steady_prior')
-    plt.plot(time_arr_filter, steady_posts_p, color='b', label="steady_posts")
-    # plt.plot(time_arr_filter, unscented_kf_error_p_prior, label='Prior unscented kf')
-    # plt.plot(time_arr_filter, unscented_kf_error_p_post, label='Prior unscented kf')
-    # plt.plot(time_arr_filter, extended_kf_error_p_prior, label='Prior extended kf')
-    # plt.plot(time_arr_filter, extended_kf_error_p_post, label='Prior extended kf')
-    # plt.plot(time_arr_filter, error_p, label='Squared error p')
-    plt.legend()
-    plt.show()
-
-    # # plot zs
-    # plt.plot(time_arr, sensor.z_no_noise_arr, label='Exact sensor data')
-    # plt.plot(time_arr, zs, label='Noisy sensor readings')
-    # plt.legend()
-    # plt.show()
+        # plot error for atoms p
+        logger.info("Plotting error p")
+        xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter,
+                                                                              time_arr_filter]),
+                                                                    np.array([lkf_num_history_manager.ps_err_post,
+                                                                              lkf_expint_approx_history_manager.ps_err_post,
+                                                                              lkf_exp_approx_history_manager.ps_err_post,
+                                                                              extended_kf_history_manager.ps_err_post,
+                                                                              unscented_kf_history_manager.ps_err_post,
+                                                                              steady_state_history_manager.steady_posts_p]),
+                                                                    labels=labels,
+                                                                    bools=[args[0].lkf_num,
+                                                                           args[0].lkf_exp,
+                                                                           args[0].lkf_expint,
+                                                                           args[0].ekf,
+                                                                           args[0].ukf,
+                                                                           True])
+        plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Error p", is_show=True, is_legend=True)
 
 
 def run_tests(*args):

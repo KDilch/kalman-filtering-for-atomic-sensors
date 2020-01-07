@@ -45,6 +45,8 @@ class Extended_KF(Model):
                                    dim_z=self.dim_z,
                                    num_terms=self.num_terms,
                                    dt=self.dt,
+                                   x0=self.x0,
+                                   P0=self.P0,
                                    **kwargs)
         filterpy.x = self.x0
         filterpy.P = self.P0
@@ -54,7 +56,7 @@ class Extended_KF(Model):
         return filterpy
 
 class AtomicSensorEKF(ExtendedKalmanFilter):
-    def __init__(self, dim_x, dim_z, dt, **kwargs):
+    def __init__(self, dim_x, dim_z, dt, x0, P0, **kwargs):
         ExtendedKalmanFilter.__init__(self, dim_x, dim_z)
         self.dt = dt
         self.t = 0
@@ -65,6 +67,8 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.__coupling_phase_shift = kwargs['coupling_phase_shift']
         self.__larmour_freq = kwargs['larmour_freq']
         self.__spin_correlation_const = kwargs['spin_correlation_const']
+        self.x0 = x0
+        self.P0 = P0
 
         jy, jz, q, p, deltat, time = sympy.symbols('jy, jz, q, p, deltat, time')
         self.x = sympy.Matrix([[jy], [jz], [q], [p]])
@@ -75,9 +79,9 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
                     [0, 0, 0, -self.__light_correlation_const]])
 
         self.fxu = self.x + self.A*self.x*self.dt
-        self.fJacobian_at_x = self.fxu.jacobian(self.x)
-        #TODO set initial conditions similarly to LKF
-        self.subs = {jy: 0, jz: 1.8551798826515542, q: 0, p: 0, time: 0}
+        from sympy import Matrix
+        self.fJacobian_at_x = self.fxu.jacobian(Matrix([jy, jz, q, p]))
+        self.subs = {jy: self.x0[0], jz: self.x0[1], q: self.x0[2], p: self.x0[3], time: 0}
         self.jy, self.jz, self.q, self.p = jy, jz, q, p
         self.time = time
 
@@ -97,4 +101,3 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
     def move(self):
         fxu_current = self.x + self.A*self.x*self.dt
         return fxu_current.evalf(subs=self.subs)
-
