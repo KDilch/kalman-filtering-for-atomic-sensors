@@ -1,3 +1,4 @@
+sympy
 odeintw
 numpy
 scipy

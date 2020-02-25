@@ -132,6 +132,17 @@ def integrate_matrix_of_functions(matrix, from_x, to_x):
         integrated_matrix[index] = quad(matrix_flat[index], from_x, to_x)[0]
     return np.reshape(integrated_matrix, shape)
 
+def differentiate_matrix_of_functions(matrix, at_t):
+    from scipy.misc import derivative
+    matrix_flat = matrix.flatten()
+    shape = np.shape(matrix)
+    matrix_derivative = np.empty_like(matrix_flat)
+    for index, element in np.ndenumerate(matrix_flat):
+        matrix_derivative[index] = derivative(matrix_flat[index], at_t, dx=1e-6)
+    return np.reshape(matrix_derivative, shape)
+
+
+
 
 def calculate_error(W, x, x_est):
     x = np.array([x]).T

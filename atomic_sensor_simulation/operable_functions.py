@@ -21,3 +21,9 @@ def create_operable_cos_func(amplitude, omega, phase_shift):
     def cos_func(t):
         return amplitude*np.cos(omega*t+phase_shift)
     return cos_func
+
+def create_operable_step_func(max_amplitude, omega):
+    @operable
+    def step_func(t):
+        return max_amplitude if int(omega*t) % omega == 0 else 0
+    return step_func

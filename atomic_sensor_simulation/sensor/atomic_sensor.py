@@ -37,11 +37,9 @@ class AtomicSensor(object):
         return self.__state_mean_history
 
     def read(self, t):
-        #TODO create abstract class Sensor
         self.__state.step(t)
         self.__z_no_noise = self.__H.dot(self.__state.state_vec)
         self.__z = self.__z_no_noise + self.__noise.step()
-
         #append to history
         self.__state_history.append(self.__state.state_vec)
         self.__state_mean_history.append([self.__state.mean_state_vec])

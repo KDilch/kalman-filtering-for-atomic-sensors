@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
-from scipy.linalg import expm
+from numpy.linalg import matrix_power
+from scipy.integrate import simps
+from sympy import *
+from scipy.linalg import expm, solve_discrete_are
 from filterpy.kalman import KalmanFilter
 from scipy.integrate import odeint
 
@@ -45,7 +48,7 @@ class Linear_KF(Model):
                        dt=dt)
 
         self.Phi_delta = self.compute_Phi_delta_exp_Fdt_approx(from_time=0)
-        self.Q_delta = np.dot(np.dot(self.Phi_delta, self.Q), self.Phi_delta.transpose()) * dt
+        self.Q_delta = self.compute_Q_delta_sympy(from_time=0., Phi_0=self.Phi_delta)
         if any(x0) is None or P0 is None:
             self.x0, self.P0 = self.calculate_x0_and_P0(z0)
             self._logger.info('Setting default values for x0 and P0...')
@@ -54,6 +57,46 @@ class Linear_KF(Model):
             self.P0 = P0
         self.dim_x = len(self.x0)
 
+    def compute_Q_delta_sympy(self, from_time, Phi_0, num_terms=30):
+        def dPhidt(Phi, t):
+            return np.reshape(np.dot(np.array(eval_matrix_of_functions(self._F, t), dtype=float),
+                                     np.reshape(Phi, (4, 4))), 16)
+
+        t = np.linspace(from_time, from_time + self.dt, num=num_terms)  # times to report solution
+        Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, 16), t, full_output=True)
+        #NUMerical
+        Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (4, 4)) for i in range(len(Phi_deltas))]
+        Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
+        integrands = np.array([np.dot(np.dot(a, self.Q), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
+        #Assuming 4x4 matrices!
+        a = integrands.reshape(-1, integrands.shape[-1])
+        int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33 = map(list, zip(*integrands.reshape(*integrands.shape[:1], -1)))
+        integrand_split = [int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33]
+        #calculate integral numerically using simsons rule
+        # integrands_flat = np.array(integrands).flatten()
+        # times_flat = np.repeat(t, integrands[0].shape[0]*integrands[0].shape[1])
+        # print(np.reshape(simps(integrands_flat, times_flat), (4, 4)))
+        # return np.reshape(simps(integrands_flat, times_flat), (4, 4))
+        self.Q_delta = np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
+        # print('Q_delta', np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4)))
+        return np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
+        # #SYMPY
+        # out = zeros(*(self.Phi_delta.shape))
+        # for n in range(num_terms):
+        #     matrix_to_n = matrix_power(self.Phi_delta, n) / factorial(n)
+        #     Phi_Q_Phi_t_Nth_term = np.dot(np.dot(matrix_to_n, self.Q), np.transpose(matrix_to_n))
+        #     matrix_flat = Phi_Q_Phi_t_Nth_term.flatten()
+        #     shape = np.shape(Phi_Q_Phi_t_Nth_term)
+        #     matrix = np.empty_like(matrix_flat)
+        #     for index, element in np.ndenumerate(matrix_flat):
+        #         matrix[index] = lambda t: t ** (2 * n) * element
+        #     Phi_Q_PHI_T = np.reshape(matrix, shape)
+        #     from utilities import integrate_matrix_of_functions
+        #     int = integrate_matrix_of_functions(Phi_Q_PHI_T, from_x=from_time, to_x=from_time+self.dt)
+        #     Phi_delta_RF = expm(self.Phi_delta * self.dt)
+        #     out += np.dot(np.dot(Phi_delta_RF, int), np.transpose(Phi_delta_RF))
+        #     print(np.array(out).astype(np.float64))
+        # return np.array(out).astype(np.float64)
 
     def compute_Phi_delta_exp_Fdt_approx(self, from_time):
         """Returns solution for Phi from t_k to t_k+dt_filter as if F did not depend on time. Can be used for very slowly varying functions etc.
