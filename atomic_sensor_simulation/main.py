@@ -4,7 +4,6 @@ from atomic_sensor_simulation.utilities import stringify_namespace, load_logging
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
 
 import numpy as np
-import matplotlib.pyplot as plt
 import argparse
 import logging
 

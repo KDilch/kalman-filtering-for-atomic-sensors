@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from numpy.linalg import matrix_power
+import matplotlib.pyplot as plt
 from scipy.integrate import simps
 from sympy import *
 from scipy.linalg import expm, solve_discrete_are
@@ -68,17 +69,12 @@ class Linear_KF(Model):
         Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (4, 4)) for i in range(len(Phi_deltas))]
         Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
         integrands = np.array([np.dot(np.dot(a, self.Q), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
-        #Assuming 4x4 matrices!
+        #Assuming 4x4 matrices! #TODO get rid of it
         a = integrands.reshape(-1, integrands.shape[-1])
         int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33 = map(list, zip(*integrands.reshape(*integrands.shape[:1], -1)))
         integrand_split = [int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33]
-        #calculate integral numerically using simsons rule
-        # integrands_flat = np.array(integrands).flatten()
-        # times_flat = np.repeat(t, integrands[0].shape[0]*integrands[0].shape[1])
-        # print(np.reshape(simps(integrands_flat, times_flat), (4, 4)))
-        # return np.reshape(simps(integrands_flat, times_flat), (4, 4))
+        #calculate integral numerically using simpsons rule
         self.Q_delta = np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
-        # print('Q_delta', np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4)))
         return np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
         # #SYMPY
         # out = zeros(*(self.Phi_delta.shape))
@@ -112,20 +108,40 @@ class Linear_KF(Model):
         """
         return expm(integrate_matrix_of_functions(self._F, from_time, from_time + self.dt))
 
-    def compute_Phi_delta_solve_ode_numerically(self, from_time, Phi_0, time_resolution=10):
+    def compute_Phi_delta_solve_ode_numerically(self, from_time, Phi_0, time_resolution=30):
         """
         :param from_time: start time of the current step (t_k)
         :param Phi_0: initial condition Phi from t_k-dt_filter to t_k
         :param time_resolution: Indicates for how many subsections time from t_k to t_k + dt_filter should be divided
         :return: numerical solution to differential equation: dPhi/dt=F(t)Phi
         """
+        Phi_0 = np.reshape(np.identity(4), 16)
         def dPhidt(Phi, t):
             return np.reshape(np.dot(np.array(eval_matrix_of_functions(self._F, t), dtype=float),
                                      np.reshape(Phi, (4, 4))), 16)
 
         t = np.linspace(from_time, from_time + self.dt, num=time_resolution)  # times to report solution
-        Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, 16), t, full_output=True)
-        return np.reshape(Phi_deltas[0], (4, 4))
+        # store solution
+        x = np.empty_like(t)
+        y = np.empty_like(t)
+        Phi=None
+        # solve ODE
+        for i in range(1, time_resolution):
+            # span for next time step
+            tspan = [t[i - 1], t[i]]
+            # solve for next step
+            Phi = odeint(dPhidt, Phi_0, tspan)
+            # store solution for plotting
+            x[i] = Phi[1][0]
+            y[i] = Phi[1][1]
+            # next initial condition
+            Phi_0 = Phi[1]
+        # Phi_deltas = odeint(dPhidt, np.reshape(Phi_0, 16), t)
+        # plt.scatter(t, x)
+        # plt.xlabel('time')
+        # plt.ylabel('x(t)')
+        # plt.show()
+        return np.reshape(Phi[1], (4, 4))
 
     def initialize_filterpy(self):
         self._logger.info('Initializing Linear Kalman Filter (filtepy)...')

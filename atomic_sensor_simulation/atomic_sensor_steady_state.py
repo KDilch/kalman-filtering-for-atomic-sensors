@@ -64,7 +64,7 @@ def change_reference_frame_rotating1(object, R, R_T, R_derrrivative):
     return np.dot(np.dot(R, object), R_T)
 
 def compute_Q_delta_sympy(F_RF, Q, delta_t, num_terms=30):
-    # #Approx exp with Taylor expansion
+    # #Approx exp with Taylor expansion //not so great
     # out = zeros(*(F_RF.shape))
     # for n in range(num_terms):
     #     matrix_to_n = matrix_power(F_RF, n) / factorial(n)
@@ -85,29 +85,17 @@ def compute_Q_delta_sympy(F_RF, Q, delta_t, num_terms=30):
         return expm(F_RF*t)
     t = np.linspace(0, delta_t, num=num_terms)
     Phi_deltas = np.array([Phi_t(i) for i in t])
-    # NUMerical
     Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (4, 4)) for i in range(len(Phi_deltas))]
     Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
     integrands = np.array([np.dot(np.dot(a, Q), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
-    # Assuming 4x4 matrices!
+    # Assuming 4x4 matrices! #TODO get rid of it
     a = integrands.reshape(-1, integrands.shape[-1])
     int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33 = map(
         list, zip(*integrands.reshape(*integrands.shape[:1], -1)))
     integrand_split = [int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31,
                        int32, int33]
-    # calculate integral numerically using simsons rule
-    # integrands_flat = np.array(integrands).flatten()
-    # times_flat = np.repeat(t, integrands[0].shape[0]*integrands[0].shape[1])
-    # print(np.reshape(simps(integrands_flat, times_flat), (4, 4)))
-    # return np.reshape(simps(integrands_flat, times_flat), (4, 4))
     Q_delta = np.dot(np.dot(Phi_t(delta_t), np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))), np.transpose(Phi_t(delta_t)))
-    print("Phi_delta", Phi_t(delta_t))
-    print("Phi_delta_T", np.transpose(Phi_t(delta_t)))
-    print("Phi_de;ta.Q_delta", np.dot(Phi_t(delta_t), np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))))
-    print('Q_delta', np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4)))
-    print("Q_delta_ss", Q_delta)
     return np.array(Q_delta, dtype=np.float64)
-
 
 def compute_expm_approx(matrix, num_terms):
     out = zeros(*(matrix.shape))

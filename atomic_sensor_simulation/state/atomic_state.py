@@ -57,14 +57,13 @@ class AtomicSensorState(State):
                                         [create_operable_const_func(0),
                                          create_operable_const_func(0),
                                          create_operable_const_func(-self.__light_correlation_const),
-                                         create_operable_const_func(0)
-                                         ],
+                                         create_operable_const_func(0)],
 
                                         [create_operable_const_func(0),
                                          create_operable_const_func(0),
                                          create_operable_const_func(0),
                                          create_operable_const_func(-self.__light_correlation_const)]])
-
+#TODO verify xJACOBIAN!!!!
         x_JACOBIAN = np.array([[create_operable_const_func(-self.__spin_correlation_const),
                                 create_operable_const_func(self.__larmour_freq),
                                 create_operable_const_func(0),
