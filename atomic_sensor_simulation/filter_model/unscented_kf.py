@@ -3,14 +3,15 @@
 from filterpy.kalman import MerweScaledSigmaPoints, UnscentedKalmanFilter
 
 from atomic_sensor_simulation.filter_model.model import Model
+from atomic_sensor_simulation.utilities import eval_matrix_of_functions
 
 
 class Unscented_KF(Model):
 
     def __init__(self,
-                 fx,
+                 F,
                  Q,
-                 hx,
+                 H,
                  R,
                  Gamma,
                  u,
@@ -27,13 +28,25 @@ class Unscented_KF(Model):
                        u=u,
                        z0=z0,
                        dt=dt)
-        self.fx = fx
-        self.hx = hx
+        self.F = F
+        self.fx = self.compute_fx_at_time_t(0)
+        self.H = H
         self.points = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=-1) #TODO figure out the factors
         #TODO figure out what Q_delta is
         self.x0 = x0
         self.P0 = P0
         self.dim_x = len(self.x0)
+
+    def compute_fx_at_time_t(self, t):
+        F_t = eval_matrix_of_functions(self.F, t)
+
+        def fx(x, dt):
+            return x + F_t.dot(x) * dt
+
+        return fx
+
+    def hx(self, x):
+        return self.H.dot(x)
 
     def initialize_filterpy(self):
         self._logger.info('Initializing Linear Kalman Filter (filtepy)...')

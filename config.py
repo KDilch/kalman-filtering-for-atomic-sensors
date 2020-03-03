@@ -9,9 +9,9 @@ config.physical_parameters = {
     }
 
 config.coupling = {
-    'omega_p': 0.,
+    'omega_p': 3.,
     'g_p': 50.,
-    'phase_shift': 3.14
+    'phase_shift': 0.
 }
 
 config.simulation = {

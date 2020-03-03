@@ -1,4 +1,5 @@
 from atomic_sensor_simulation.utilities import operable
+from scipy.signal import square
 import numpy as np
 
 
@@ -22,8 +23,13 @@ def create_operable_cos_func(amplitude, omega, phase_shift):
         return amplitude*np.cos(omega*t+phase_shift)
     return cos_func
 
-def create_operable_step_func(max_amplitude, omega):
+def create_operable_step_func(time_arr):
     @operable
-    def step_func(t):
-        return max_amplitude if int(omega*t) % omega == 0 else 0
-    return step_func
+    def square(t):
+        import copy
+        t_copy = copy.deepcopy(t)
+        print(t_copy, "t_copy")
+        index = np.where(time_arr == t_copy)
+        print(index[0], "index")
+        return square(time_arr)[index[0]]
+    return square

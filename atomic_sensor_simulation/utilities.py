@@ -98,6 +98,7 @@ def generate_data_arr_for_plotting(all_xs, all_ys, labels, bools):
 
 
 class operable:
+
     def __init__(self, f):
         self.f = f
 

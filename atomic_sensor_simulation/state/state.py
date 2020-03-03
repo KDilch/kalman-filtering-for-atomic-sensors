@@ -2,7 +2,7 @@
 import numpy as np
 from abc import ABC
 import logging
-
+from scipy.signal import square, sawtooth
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions, operable
 from atomic_sensor_simulation.operable_functions import create_operable_const_func
 
@@ -15,6 +15,7 @@ class State(ABC):
                  F_transition_matrix,
                  dt,
                  time,
+                 time_arr,
                  u_control_vec=None,
                  Gamma_control_evolution_matrix=None,
                  initial_control_vec=None,
@@ -31,6 +32,9 @@ class State(ABC):
         self._state_vec = initial_vec
         self._mean_state_vec = initial_vec
         self._dt = dt
+        self.time_arr = time_arr
+        self.square_signal = square(2 * np.pi *time_arr)
+        self.sawtooth_signal = sawtooth(2 * np.pi  * time_arr)
         if initial_control_vec:
             self._control_state_vec = initial_control_vec
         else:
@@ -89,6 +93,13 @@ class State(ABC):
         self._logger.debug('Updating time and dt.')
         self._time = t
         self._logger.debug('Performing a step for time %r' % str(self._time))
+        index = np.where(self.time_arr == t)[0][0]
+        print(self.square_signal[index], "time", t, "index", index)
         self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self._dt
+        # self._mean_state_vec[2] = 100*self.sawtooth_signal[index]
+        # import matplotlib.pyplot as plt
+        # plt.plot(self.time_arr, self.sawtooth_signal)
+        # plt.show()
+        # print(self._mean_state_vec.shape, 'shape')
         self._state_vec = self._mean_state_vec + self.noise_vec.step()
         return

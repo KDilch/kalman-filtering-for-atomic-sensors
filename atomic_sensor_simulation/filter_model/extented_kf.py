@@ -3,15 +3,15 @@
 from filterpy.kalman import ExtendedKalmanFilter
 import sympy
 import numpy as np
-
 from atomic_sensor_simulation.filter_model.model import Model
+
 
 class Extended_KF(Model):
 
     def __init__(self,
                  F,
                  Q,
-                 hx,
+                 H,
                  R,
                  Gamma,
                  u,
@@ -19,7 +19,8 @@ class Extended_KF(Model):
                  dt,
                  x0,
                  P0,
-                 num_terms
+                 num_terms,
+                 time_arr
                  ):
 
         Model.__init__(self,
@@ -30,11 +31,18 @@ class Extended_KF(Model):
                        z0=z0,
                        dt=dt)
         self.F = F
-        self.hx = hx
         self.x0 = x0
+        self.H = H
         self.P0 = P0
         self.num_terms = num_terms
         self.dim_x = len(self.x0)
+        self.time_arr = time_arr
+
+    def hx(self, x):
+        return self.H.dot(x)
+
+    def HJacobianat(self, x):
+        return self.H
 
     def initialize_filterpy(self, **kwargs):
         self._logger.info('Initializing Extended Kalman Filter (filtepy)...')
@@ -58,7 +66,6 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         ExtendedKalmanFilter.__init__(self, dim_x, dim_z)
         self.dt = dt
         self.t = 0
-
         self.__light_correlation_const = kwargs['light_correlation_const']
         self.__coupling_amplitude = kwargs['coupling_amplitude']
         self.__coupling_freq = kwargs['coupling_freq']
@@ -75,7 +82,6 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
                     [-self.__larmour_freq, -self.__spin_correlation_const, self.__coupling_amplitude*sympy.cos(self.__coupling_freq*time + self.__coupling_phase_shift), self.__coupling_amplitude*sympy.sin(self.__coupling_freq*time + self.__coupling_phase_shift)],
                     [0, 0, -self.__light_correlation_const, 0],
                     [0, 0, 0, -self.__light_correlation_const]])
-
         self.fxu = self.x + self.A*self.x*deltat
         from sympy import Matrix
         self.fJacobian_at_x = self.fxu.jacobian(Matrix([jy, jz, q, p]))
