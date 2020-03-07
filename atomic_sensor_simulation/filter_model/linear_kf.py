@@ -76,6 +76,7 @@ class Linear_KF(Model):
                            int31, int32, int33]
         # calculate integral numerically using simpsons rule
         self.Q_delta = np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
+        print("Q", self.Q_delta)
         return np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
 
     def compute_Phi_delta_exp_Fdt_approx(self, from_time):

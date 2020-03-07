@@ -187,6 +187,13 @@ def run__atomic_sensor(*args):
 
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
+        extended_kf_filterpy.set_F(F=lkf_num.F)
+        extended_kf_filterpy.set_Q(Q=lkf_num.Q)
+        extended_kf_filterpy.predict()
+        extended_kf_filterpy.update(z, extended_kf_model.HJacobianat, extended_kf_model.hx)
+        extended_kf_history_manager.add_entry(index)
+
+        
         lkf_num.predict()
         lkf_num.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time)
         lkf_num.Q = linear_kf_model.compute_Q_delta_sympy(from_time=time,
@@ -208,10 +215,6 @@ def run__atomic_sensor(*args):
         unscented_kf_filterpy.predict(fx=unscented_kf_model.compute_fx_at_time_t(time))
         unscented_kf_filterpy.update(z)
         unscented_kf_history_manager.add_entry(index)
-
-        extended_kf_filterpy.predict()
-        extended_kf_filterpy.update(z, extended_kf_model.HJacobianat, extended_kf_model.hx)
-        extended_kf_history_manager.add_entry(index)
 
         error_jy[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=lkf_num.x)
         error_jz[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=lkf_num.x)
