@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import unittest
 import numpy as np
-from atomic_sensor_simulation.filter_model.linear_kf import Linear_KF
+from filter_model.AtomicSensor.linear_kf import Linear_KF
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
 from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
 
