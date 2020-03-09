@@ -28,7 +28,6 @@ class GaussianWhiteNoise(Noise):
         :param mean:
         :param logger: instance of logging.Logger or None (if None a new instance of this class will be created)
         """
-        #TODO matrix size checks
         self.__logger = logger if logger else logging.getLogger(__name__)
         self.__value = None
         self.__cov = cov

@@ -1,3 +1,5 @@
+sympy
+odeintw
 numpy
 scipy
 matplotlib

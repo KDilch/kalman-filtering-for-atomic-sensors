@@ -1,4 +1,5 @@
 from atomic_sensor_simulation.utilities import operable
+from scipy.signal import square
 import numpy as np
 
 
