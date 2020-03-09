@@ -6,7 +6,7 @@ from enum import Enum
 from atomic_sensor_simulation.state.state import State
 
 from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func, \
-    create_operable_sin_func, create_operable_step_func
+    create_operable_sin_func
 
 
 class AtomicSensorCoordinates(Enum):
@@ -100,7 +100,7 @@ class AtomicSensorState(State):
                        time=initial_time,
                        u_control_vec=np.array([create_operable_const_func(0.),
                                                create_operable_const_func(0.),
-                                               create_operable_step_func(time_arr),
+                                               create_operable_const_func(0.),
                                                create_operable_const_func(0.)]).T,
                        Gamma_control_evolution_matrix=np.array([[create_operable_const_func(1.),
                                                                  create_operable_const_func(0.),

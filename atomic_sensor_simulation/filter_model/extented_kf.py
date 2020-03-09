@@ -110,16 +110,16 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.P_prior = np.copy(self.P)
 
     def move(self):
-        self.x = np.dot(self.F, self.x)
-        return self.x
-        # fxu_current = self.x
-        # for i in np.linspace(self.t, self.t+self.dt, num=1, endpoint=True):
-        #     smaller_dt = self.dt
-        #     fxu_current = self.x + self.F_sympy*self.x*smaller_dt
-        #     self.x = fxu_current.evalf(subs=self.subs)
-        #     self.subs[self.jy] = self.x[0]
-        #     self.subs[self.jz] = self.x[1]
-        #     self.subs[self.q] = self.x[2]
-        #     self.subs[self.p] = self.x[3]
-        #     self.subs[self.time] = self.t
-        # return fxu_current.evalf(subs=self.subs)
+        # self.x = np.dot(self.F, self.x)
+        # return self.x
+        fxu_current = self.x
+        for i in np.linspace(self.t, self.t+self.dt, num=1, endpoint=True):
+            smaller_dt = self.dt
+            fxu_current = self.x + self.F_sympy*self.x*smaller_dt
+            self.x = fxu_current.evalf(subs=self.subs)
+            self.subs[self.jy] = self.x[0]
+            self.subs[self.jz] = self.x[1]
+            self.subs[self.q] = self.x[2]
+            self.subs[self.p] = self.x[3]
+            self.subs[self.time] = self.t
+        return fxu_current.evalf(subs=self.subs)

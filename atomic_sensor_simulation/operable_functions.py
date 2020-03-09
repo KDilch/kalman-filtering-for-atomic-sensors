@@ -22,14 +22,3 @@ def create_operable_cos_func(amplitude, omega, phase_shift):
     def cos_func(t):
         return amplitude*np.cos(omega*t+phase_shift)
     return cos_func
-
-def create_operable_step_func(time_arr):
-    @operable
-    def square(t):
-        import copy
-        t_copy = copy.deepcopy(t)
-        print(t_copy, "t_copy")
-        index = np.where(time_arr == t_copy)
-        print(index[0], "index")
-        return square(time_arr)[index[0]]
-    return square

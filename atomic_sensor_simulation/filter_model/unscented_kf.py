@@ -31,8 +31,7 @@ class Unscented_KF(Model):
         self.F = F
         self.fx = self.compute_fx_at_time_t(0)
         self.H = H
-        self.points = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=-1) #TODO figure out the factors
-        #TODO figure out what Q_delta is
+        self.points = MerweScaledSigmaPoints(4, alpha=.00001, beta=2., kappa=0.) #TODO figure out the factors
         self.x0 = x0
         self.P0 = P0
         self.dim_x = len(self.x0)
@@ -44,6 +43,9 @@ class Unscented_KF(Model):
             return x + F_t.dot(x) * dt
 
         return fx
+
+    def set_Q(self, Q):
+        self.Q = Q
 
     def hx(self, x):
         return self.H.dot(x)

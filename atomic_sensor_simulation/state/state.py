@@ -33,8 +33,9 @@ class State(ABC):
         self._mean_state_vec = initial_vec
         self._dt = dt
         self.time_arr = time_arr
-        self.square_signal = square(2 * np.pi *time_arr)
-        self.sawtooth_signal = sawtooth(2 * np.pi  * time_arr)
+        self.square_signal = square(2*np.pi*time_arr/6)
+        self.sawtooth_signal = sawtooth(2*np.pi*time_arr/6)
+        self.sin_signal = np.sin(2*np.pi*time_arr/6)
         if initial_control_vec:
             self._control_state_vec = initial_control_vec
         else:
@@ -94,9 +95,8 @@ class State(ABC):
         self._time = t
         self._logger.debug('Performing a step for time %r' % str(self._time))
         index = np.where(self.time_arr == t)[0][0]
-        print(self.square_signal[index], "time", t, "index", index)
         self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self._dt
-        # self._mean_state_vec[2] = 100*self.sawtooth_signal[index]
+        self._mean_state_vec[2] = self.sin_signal[index]
         # import matplotlib.pyplot as plt
         # plt.plot(self.time_arr, self.sawtooth_signal)
         # plt.show()

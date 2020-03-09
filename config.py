@@ -9,7 +9,7 @@ config.physical_parameters = {
     }
 
 config.coupling = {
-    'omega_p': 3.,
+    'omega_p': 15.,
     'g_p': 50.,
     'phase_shift': 0.
 }
@@ -24,7 +24,7 @@ config.simulation = {
 }
 
 config.filter = {
-    'dt_filter': 0.05,
+    'dt_filter': 0.01,
     'spin_y_initial_val': None,
     'spin_z_initial_val': None,
     'q_initial_val': None,
@@ -33,12 +33,12 @@ config.filter = {
 }
 
 config.noise_and_measurement = {
-    'QJy': 0.01,
-    'QJz': 0.01,
-    'Qq': 0.1,
-    'Qp': 0.1,
+    'QJy': 0.001,
+    'QJz': 0.001,
+    'Qq': 0.001,
+    'Qp': 0.001,
     'gD': 100.,
-    'QD': 0.01
+    'QD': 0.001
 }
 
 config.W = {
