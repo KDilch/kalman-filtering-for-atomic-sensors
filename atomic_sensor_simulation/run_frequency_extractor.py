@@ -137,21 +137,20 @@ def run__frequency_extractor(*args):
     labels = ['Extended kf', 'Exact data']
     labels_err = ['Extended kf err', 'Steady state']
 
-    # plot atoms jy
     if np.any([True]):
-        logger.info("Plotting data jy")
+        logger.info("Plotting data x1")
         xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([
                                                  time_arr_filter,
                                                  time_arr]),
                                        np.array([extended_kf_history_manager.x1s,
                                                  x1_full_history]),
                                        labels=labels,
-                                       bools=[args[0].ekf,
+                                       bools=[True,
                                              True])
         plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="x1", is_show=True, is_legend=True)
 
         # plot error for atoms jy
-        logger.info("Plotting error jy")
+        logger.info("Plotting error x1")
         xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([
                                                                               time_arr_filter]),
                                                                     np.array([extended_kf_history_manager.x1s_err_post,
@@ -161,7 +160,7 @@ def run__frequency_extractor(*args):
         plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Squared error x1", is_show=True, is_legend=True)
 
         # plot atoms jz
-        logger.info("Plotting data jz")
+        logger.info("Plotting data x2")
         xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([
                                                                               time_arr_filter,
                                                                               time_arr]),
@@ -173,7 +172,7 @@ def run__frequency_extractor(*args):
         plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="x2", is_show=True, is_legend=True)
 
         # plot error for atoms jz
-        logger.info("Plotting error jz")
+        logger.info("Plotting error x2")
         xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([
                                                                               time_arr_filter]),
                                                                     np.array([extended_kf_history_manager.x2s_err_post,
@@ -182,8 +181,7 @@ def run__frequency_extractor(*args):
                                                                     bools=[True])
         plot_data(xs_sel, ys_sel, data_labels=labels_sel, title="Squared error x2", is_show=True, is_legend=True)
 
-        # plot light q (noisy, exact and filtered)
-        logger.info("Plotting data q")
+        logger.info("Plotting data x3")
         xs_sel, ys_sel, labels_sel = generate_data_arr_for_plotting(np.array([
                                                                               time_arr_filter,
                                                                               time_arr]),
