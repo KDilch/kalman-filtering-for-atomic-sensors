@@ -37,6 +37,26 @@ class Extended_KF(Model):
         self.dim_x = len(self.x0)
         self.time_arr = time_arr
 
+    def compute_Q_delta_sympy(self, from_time, F_0, num_terms=30):
+        def dPhidt(Phi, t):
+            return np.reshape(np.dot(np.array(eval_matrix_of_functions(self._F, t), dtype=float),
+                                     np.reshape(Phi, (4, 4))), 16)
+
+        t = np.linspace(from_time, from_time + self.dt, num=num_terms)  # times to report solution
+        Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, 16), t, full_output=True)
+        # Numerical
+        Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (4, 4)) for i in range(len(Phi_deltas))]
+        Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
+        integrands = np.array(
+            [np.dot(np.dot(a, self.Q), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
+        int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33 = map(
+            list, zip(*integrands.reshape(*integrands.shape[:1], -1)))
+        integrand_split = [int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30,
+                           int31, int32, int33]
+        # calculate integral numerically using simpsons rule
+        self.Q_delta = np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
+        return np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
+
     def hx(self, x):
         return self.H.dot(x)
 
@@ -75,24 +95,20 @@ class FrequencyExtractorEKF(ExtendedKalmanFilter):
         self.x0 = x0
         self.P0 = P0
         self.x = state_vec
-        self.fxu = lambda t: np.array([np.cos(self.x[2] * t) * self.x[0] - np.sin(self.x[2] * t) * self.x[1],
-                                       np.sin(self.x[2] * t) * self.x[0] + np.cos(self.x[2] * t) * self.x[1],
-                                       self.x[2]])
-        self.F = lambda t: np.array([[np.cos(self.x[2] * t), -np.sin(self.x[2] * t),
-                                      -np.sin(self.x[2] * t) * self.x[0] * t - np.cos(self.x[2] * t) * self.x[
-                                          1] * t],
-                                     [np.sin(self.x[2] * t), np.cos(self.x[2] * t),
-                                      np.cos(self.x[2] * t) * self.x[0] * t - np.sin(self.x[2] * t) * self.x[
-                                          1] * t],
-                                     [0, 0, 1]])
+        self.fxu = lambda t, x: np.array([np.cos(x[2]) * x[0] - np.sin(x[2]) * x[1],
+                                          np.sin(x[2]) * x[0] + np.cos(x[2]) * x[1],
+                                          x[2]])
+        self.F = lambda t, x: np.array([[np.cos(x[2]), -np.sin(x[2]), -np.sin(x[2])*x[0]-np.cos(x[2])*x[1]],
+                                        [np.sin(x[2]), np.cos(x[2]), np.cos(x[2])*x[0]-np.sin(x[2])*x[1]],
+                                        [0, 0, 1]])
 
     def predict(self, u=0):
         self.x = self.move()
         self.t += self.dt
-        self.P = np.dot(self.F(self.t), self.P).dot(self.F(self.t).T) + self.Q
+        self.P = np.dot(self.F(self.t, self.x), self.P).dot(self.F(self.t, self.x).T) + self.Q
         # save prior
         self.x_prior = np.copy(self.x)
         self.P_prior = np.copy(self.P)
 
     def move(self):
-        return self.fxu(self.t)
+        return self.fxu(self.t, self.x)

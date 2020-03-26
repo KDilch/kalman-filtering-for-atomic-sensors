@@ -15,7 +15,7 @@ from history_manager.frequency_extractor_history_manager import Filter_History_M
 
 def run__frequency_extractor(*args):
 
-    # Logger for storing errors and logs in seprate file, creates separate folder
+    # Logger for storing errors and logs in seperate file, creates separate folder
     logger = logging.getLogger(__name__)
     logger.info('Starting execution of run-frequency-extractor command.')
 
@@ -40,8 +40,7 @@ def run__frequency_extractor(*args):
                  )
                 )
 
-    num_iter_sensor = (2 * np.pi * config.simulation['number_periods'] /
-                       config.physical_parameters['larmour_freq']) / config.simulation['dt_sensor']
+    num_iter_sensor = config.simulation['num_iter_sensor']
     num_iter_filter = np.int(np.floor_divide(num_iter_sensor * config.simulation['dt_sensor'],
                                              config.filter['dt_filter']))
 
@@ -66,25 +65,25 @@ def run__frequency_extractor(*args):
     # SIMULATING DYNAMICS=====================================================
 
     state = FrequencySensorState(initial_vec=np.array([config.simulation['x1'],
-                                                    config.simulation['x2'],
-                                                    config.simulation['x3']]),
-                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0.],
-                                                           cov=Q,
-                                                           dt=config.simulation['dt_sensor']),
-                              initial_time=0,
-                              time_arr=time_arr,
-                              dt=config.simulation['dt_sensor'])
+                                                       config.simulation['x2'],
+                                                       config.simulation['x3']]),
+                                 noise_vec=GaussianWhiteNoise(mean=[0., 0., 0.],
+                                                              cov=Q,
+                                                              dt=config.simulation['dt_sensor']),
+                                 initial_time=0,
+                                 time_arr=time_arr,
+                                 dt=config.simulation['dt_sensor'])
 
     sensor = FrequencySensor(state,
-                          sensor_noise=GaussianWhiteNoise(mean=0.,
-                                                          cov=R / config.simulation['dt_sensor'],
-                                                          dt=config.simulation['dt_sensor']),
-                          H=H,
-                          dt=config.simulation['dt_sensor'])
+                             sensor_noise=GaussianWhiteNoise(mean=0.,
+                                                             cov=R / config.simulation['dt_sensor'],
+                                                             dt=config.simulation['dt_sensor']),
+                             H=H,
+                             dt=config.simulation['dt_sensor'])
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
     zs_filter_freq = zs[::every_nth_z]
-    x_filter_freq = sensor.state_vec_full_history[::every_nth_z]
+    # x_filter_freq = sensor.state_vec_full_history[::every_nth_z]
 
     # KALMAN FILTER====================================================
     # unscented_kf_model = Unscented_KF(fx=compute_fx_at_time_t(0),

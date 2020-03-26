@@ -77,9 +77,9 @@ class FrequencySensorState(State):
         self._time = t
         self._logger.debug('Performing a step for time %r' % str(self._time))
         index = np.where(self.time_arr == t)[0][0]
-        self._mean_state_vec = np.array([np.cos(self.mean_state_vec[2]*t)*self.mean_state_vec[0]-np.sin(self.mean_state_vec[2]*t)*self.mean_state_vec[1],
-                                         np.sin(self.mean_state_vec[2]*t)*self.mean_state_vec[0]+np.cos(self.mean_state_vec[2]*t)*self.mean_state_vec[1],
+        self._mean_state_vec = np.array([np.cos(self.mean_state_vec[2])*self.mean_state_vec[0]-np.sin(self.mean_state_vec[2])*self.mean_state_vec[1],
+                                         np.sin(self.mean_state_vec[2])*self.mean_state_vec[0]+np.cos(self.mean_state_vec[2])*self.mean_state_vec[1],
                                          self.mean_state_vec[2]])
-        # self._mean_state_vec[2] = self.sin_signal[index]
+        # self._mean_state_vec[2] = self.sawtooth_signal[index]
         self._state_vec = self._mean_state_vec + self.noise_vec.step()
         return
