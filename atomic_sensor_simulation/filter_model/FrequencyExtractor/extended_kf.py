@@ -32,7 +32,6 @@ class Extended_KF(Model):
         self.H = H
         self.H_inverse = np.linalg.pinv(np.array(H, dtype=np.float))
         self.x0, self.P0 = self.calculate_x0_and_P0(z0)
-        self.x0=np.array([2,2,0.1])
         self.num_terms = num_terms
         self.dim_x = len(self.x0)
         self.time_arr = time_arr
@@ -58,7 +57,8 @@ class Extended_KF(Model):
         return np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
 
     def hx(self, x):
-        return self.H.dot(x)
+        a = np.dot(self.H, x)
+        return np.dot(self.H, x)
 
     def HJacobianat(self, x):
         return self.H
@@ -82,7 +82,8 @@ class Extended_KF(Model):
 
     def calculate_x0_and_P0(self, z0):
         x0 = np.dot(self.H_inverse, z0)
-        print(x0)
+        x0[1] = 1.
+        print("x0 - filter:", x0)
         cov_x0 = self.Q + np.dot(np.dot(self.H_inverse, self.R_delta), np.transpose(self.H_inverse))
         print(cov_x0)
         return x0, cov_x0
@@ -95,17 +96,21 @@ class FrequencyExtractorEKF(ExtendedKalmanFilter):
         self.x0 = x0
         self.P0 = P0
         self.x = state_vec
-        self.fxu = lambda t, x: np.array([np.cos(x[2]) * x[0] - np.sin(x[2]) * x[1],
-                                          np.sin(x[2]) * x[0] + np.cos(x[2]) * x[1],
+        self.fxu = lambda t, x: np.array([np.cos(x[2]*self.dt) * x[0] - np.sin(x[2]*self.dt) * x[1],
+                                          np.sin(x[2]*self.dt) * x[0] + np.cos(x[2]*self.dt) * x[1],
                                           x[2]])
-        self.F = lambda t, x: np.array([[np.cos(x[2]), -np.sin(x[2]), -np.sin(x[2])*x[0]-np.cos(x[2])*x[1]],
-                                        [np.sin(x[2]), np.cos(x[2]), np.cos(x[2])*x[0]-np.sin(x[2])*x[1]],
-                                        [0, 0, 1]])
+        # self.F = lambda t, x: np.array([[np.cos(x[2]*self.dt), -np.sin(x[2]*self.dt), -np.sin(x[2]*self.dt)*x[0]*self.dt-np.cos(x[2]*self.dt)*x[1]*self.dt],
+        #                                 [np.sin(x[2]*self.dt), np.cos(x[2]*self.dt), np.cos(x[2]*self.dt)*x[0]*self.dt-np.sin(x[2]*self.dt)*x[1]*self.dt],
+        #                                 [0, 0, 1]])
+    def F_func(self, x):
+        return np.array([[np.cos(x[2]*self.dt), -np.sin(x[2]*self.dt), -np.sin(x[2]*self.dt)*x[0]*self.dt-np.cos(x[2]*self.dt)*x[1]*self.dt],
+                                        [np.sin(x[2]*self.dt), np.cos(x[2]*self.dt), np.cos(x[2]*self.dt)*x[0]*self.dt-np.sin(x[2]*self.dt)*x[1]*self.dt],
+                                        [0, 0, 1]], dtype=float)
 
     def predict(self, u=0):
         self.x = self.move()
         self.t += self.dt
-        self.P = np.dot(self.F(self.t, self.x), self.P).dot(self.F(self.t, self.x).T) + self.Q
+        self.P = np.dot(np.dot(self.F_func(self.x), self.P), np.transpose(self.F_func(self.x))) + self.Q
         # save prior
         self.x_prior = np.copy(self.x)
         self.P_prior = np.copy(self.P)

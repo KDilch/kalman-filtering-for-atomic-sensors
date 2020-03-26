@@ -2,22 +2,22 @@ from types import SimpleNamespace
 config = SimpleNamespace()
 
 config.simulation = {
-    'num_iter_sensor': 200,
+    'num_iter_sensor': 300,
     'number_periods': 30,
-    'dt_sensor': 1.,
+    'dt_sensor': 0.05,
     'x1': 1.,
-    'x2': 0.,
-    'x3': 0.471239
+    'x2': 1.,
+    'x3': 0.
 }
 
 config.filter = {
-    'dt_filter': 1.
+    'dt_filter': 0.05
 }
 
 config.noise_and_measurement = {
     'Qx1': 0.,
     'Qx2': 0.,
-    'Qx3': 0.01,
-    'R': 0.01
+    'Qx3': 0.001,
+    'R': 0.0001
 }
 

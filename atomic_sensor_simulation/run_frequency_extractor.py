@@ -126,7 +126,8 @@ def run__frequency_extractor(*args):
         # unscented_kf_history_manager.add_entry(index)
 
         extended_kf_filterpy.predict()
-        extended_kf_filterpy.update(z, Hx=extended_kf_model.hx, HJacobian=extended_kf_model.HJacobianat)
+        print(H, "H")
+        extended_kf_filterpy.update(z, HJacobian=lambda x: H, Hx=lambda x: np.dot(H, x))
         extended_kf_history_manager.add_entry(index)
 
     # PLOTS=========================================================

@@ -31,7 +31,8 @@ class FrequencySensorState(State):
                        in this case they are: atoms_wiener_const, g_a_coupling_const
         """
         self.__time = initial_time
-
+        self.slope = None
+        self.shift = None
         State.__init__(self,
                        initial_vec,
                        noise_vec,
@@ -73,13 +74,24 @@ class FrequencySensorState(State):
         """Returns a numpy array representing a noise vector [noise_j, noise_q]."""
         return self._noise_vec
 
+    def linear_freq_change(self, t):
+        if not self.slope:
+            self.slope = 0.2
+        if (t>self.time_arr[100]) and (t<self.time_arr[-100]):
+            x = self.slope*t - self.slope*self.time_arr[100]
+        elif t<self.time_arr[100]:
+            x = 0.
+        else:
+            x=self.mean_state_vec[2]
+        return x
+
     def step(self, t):
         self._time = t
         self._logger.debug('Performing a step for time %r' % str(self._time))
         index = np.where(self.time_arr == t)[0][0]
-        self._mean_state_vec = np.array([np.cos(self.mean_state_vec[2])*self.mean_state_vec[0]-np.sin(self.mean_state_vec[2])*self.mean_state_vec[1],
-                                         np.sin(self.mean_state_vec[2])*self.mean_state_vec[0]+np.cos(self.mean_state_vec[2])*self.mean_state_vec[1],
+        self._mean_state_vec = np.array([np.cos(self.mean_state_vec[2]*self._dt)*self.mean_state_vec[0]-np.sin(self.mean_state_vec[2]*self._dt)*self.mean_state_vec[1],
+                                         np.sin(self.mean_state_vec[2]*self._dt)*self.mean_state_vec[0]+np.cos(self.mean_state_vec[2]*self._dt)*self.mean_state_vec[1],
                                          self.mean_state_vec[2]])
-        # self._mean_state_vec[2] = self.sawtooth_signal[index]
+        self._mean_state_vec[2] = self.linear_freq_change(t)
         self._state_vec = self._mean_state_vec + self.noise_vec.step()
         return
