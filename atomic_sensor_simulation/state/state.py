@@ -96,6 +96,6 @@ class State(ABC):
         self._logger.debug('Performing a step for time %r' % str(self._time))
         index = np.where(self.time_arr == t)[0][0]
         self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self._dt
-        self._mean_state_vec[2] = self.sin_signal[index]
+        # self._mean_state_vec[2] = self.sin_signal[index]
         self._state_vec = self._mean_state_vec + self.noise_vec.step()
         return

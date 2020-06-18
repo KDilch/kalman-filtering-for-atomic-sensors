@@ -12,6 +12,7 @@ from filter_model.AtomicSensor.unscented_kf import Unscented_KF
 from filter_model.AtomicSensor.extented_kf import Extended_KF
 from atomic_sensor_simulation.utilities import calculate_error, eval_matrix_of_functions
 from atomic_sensor_simulation.helper_functions.plot_all_atomic_sensor import plot__all_atomic_sensor
+from atomic_sensor_simulation.helper_functions.save_all_simulation_data import save_data
 from history_manager.atomic_sensor_history_manager import Filter_History_Manager, SteadyStateHistoryManager
 from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
 
@@ -233,13 +234,24 @@ def run__atomic_sensor(*args):
         steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
     # PLOT DATA
-    plot__all_atomic_sensor(sensor,
-                            time_arr_filter,
-                            time_arr,
-                            lkf_num_history_manager,
-                            lkf_expint_approx_history_manager,
-                            lkf_exp_approx_history_manager,
-                            extended_kf_history_manager,
-                            unscented_kf_history_manager,
-                            steady_state_history_manager,
-                            args)
+    # plot__all_atomic_sensor(sensor,
+    #                         time_arr_filter,
+    #                         time_arr,
+    #                         lkf_num_history_manager,
+    #                         lkf_expint_approx_history_manager,
+    #                         lkf_exp_approx_history_manager,
+    #                         extended_kf_history_manager,
+    #                         unscented_kf_history_manager,
+    #                         steady_state_history_manager,
+    #                         args)
+
+    # SAVE DATA TO A FILE
+    save_data(sensor,
+              time_arr_filter,
+              time_arr,
+              lkf_num_history_manager,
+              extended_kf_history_manager,
+              unscented_kf_history_manager,
+              steady_state_history_manager,
+              args,
+              './data')

@@ -97,6 +97,16 @@ def generate_data_arr_for_plotting(all_xs, all_ys, labels, bools):
     return selected_xs, selected_ys, selected_labels
 
 
+def generate_data_arr_for_saving(all_data, labels, bools):
+    import pandas as pd
+    data = {}
+    for index, bool in enumerate(bools):
+        if bool:
+            data.update({labels[index]: all_data[index]})
+    data_frame = pd.DataFrame(data)
+    return data_frame
+
+
 class operable:
 
     def __init__(self, f):
