@@ -188,7 +188,6 @@ def run__atomic_sensor(*args):
 
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
-        extended_kf_filterpy.set_F(F=lkf_num.F)
         extended_kf_filterpy.set_Q(Q=lkf_num.Q)
         extended_kf_filterpy.predict()
         extended_kf_filterpy.update(z, extended_kf_model.HJacobianat, extended_kf_model.hx)
@@ -234,16 +233,16 @@ def run__atomic_sensor(*args):
         steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
     # PLOT DATA
-    # plot__all_atomic_sensor(sensor,
-    #                         time_arr_filter,
-    #                         time_arr,
-    #                         lkf_num_history_manager,
-    #                         lkf_expint_approx_history_manager,
-    #                         lkf_exp_approx_history_manager,
-    #                         extended_kf_history_manager,
-    #                         unscented_kf_history_manager,
-    #                         steady_state_history_manager,
-    #                         args)
+    plot__all_atomic_sensor(sensor,
+                            time_arr_filter,
+                            time_arr,
+                            lkf_num_history_manager,
+                            lkf_expint_approx_history_manager,
+                            lkf_exp_approx_history_manager,
+                            extended_kf_history_manager,
+                            unscented_kf_history_manager,
+                            steady_state_history_manager,
+                            args)
 
     # SAVE DATA TO A FILE
     save_data(sensor,

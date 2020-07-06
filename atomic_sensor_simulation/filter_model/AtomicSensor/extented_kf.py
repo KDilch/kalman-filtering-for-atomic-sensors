@@ -54,6 +54,8 @@ class Extended_KF(Model):
                                    dt=self.dt,
                                    x0=self.x0,
                                    P0=self.P0,
+                                   F=self.F,
+                                   time_resolution_ode_solver=30,
                                    **kwargs)
         filterpy.x = self.x0
         filterpy.P = self.P0
@@ -64,7 +66,7 @@ class Extended_KF(Model):
 
 
 class AtomicSensorEKF(ExtendedKalmanFilter):
-    def __init__(self, dim_x, dim_z, dt, x0, P0, **kwargs):
+    def __init__(self, dim_x, dim_z, dt, x0, P0, F, time_resolution_ode_solver,**kwargs):
         ExtendedKalmanFilter.__init__(self, dim_x, dim_z)
         self.dt = dt
         self.t = 0
@@ -76,25 +78,11 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.__spin_correlation_const = kwargs['spin_correlation_const']
         self.x0 = x0
         self.P0 = P0
-
-        jy, jz, q, p, deltat, time = sympy.symbols('jy, jz, q, p, deltat, time')
-        self.x = sympy.Matrix([[jy], [jz], [q], [p]])
-
-        self.F_sympy = sympy.Matrix([[-self.__spin_correlation_const, self.__larmour_freq, 0, 0],
-                    [-self.__larmour_freq,
-                     -self.__spin_correlation_const,
-                     self.__coupling_amplitude*sympy.cos(self.__coupling_freq*time + self.__coupling_phase_shift),
-                     self.__coupling_amplitude*sympy.sin(self.__coupling_freq*time + self.__coupling_phase_shift)],
-                    [0, 0, -self.__light_correlation_const, 0],
-                    [0, 0, 0, -self.__light_correlation_const]])
-        self.fxu = self.x + self.F_sympy*self.x*deltat
-        self.fJacobian_at_x = self.fxu.jacobian(sympy.Matrix([jy, jz, q, p]))
-        self.subs = {jy: self.x0[0], jz: self.x0[1], q: self.x0[2], p: self.x0[3], time: 0, deltat: dt}
-        self.jy, self.jz, self.q, self.p = jy, jz, q, p
-        self.time = time
-
-    def set_F(self, F):
         self.F = F
+        self.time_resolution = time_resolution_ode_solver
+
+    def set_fxu(self, fxu):
+        self.fxu = fxu
         return
 
     def set_Q(self, Q):
@@ -102,24 +90,48 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         return
 
     def predict(self, u=0):
-        self.x = self.move()
+        self.x = self.predict_x_ode_solve(from_time=self.t, time_resolution=self.time_resolution)
+        self.P = self.predict_cov_ode_solve(from_time=self.t, time_resolution=self.time_resolution)
         self.t += self.dt
-        self.P = np.dot(self.F, self.P).dot(self.F.T) + self.Q
         # save prior
         self.x_prior = np.copy(self.x)
         self.P_prior = np.copy(self.P)
 
-    def move(self):
-        # self.x = np.dot(self.F, self.x)
-        # return self.x
-        fxu_current = self.x
-        for i in np.linspace(self.t, self.t+self.dt, num=1, endpoint=True):
-            smaller_dt = self.dt
-            fxu_current = self.x + self.F_sympy*self.x*smaller_dt
-            self.x = fxu_current.evalf(subs=self.subs)
-            self.subs[self.jy] = self.x[0]
-            self.subs[self.jz] = self.x[1]
-            self.subs[self.q] = self.x[2]
-            self.subs[self.p] = self.x[3]
-            self.subs[self.time] = self.t
-        return fxu_current.evalf(subs=self.subs)
+    def predict_x_ode_solve(self, from_time, time_resolution=30):
+        x0 = np.array(np.reshape(self.x, 4), dtype=np.float64)
+        def dxdt(x,t):
+            return np.reshape(np.dot(np.array(eval_matrix_of_functions(self.F, t), dtype=float),
+                                     np.reshape(x, (4, -1))), 4)
+
+        t = np.linspace(from_time, from_time + self.dt, num=time_resolution)  # times to report solution
+        # store solution
+        x = None
+        # solve ODE
+        for i in range(1, time_resolution):
+            # span for next time step
+            tspan = [t[i - 1], t[i]]
+            # solve for next step
+            x = odeint(dxdt, x0, tspan)
+            # next initial condition
+            x0 = x[1]
+        return np.reshape(x[1], (4, -1))
+
+    def predict_cov_ode_solve(self, from_time, time_resolution=30):
+        P0 = np.reshape(self.P,  16)
+        def dPdt(P,t):
+            result = np.dot(np.array(eval_matrix_of_functions(self.F, t), dtype=float), np.reshape(P, (4, 4))) +\
+            np.dot(np.reshape(P, (4, 4)), np.transpose(np.array(eval_matrix_of_functions(self.F, t), dtype=float))) +\
+                self.Q
+            return np.reshape(result, 16)
+        t = np.linspace(from_time, from_time + self.dt, num=time_resolution)  # times to report solution
+        # store solution
+        P = None
+        # solve ODE
+        for i in range(1, time_resolution):
+            # span for next time step
+            tspan = [t[i - 1], t[i]]
+            # solve for next step
+            P = odeint(dPdt, P0, tspan)
+            # next initial condition
+            P0 = P[1]
+        return np.reshape(P[1], (4, 4))
