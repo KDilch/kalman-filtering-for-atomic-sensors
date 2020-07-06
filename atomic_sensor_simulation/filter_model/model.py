@@ -10,6 +10,7 @@ class Model(ABC):
     def __init__(self,
                  Q,
                  R,
+                 R_delta,
                  Gamma,
                  u,
                  z0,
@@ -18,7 +19,8 @@ class Model(ABC):
         self._logger = logger or logging.getLogger(__name__)
         self.dt = dt
         self.Q = Q
-        self.R_delta = R
+        self.R_delta = R_delta
+        self.R = R
         self.dim_z = len(z0)
         self.u_control_vec = u
         self.Gamma_control_transition_matrix = Gamma

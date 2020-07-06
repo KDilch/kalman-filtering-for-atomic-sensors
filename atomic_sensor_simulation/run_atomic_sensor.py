@@ -104,6 +104,7 @@ def run__atomic_sensor(*args):
                           dt=config.simulation['dt_sensor'])
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
+    logger.info('Filter frequency is  %r'%every_nth_z)
     zs_filter_freq = zs[::every_nth_z]
     x_filter_freq = sensor.state_vec_full_history[::every_nth_z]
 
@@ -112,7 +113,8 @@ def run__atomic_sensor(*args):
     linear_kf_model = Linear_KF(F=state.F_transition_matrix,
                                 Q=Q,
                                 H=H,
-                                R=R / config.filter['dt_filter'],
+                                R=R,
+                                R_delta=R / config.filter['dt_filter'],
                                 Gamma=state.Gamma_control_evolution_matrix,
                                 u=state.u_control_vec,
                                 z0=[zs[0]],
@@ -132,8 +134,9 @@ def run__atomic_sensor(*args):
 
     unscented_kf_model = Unscented_KF(F=state.F_transition_matrix,
                                       Q=linear_kf_model.Q_delta,
+                                      R=R,
                                       H=H,
-                                      R=R / config.filter['dt_filter'],
+                                      R_delta=R / config.filter['dt_filter'],
                                       Gamma=state.Gamma_control_evolution_matrix,
                                       u=state.u_control_vec,
                                       z0=[zs[0]],
@@ -143,8 +146,9 @@ def run__atomic_sensor(*args):
 
     extended_kf_model = Extended_KF(F=state.F_transition_matrix,
                                     H=H,
-                                    Q=linear_kf_model.Q_delta,
-                                    R=R / config.filter['dt_filter'],
+                                    Q=Q,
+                                    R=R,
+                                    R_delta=R / config.filter['dt_filter'],
                                     Gamma=state.Gamma_control_evolution_matrix,
                                     u=state.u_control_vec,
                                     z0=[zs[0]],
@@ -188,8 +192,8 @@ def run__atomic_sensor(*args):
 
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
-        extended_kf_filterpy.set_Q(Q=lkf_num.Q)
-        extended_kf_filterpy.predict()
+
+        extended_kf_filterpy.predict_discretization_first()
         extended_kf_filterpy.update(z, extended_kf_model.HJacobianat, extended_kf_model.hx)
         extended_kf_history_manager.add_entry(index)
 
@@ -199,10 +203,10 @@ def run__atomic_sensor(*args):
         unscented_kf_history_manager.add_entry(index)
 
         lkf_num.predict()
-        lkf_num.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time)
-        lkf_num.Q = linear_kf_model.compute_Q_delta_sympy(from_time=time,
-                                                          Phi_0=lkf_num.F,
-                                                          num_terms=30)
+        # lkf_num.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time)
+        # lkf_num.Q = linear_kf_model.compute_Q_delta_sympy(from_time=time,
+        #                                                   Phi_0=lkf_num.F,
+        #                                                   num_terms=30)
         # lkf_expint_approx.predict()
         # lkf_expint_approx.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time)
         # lkf_exp_approx.predict()

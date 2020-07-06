@@ -13,7 +13,7 @@ class Extended_KF(Model):
     def __init__(self,
                  Q,
                  H,
-                 R,
+                 R_delta,
                  Gamma,
                  u,
                  z0,
@@ -24,7 +24,7 @@ class Extended_KF(Model):
 
         Model.__init__(self,
                        Q=Q,
-                       R=R,
+                       R_delta=R_delta,
                        Gamma=Gamma,
                        u=u,
                        z0=z0,

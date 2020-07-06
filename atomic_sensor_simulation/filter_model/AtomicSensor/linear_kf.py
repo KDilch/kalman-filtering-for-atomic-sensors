@@ -20,6 +20,7 @@ class Linear_KF(Model):
                  Q,
                  H,
                  R,
+                 R_delta,
                  Gamma,
                  u,
                  z0,
@@ -29,6 +30,7 @@ class Linear_KF(Model):
                  **kwargs
                  ):
         self._F = F
+        self.t = 0
         self._x_jac = None
         self.Q = Q
         self.H = H
@@ -43,6 +45,7 @@ class Linear_KF(Model):
         Model.__init__(self,
                        Q=Q,
                        R=R,
+                       R_delta=R_delta,
                        Gamma=Gamma,
                        u=u,
                        z0=z0,
@@ -57,6 +60,16 @@ class Linear_KF(Model):
             self.x0 = x0
             self.P0 = P0
         self.dim_x = len(self.x0)
+
+    def predict(self, u=None, B=None, F=None, Q=None):
+        self.Phi = self.compute_Phi_delta_solve_ode_numerically(from_time=self.t, time_resolution=self.time_resolution)
+        self.Q_delta = self.compute_Q_delta_sympy(from_time=self.t, Phi_0=self.Phi, num_terms=self.time_resolution)
+        self.x = np.dot(self.Phi, self.x)
+        self.P = np.dot(np.dot(self.Phi, self.P), self.Phi.T) + self.Q_delta
+        self.t += self.dt
+        # save prior
+        self.x_prior = np.copy(self.x)
+        self.P_prior = np.copy(self.P)
 
     def compute_Q_delta_sympy(self, from_time, Phi_0, num_terms=30):
         def dPhidt(Phi, t):

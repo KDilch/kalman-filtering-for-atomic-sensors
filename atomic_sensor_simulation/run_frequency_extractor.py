@@ -99,7 +99,7 @@ def run__frequency_extractor(*args):
 
     extended_kf_model = Extended_KF(Q=Q,
                                     H=H,
-                                    R=R / config.filter['dt_filter'],
+                                    R_delta=R / config.filter['dt_filter'],
                                     Gamma=state.Gamma_control_evolution_matrix,
                                     u=state.u_control_vec,
                                     z0=[zs[0]],
