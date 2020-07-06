@@ -13,6 +13,7 @@ def save_data(sensor,
               extended_kf_history_manager,
               unscented_kf_history_manager,
               steady_state_history_manager,
+              zs_filter_freq,
               args,
               file_basename):
     # PLOTS=========================================================
@@ -23,6 +24,7 @@ def save_data(sensor,
 
     labels_filter = ['time_arr_filter',
                      'jy_lin', 'jy_ext', 'jy_unsc', 'jy_err_lin', 'jy_err_ext', 'jy_err_unsc', 'jy_steady_err',
+                     'z',
                      'jz_lin', 'jz_ext', 'jz_unsc', 'jz_err_lin', 'jz_err_ext', 'jz_err_unsc', 'jz_steady_err',
                      'q_lin', 'q_ext', 'q_unsc', 'q_err_lin', 'q_err_ext', 'q_err_unsc', 'q_steady_err',
                      'p_lin', 'p_ext', 'p_unsc', 'p_err_lin', 'p_err_ext', 'p_err_unsc', 'p_steady_err']
@@ -38,6 +40,7 @@ def save_data(sensor,
                                                                  extended_kf_history_manager.jys_err_post,
                                                                  unscented_kf_history_manager.jys_err_post,
                                                                  steady_state_history_manager.steady_posts_jy,
+                                                                 zs_filter_freq,
                                                                  lkf_num_history_manager.jzs,
                                                                  extended_kf_history_manager.jzs,
                                                                  unscented_kf_history_manager.jzs,
@@ -69,6 +72,7 @@ def save_data(sensor,
                                                                            args[0].ekf,
                                                                            args[0].ukf,
                                                                            True,
+                                                                           True,
                                                                            args[0].lkf_num,
                                                                            args[0].ekf,
                                                                            args[0].ukf,
@@ -95,11 +99,16 @@ def save_data(sensor,
                                                                      j_z_full_history,
                                                                      q_q_full_history,
                                                                      q_p_full_history]),
-                                                       labels=labels_filter,
+                                                       labels=['time',
+                                                               'Jy',
+                                                               'Jz',
+                                                               'q',
+                                                               'p'],
                                                        bools=[True,
                                                               True,
                                                               True,
+                                                              True,
                                                               True])
-        all_data_filter.to_csv(file_basename + '_kf.csv', sep='\t', na_rep='Unknown')
-        all_data_simulation.to_csv(file_basename + '_sim.csv', sep='\t', na_rep='Unknown')
+        all_data_filter.to_csv(file_basename + '_kf_gp_150_wp_0.csv', sep='\t', na_rep='Unknown')
+        all_data_simulation.to_csv(file_basename + '_sim_gp_150_wp_0.csv', sep='\t', na_rep='Unknown')
     return

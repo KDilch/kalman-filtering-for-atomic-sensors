@@ -253,5 +253,6 @@ def run__atomic_sensor(*args):
               extended_kf_history_manager,
               unscented_kf_history_manager,
               steady_state_history_manager,
+              np.transpose(zs_filter_freq[1:])[0],
               args,
               './data')
