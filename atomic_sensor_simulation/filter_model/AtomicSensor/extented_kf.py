@@ -201,7 +201,7 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         def dPdt(P,t):
             result = np.dot(np.array(eval_matrix_of_functions(self.F, t), dtype=float), np.reshape(P, (4, 4))) +\
             np.dot(np.reshape(P, (4, 4)), np.transpose(np.array(eval_matrix_of_functions(self.F, t), dtype=float))) +\
-                self.Q - np.dot(np.dot(np.dot(np.dot(np.reshape(P, (4, 4)), np.transpose(self.H)), np.linalg.inv(self.R)), self.H), np.reshape(P, (4, 4)))
+                self.Q - np.dot(np.dot(np.dot(np.dot(np.reshape(P, (4, 4)), np.transpose(self.H)), np.linalg.inv(self.R_delta)), self.H), np.reshape(P, (4, 4)))
             return np.reshape(result, 16)
         t = np.linspace(from_time, from_time + self.dt, num=time_resolution)  # times to report solution
         # store solution
@@ -221,7 +221,7 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         z = reshape_z(z, self.dim_z, self.x.ndim)
 
         if R is None:
-            R = self.R_delta
+            R = self.R
         elif np.isscalar(R):
             R = np.eye(self.dim_z) * R
 

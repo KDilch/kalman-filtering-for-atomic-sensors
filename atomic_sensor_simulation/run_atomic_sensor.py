@@ -193,8 +193,12 @@ def run__atomic_sensor(*args):
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
 
-        extended_kf_filterpy.predict_discretization_first()
-        extended_kf_filterpy.update(z, extended_kf_model.HJacobianat, extended_kf_model.hx)
+        extended_kf_filterpy.predict()
+        extended_kf_filterpy.set_Q(lkf_num.Q) # THIS LINE NEEDS TO BE ADDED IF LINEARIZATION FIRST
+        extended_kf_filterpy.update(z,
+                                    extended_kf_model.HJacobianat,
+                                    extended_kf_model.hx,
+                                    R=extended_kf_filterpy.R_delta)
         extended_kf_history_manager.add_entry(index)
 
         unscented_kf_model.set_Q(Q=lkf_num.Q)
