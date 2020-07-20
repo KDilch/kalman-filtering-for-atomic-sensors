@@ -41,8 +41,8 @@ class Unscented_KF(Model):
     def compute_fx_at_time_t(self, t):
         F_t = eval_matrix_of_functions(self.F, t)
 
-        def fx(x, dt):
-            return x + F_t.dot(x) * dt
+        def fx(x):
+            return x + F_t.dot(x) 
 
         return fx
 
