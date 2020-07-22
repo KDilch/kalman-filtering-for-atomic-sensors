@@ -3,7 +3,7 @@ import numpy as np
 from utilities import compute_squred_error_from_covariance
 
 class Filter_History_Manager(object):
-    def __init__(self, filter_obj, num_iter_filter):
+    def __init__(self, filter_obj, num_iter_filter, config, time):
         self.__filter_obj = filter_obj
         self.__jys = np.zeros(num_iter_filter)
         self.__jys_err_prior = np.zeros(num_iter_filter)
@@ -17,6 +17,16 @@ class Filter_History_Manager(object):
         self.__ps = np.zeros(num_iter_filter)
         self.__ps_err_prior = np.zeros(num_iter_filter)
         self.__ps_err_post = np.zeros(num_iter_filter)
+        self.__zs_est = np.zeros(num_iter_filter)
+        self.__waveform_est = np.zeros(num_iter_filter)
+        self.__waveform_est_err = np.zeros(num_iter_filter)
+        self.__time = time
+        self.config = config
+        self.sigma_D = np.sqrt(self.config.noise_and_measurement['QD']/self.config.filter['dt_filter'])
+
+    @property
+    def time(self):
+        return self.__time
 
     @property
     def jys(self):
@@ -65,6 +75,18 @@ class Filter_History_Manager(object):
     def ps_err_post(self):
         return self.__ps_err_post
 
+    @property
+    def zs(self):
+        return self.__zs_est
+
+    @property
+    def waveform_est(self):
+        return self.__waveform_est
+
+    @property
+    def waveform_est_err(self):
+        return self.__waveform_est_err
+
     def add_entry(self, index):
         self.__jys[index] = self.__filter_obj.x[0]
         self.__jzs[index] = self.__filter_obj.x[1]
@@ -78,7 +100,9 @@ class Filter_History_Manager(object):
         self.__jzs_err_post[index] = compute_squred_error_from_covariance(self.__filter_obj.P_post, index=1)
         self.__qs_err_post[index] = compute_squred_error_from_covariance(self.__filter_obj.P_post, index=2)
         self.__ps_err_post[index] = compute_squred_error_from_covariance(self.__filter_obj.P_post, index=3)
-
+        self.__zs_est[index] = self.config.noise_and_measurement['gD']*self.__jzs[index]/self.sigma_D
+        self.__waveform_est[index] = self.config.noise_and_measurement['gD']*self.config.coupling['g_p']*(np.cos(self.config.coupling['omega_p']*self.time[index])*self.__qs[index]+np.sin(self.config.coupling['omega_p']*self.time[index])*self.__ps[index])/self.sigma_D
+        self.__waveform_est_err[index] = self.config.coupling['g_p']**2*(np.cos(self.config.coupling['omega_p']*self.time[index])**2*self.__qs_err_post[index]**2+np.sin(self.config.coupling['omega_p']*self.time[index])**2*self.__ps_err_post[index]**2)
 
 class SteadyStateHistoryManager(object):
     def __init__(self, num_iter_filter):
@@ -90,6 +114,7 @@ class SteadyStateHistoryManager(object):
         self.__steady_posts_q = np.zeros(num_iter_filter)
         self.__steady_priors_p = np.zeros(num_iter_filter)
         self.__steady_posts_p = np.zeros(num_iter_filter)
+        self.__steady_waveform_err = np.zeros(num_iter_filter)
 
     @property
     def steady_priors_jy(self):
@@ -123,6 +148,10 @@ class SteadyStateHistoryManager(object):
     def steady_posts_p(self):
         return self.__steady_posts_p
 
+    @property
+    def steady_waveform_err(self):
+        return self.__steady_waveform_err
+
     def add_entry(self, steady_prior, steady_post, index):
         self.__steady_priors_jy[index] = compute_squred_error_from_covariance(steady_prior, 0)
         self.__steady_priors_jz[index] = compute_squred_error_from_covariance(steady_prior, 1)
@@ -132,3 +161,4 @@ class SteadyStateHistoryManager(object):
         self.__steady_posts_jz[index] = compute_squred_error_from_covariance(steady_post, 1)
         self.__steady_posts_q[index] = compute_squred_error_from_covariance(steady_post, 2)
         self.__steady_posts_p[index] = compute_squred_error_from_covariance(steady_post, 3)
+        self.__steady_waveform_err[index] = self.__steady_posts_p[index]+self.steady_posts_q[index]

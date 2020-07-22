@@ -98,6 +98,8 @@ class AtomicSensorState(State):
                        x_jacobian=x_JACOBIAN,
                        dt=dt,
                        time=initial_time,
+                       gp=self.__coupling_amplitude,
+                       omega_p=self.__coupling_freq,
                        u_control_vec=np.array([create_operable_const_func(0.),
                                                create_operable_const_func(0.),
                                                create_operable_const_func(0.),

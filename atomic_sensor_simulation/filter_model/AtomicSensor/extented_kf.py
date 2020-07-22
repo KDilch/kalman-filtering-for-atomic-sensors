@@ -4,6 +4,8 @@ from filterpy.kalman import ExtendedKalmanFilter
 from scipy.integrate import odeint, simps
 import numpy as np
 import copy
+import numdifftools
+from scipy.signal import square, sawtooth
 from scipy.linalg import expm
 from atomic_sensor_simulation.filter_model.model import Model
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions
@@ -80,6 +82,7 @@ class Extended_KF(Model):
                                    R=self.R,
                                    R_delta=self.R_delta,
                                    time_resolution_ode_solver=10,
+                                   time_arr=self.time_arr,
                                    **kwargs)
         filterpy.x = self.x0
         filterpy.P = self.P0
@@ -90,7 +93,7 @@ class Extended_KF(Model):
 
 
 class AtomicSensorEKF(ExtendedKalmanFilter):
-    def __init__(self, dim_x, dim_z, dt, x0, P0, F, H, R, R_delta, time_resolution_ode_solver, **kwargs):
+    def __init__(self, dim_x, dim_z, dt, x0, P0, F, H, R, R_delta, time_resolution_ode_solver, time_arr, **kwargs):
         ExtendedKalmanFilter.__init__(self, dim_x, dim_z)
         self.dt = dt
         self.t = 0
@@ -109,7 +112,11 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.Phi_0 = np.identity(4)
         self.Phi = np.identity(4)
         self.Q_delta = self.compute_Q_delta(from_time=self.t, Phi_0=self.Phi, num_terms=30)
+        self.time_arr = time_arr
         self.time_resolution = time_resolution_ode_solver
+        self.square_signal = square(2 * np.pi * self.time_arr / 6)
+        self.sawtooth_signal = sawtooth(2 * np.pi * self.time_arr / 6)
+        self.sin_signal = np.sin(2 * np.pi * self.time_arr / 6)
 
     def set_fxu(self, fxu):
         self.fxu = fxu
@@ -147,10 +154,21 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.x_prior = np.copy(self.x)
         self.P_prior = np.copy(self.P)
 
+    def fx(self, x):
+        x = np.dot(self.Phi, x)
+        try:
+            index = np.where(self.time_arr == self.t)[0][0]
+        except:
+            index = np.where(np.abs(self.time_arr - self.t) < 0.0000001)[0][0]
+        x[2] = self.sawtooth_signal[index]
+        return x
+
     def predict_discretization_first(self, u=0):
         self.Phi = self.predict_Phi_odeint(from_time=self.t, time_resolution=self.time_resolution)
         self.Q_delta = self.compute_Q_delta(from_time=self.t, Phi_0=self.Phi, num_terms=self.time_resolution)
-        self.x = np.dot(self.Phi, self.x)
+        self.x = self.fx(self.x)
+        Jfun = numdifftools.Jacobian(fun=self.fx)
+        self.Phi = Jfun(np.array(self.x, dtype=float))
         self.P = np.dot(np.dot(self.Phi, self.P), self.Phi.T) + self.Q_delta
         self.t += self.dt
         # save prior

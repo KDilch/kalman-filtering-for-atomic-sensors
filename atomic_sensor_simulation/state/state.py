@@ -16,6 +16,8 @@ class State(ABC):
                  dt,
                  time,
                  time_arr,
+                 gp=0,
+                 omega_p=0,
                  u_control_vec=None,
                  Gamma_control_evolution_matrix=None,
                  initial_control_vec=None,
@@ -28,6 +30,8 @@ class State(ABC):
         :param Phi_evolution_matrix: 
         :param u_control_vec:
         """
+        self.gp = gp
+        self.omega_p = omega_p
         self._logger = logger or logging.getLogger(__name__)
         self._state_vec = initial_vec
         self._mean_state_vec = initial_vec
@@ -53,6 +57,7 @@ class State(ABC):
             self._Gamma_control_evolution_matrix = np.array([[create_operable_const_func(0.) for i in range(np.shape(self._F_transition_matrix)[0])] for j in range(np.shape(self._F_transition_matrix)[0])])
         self._coordinates = coordinates_enum
         self._time = time
+        self._waveform = None
 
     @property
     def state_vec(self):
@@ -90,12 +95,17 @@ class State(ABC):
     def time(self):
         return self._time
 
+    @property
+    def waveform(self):
+        return self._waveform
+
     def step(self, t):
         self._logger.debug('Updating time and dt.')
         self._time = t
         self._logger.debug('Performing a step for time %r' % str(self._time))
         index = np.where(self.time_arr == t)[0][0]
         self._mean_state_vec = self._mean_state_vec + eval_matrix_of_functions(self._F_transition_matrix, t).dot(self.mean_state_vec) * self._dt
-        # self._mean_state_vec[2] = self.sin_signal[index]
+        self._mean_state_vec[2] = self.sawtooth_signal[index]
         self._state_vec = self._mean_state_vec + self.noise_vec.step()
+        self._waveform = self.gp*self._state_vec[2]*np.cos(self.omega_p*self.time)+self.gp*self._state_vec[3]*np.sin(self.omega_p*self.time)
         return

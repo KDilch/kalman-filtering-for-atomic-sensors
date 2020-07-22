@@ -1,6 +1,5 @@
 import numpy as np
 import logging
-from atomic_sensor_simulation.noise import GaussianWhiteNoise
 
 
 class AtomicSensor(object):
@@ -19,6 +18,7 @@ class AtomicSensor(object):
         self.__state_history = []
         self.__state_mean_history = []
         self.z_no_noise_arr = []
+        self.__waveform_history = []
 
     @property
     def noise(self):
@@ -36,12 +36,17 @@ class AtomicSensor(object):
     def state_vec_mean_full_history(self):
         return self.__state_mean_history
 
+    @property
+    def waveform_history(self):
+        return self.__waveform_history
+
     def read(self, t):
         self.__state.step(t)
         self.__z_no_noise = self.__H.dot(self.__state.state_vec)
         self.__z = self.__z_no_noise + self.__noise.step()
         #append to history
         self.__state_history.append(self.__state.state_vec)
+        self.__waveform_history.append(self.__state.waveform)
         self.__state_mean_history.append([self.__state.mean_state_vec])
         self.z_no_noise_arr.append(self.__z_no_noise)
         return self.__z

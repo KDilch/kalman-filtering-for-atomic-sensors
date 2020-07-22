@@ -25,6 +25,7 @@ def run__atomic_sensor(*args):
 
     logger.info('Loading a config file from path %r' % args[0].config)
     config = import_config_from_path(args[0].config)
+    config.coupling['g_p'] = args[0].gp
 
     logger.info(
         'Setting physical parameters to larmour_freq = %r, spin_correlation_const = %r, light_correlation_const=%r.' %
@@ -104,9 +105,12 @@ def run__atomic_sensor(*args):
                           dt=config.simulation['dt_sensor'])
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
-    logger.info('Filter frequency is  %r'%every_nth_z)
+    logger.info('Filter frequency is  %r' % every_nth_z)
     zs_filter_freq = zs[::every_nth_z]
     x_filter_freq = sensor.state_vec_full_history[::every_nth_z]
+
+    zs_sigma = zs_filter_freq/np.sqrt(R/config.filter['dt_filter'])
+
 
     # KALMAN FILTER====================================================
     # Linear Kalman Filter
@@ -163,17 +167,17 @@ def run__atomic_sensor(*args):
     logger.info("Initializing linear_kf_filterpy Kalman Filter")
 
     lkf_exp_approx = linear_kf_model.initialize_filterpy()
-    lkf_exp_approx_history_manager = Filter_History_Manager(lkf_exp_approx, num_iter_filter)
+    lkf_exp_approx_history_manager = Filter_History_Manager(lkf_exp_approx, num_iter_filter, config, time_arr_filter)
 
     lkf_expint_approx = linear_kf_model.initialize_filterpy()
-    lkf_expint_approx_history_manager = Filter_History_Manager(lkf_expint_approx, num_iter_filter)
+    lkf_expint_approx_history_manager = Filter_History_Manager(lkf_expint_approx, num_iter_filter, config, time_arr_filter)
 
     lkf_num = linear_kf_model.initialize_filterpy()
-    lkf_num_history_manager = Filter_History_Manager(lkf_num, num_iter_filter)
+    lkf_num_history_manager = Filter_History_Manager(lkf_num, num_iter_filter, config, time_arr)
 
     logger.info("Initializing unscented_kf_filterpy Unscented Filter")
     unscented_kf_filterpy = unscented_kf_model.initialize_filterpy()
-    unscented_kf_history_manager = Filter_History_Manager(unscented_kf_filterpy, num_iter_filter)
+    unscented_kf_history_manager = Filter_History_Manager(unscented_kf_filterpy, num_iter_filter, config, time_arr_filter)
 
     logger.info("Initializing extended_kf_filterpy Unscented Filter")
     extended_kf_filterpy = extended_kf_model.initialize_filterpy(
@@ -183,12 +187,18 @@ def run__atomic_sensor(*args):
         coupling_amplitude=config.coupling['g_p'],
         coupling_freq=config.coupling['omega_p'],
         coupling_phase_shift=config.coupling['phase_shift'])
-    extended_kf_history_manager = Filter_History_Manager(extended_kf_filterpy, num_iter_filter)
+    extended_kf_history_manager = Filter_History_Manager(extended_kf_filterpy, num_iter_filter, config, time_arr_filter)
 
-    error_jy = np.zeros(num_iter_filter)
-    error_jz = np.zeros(num_iter_filter)
-    error_q = np.zeros(num_iter_filter)
-    error_p = np.zeros(num_iter_filter)
+    error_jy_LKF = np.zeros(num_iter_filter)
+    error_jz_LKF = np.zeros(num_iter_filter)
+    error_q_LKF = np.zeros(num_iter_filter)
+    error_p_LKF = np.zeros(num_iter_filter)
+    error_jy_EKF = np.zeros(num_iter_filter)
+    error_jz_EKF = np.zeros(num_iter_filter)
+    error_q_EKF = np.zeros(num_iter_filter)
+    error_p_EKF = np.zeros(num_iter_filter)
+    error_waveform_LKF = np.zeros(num_iter_filter)
+    error_waveform_EKF = np.zeros(num_iter_filter)
 
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
@@ -203,10 +213,10 @@ def run__atomic_sensor(*args):
         extended_kf_history_manager.add_entry(index)
 
         #COMMENTING OUT UKF SINCE IT NEEDS DEBUGGING (no reason to wait longer for the simulation to finish)
-        # unscented_kf_model.set_Q(Q=lkf_num.Q)
-        # unscented_kf_filterpy.predict(fx=unscented_kf_model.compute_fx_at_time_t(time))
-        # unscented_kf_filterpy.update(z)
-        # unscented_kf_history_manager.add_entry(index)
+        unscented_kf_model.set_Q(Q=lkf_num.Q)
+        unscented_kf_filterpy.predict(fx=unscented_kf_model.compute_fx_at_time_t(time))
+        unscented_kf_filterpy.update(z)
+        unscented_kf_history_manager.add_entry(index)
 
         lkf_num.predict()
         lkf_num.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time)
@@ -226,10 +236,16 @@ def run__atomic_sensor(*args):
         # lkf_expint_approx_history_manager.add_entry(index)
         # lkf_exp_approx_history_manager.add_entry(index)
 
-        error_jy[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=lkf_num.x)
-        error_jz[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=lkf_num.x)
-        error_q[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=lkf_num.x)
-        error_p[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_jy_LKF[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_jz_LKF[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_q_LKF[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_p_LKF[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_jy_EKF[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_jz_EKF[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_q_EKF[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_p_EKF[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_waveform_LKF[index] = config.coupling['g_p']**2*(np.cos(config.coupling['omega_p']*time)**2*error_q_LKF[index]**2+np.sin(config.coupling['omega_p']*time)**2*error_p_LKF[index]**2)
+        error_waveform_EKF[index] = config.coupling['g_p']**2*(np.cos(config.coupling['omega_p']*time)**2*error_q_EKF[index]**2+np.sin(config.coupling['omega_p']*time)**2*error_p_EKF[index]**2)
 
     # FIND STEADY STATE SOLUTION
     steady_state_history_manager = SteadyStateHistoryManager(num_iter_filter)
@@ -242,17 +258,17 @@ def run__atomic_sensor(*args):
         logger.debug("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
         steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
-    # PLOT DATA
-    plot__all_atomic_sensor(sensor,
-                            time_arr_filter,
-                            time_arr,
-                            lkf_num_history_manager,
-                            lkf_expint_approx_history_manager,
-                            lkf_exp_approx_history_manager,
-                            extended_kf_history_manager,
-                            unscented_kf_history_manager,
-                            steady_state_history_manager,
-                            args)
+    # # # PLOT DATA
+    # plot__all_atomic_sensor(sensor,
+    #                             time_arr_filter,
+    #                             time_arr,
+    #                             lkf_num_history_manager,
+    #                             lkf_expint_approx_history_manager,
+    #                             lkf_exp_approx_history_manager,
+    #                             extended_kf_history_manager,
+    #                             unscented_kf_history_manager,
+    #                             steady_state_history_manager,
+    #                             args)
 
     # SAVE DATA TO A FILE
     save_data(sensor,
@@ -263,5 +279,17 @@ def run__atomic_sensor(*args):
               unscented_kf_history_manager,
               steady_state_history_manager,
               np.transpose(zs_filter_freq[1:])[0],
+              error_jy_LKF,
+              error_jz_LKF,
+              error_q_LKF,
+              error_p_LKF,
+              error_waveform_LKF,
+              error_jy_EKF,
+              error_jz_EKF,
+              error_q_EKF,
+              error_p_EKF,
+              error_waveform_EKF,
+              np.transpose(zs_sigma[1:])[0],
               args,
-              './data')
+              './Simulation_data/data_time_inv',
+              config)
