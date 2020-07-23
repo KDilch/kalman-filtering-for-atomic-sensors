@@ -98,7 +98,7 @@ def main():
     # parse some argument lists
     args = parser.parse_args()
     logger.info('Parsed input arguments %r' % stringify_namespace(args))
-    for element in [1, 5, 10, 50, 100, 150]:
+    for element in [150]:
         args.gp = element
         args.func(args)
     logger.info('Ending execution of the application.')
