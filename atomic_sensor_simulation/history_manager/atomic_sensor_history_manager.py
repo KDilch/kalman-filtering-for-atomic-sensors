@@ -102,10 +102,14 @@ class Filter_History_Manager(object):
         self.__ps_err_post[index] = compute_squred_error_from_covariance(self.__filter_obj.P_post, index=3)
         self.__zs_est[index] = self.config.noise_and_measurement['gD']*self.__jzs[index]/self.sigma_D
         self.__waveform_est[index] = self.config.coupling['g_p']*(np.cos(self.config.coupling['omega_p']*self.__time[index])*self.__qs[index]+np.sin(self.config.coupling['omega_p']*self.__time[index])*self.__ps[index])
-        self.__waveform_est_err[index] = (self.config.coupling['g_p']**2)*(((np.cos(self.config.coupling['omega_p']*self.__time[index]))**2)*(self.__qs_err_post[index])+((np.sin(self.config.coupling['omega_p']*self.__time[index])**2)*(self.__ps_err_post[index])))
+        self.__waveform_est_err[index] = (self.config.coupling['g_p'])**2*((((np.cos(self.config.coupling['omega_p']*self.__time[index]))**2)*self.__qs_err_post[index])+(((np.sin(self.config.coupling['omega_p']*self.__time[index])**2)*(self.__ps_err_post[index]))))
 
 class SteadyStateHistoryManager(object):
+    def __del__(self):
+        print("Deleting SteadyStateHistoryManager")
+
     def __init__(self, num_iter_filter, config):
+        print("Creating SteadyStateHistoryManager")
         self.__steady_priors_jy = np.zeros(num_iter_filter)
         self.__steady_posts_jy = np.zeros(num_iter_filter)
         self.__steady_priors_jz = np.zeros(num_iter_filter)
@@ -162,4 +166,4 @@ class SteadyStateHistoryManager(object):
         self.__steady_posts_jz[index] = compute_squred_error_from_covariance(steady_post, 1)
         self.__steady_posts_q[index] = compute_squred_error_from_covariance(steady_post, 2)
         self.__steady_posts_p[index] = compute_squred_error_from_covariance(steady_post, 3)
-        self.__steady_waveform_err[index] = (self.__steady_posts_q[index]+self.__steady_posts_p[index])
+        self.__steady_waveform_err[index] = (self.config.coupling['g_p'])**2*(self.__steady_posts_q[index])

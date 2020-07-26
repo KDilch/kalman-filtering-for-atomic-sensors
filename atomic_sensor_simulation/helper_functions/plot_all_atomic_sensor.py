@@ -36,6 +36,7 @@ def plot_state_LKF(filter_state, simulation_state, filename, target_dir='./'):
             plt.tick_params(labelleft='off')
 
     plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
     plt.close()
     return
 
@@ -49,8 +50,8 @@ def plot_state_err_LKF(err_cov, err_ss, filename, target_dir='./'):
         # Find the right spot on the plot
         plt.subplot(2, 2, num)
 
-        plt.plot(err_cov['time'], err_cov[column], marker='', color='orange', linewidth=1.9, label=r"LKF $\{\Sigma_{k|k}\}_{i}^{i}$")
-        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State Error')
+        plt.plot(err_cov['time'], err_cov[column], marker='', color='orange', linewidth=1.9, label=r"LKF estimation error")
+        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State error')
 
         if num in [4, 3]:
             plt.xlabel('time [a.u.]', fontsize=18)
@@ -66,6 +67,7 @@ def plot_state_err_LKF(err_cov, err_ss, filename, target_dir='./'):
             plt.tick_params(labelleft='off')
 
     plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
     plt.close()
     return
 
@@ -96,6 +98,7 @@ def plot_state_real_err_LKF(err_real, err_ss, filename, target_dir='./'):
             plt.tick_params(labelleft='off')
 
     plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
     plt.close()
     return
 
@@ -107,7 +110,7 @@ def plot_zs(zs_real, zs_est, filename, target_dir='./'):
         num += 1
 
         # Find the right spot on the plot
-        plt.plot(zs_real['time'], zs_real[column], marker='', color='grey', linewidth=1.9, linestyle='--', label=r"Simulation")
+        plt.plot(zs_real['time'][::1], zs_real[column][::1], marker='.', color='grey', linewidth=1.9, label=r"Simulation")
         plt.plot(zs_est['time'], zs_est[column], marker='', color='orange', linewidth=1.9, label='LKF estimate')
 
 
@@ -122,98 +125,108 @@ def plot_zs(zs_real, zs_est, filename, target_dir='./'):
             plt.tick_params(labelleft='off')
 
     plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
     plt.close()
     return
 
-def plot_waveform(waveform_real, waveform_est, filename, target_dir='./'):
-    plt.figure(figsize=(14, 9))
+def plot_waveform(waveform_real, waveform_est, waveform_est_err, waveform_ss, filename, target_dir='./'):
+    plt.figure(figsize=(14, 5))
 
-    num = 0
+    # Find the right spot on the plot
+    plt.subplot(1, 2, 1)
     for column in waveform_real.drop('time', axis=1):
-        num += 1
-
-        # Find the right spot on the plot
         plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.9, label=r"Simulation")
         plt.plot(waveform_est['time'], waveform_est[column], marker='', color='orange', linewidth=1.9, label='LKF estimate')
 
-
         plt.xlabel('time [a.u.]', fontsize=18)
         plt.ylabel(column+' [a.u.]', fontsize=18)
         plt.legend(fontsize=18)
 
-        # Not ticks everywhere
-        if num in range(7):
-            plt.tick_params(labelbottom='off')
-        if num not in [1, 4, 7]:
-            plt.tick_params(labelleft='off')
-
-    plt.savefig(os.path.join(target_dir, filename))
-    plt.close()
-    return
-
-def plot_waveform_err(waveform_real_err, waveform_ss_err, filename, target_dir='./'):
-    plt.figure(figsize=(14, 9))
-
-    num = 0
-    for column in waveform_real_err.drop('time', axis=1):
-        num += 1
-
-        # Find the right spot on the plot
-        plt.plot(waveform_ss_err['time'], waveform_ss_err[column], marker='', color='grey', linewidth=1.9, label=r"Steady State error")
-        plt.plot(waveform_real_err['time'], waveform_real_err[column], marker='', color='orange', linewidth=1.9, label='LKF error')
-
+    plt.subplot(1, 2, 2)
+    for column in waveform_est_err.drop('time', axis=1):
+        plt.plot(waveform_ss['time'], waveform_ss[column], marker='', color='grey', linewidth=1.9,
+                 label=r"Steady State error")
+        plt.plot(waveform_est_err['time'], waveform_est_err[column], marker='', color='orange', linewidth=1.9,
+                 label='LKF error')
 
         plt.xlabel('time [a.u.]', fontsize=18)
-        plt.ylabel(column+' [a.u.]', fontsize=18)
+        plt.ylabel(column + ' [a.u.]', fontsize=18)
         plt.legend(fontsize=18)
 
-        # plt.xlim((0., 5.))
-        # plt.ylim((0., 500))
-
-        # Not ticks everywhere
-        if num in range(7):
-            plt.tick_params(labelbottom='off')
-        if num not in [1, 4, 7]:
-            plt.tick_params(labelleft='off')
 
     plt.savefig(os.path.join(target_dir, filename))
     # plt.show()
     plt.close()
     return
 
-def plot_EKF_LKF_DIFFERENCE(diff, filename, target_dir='./'):
-    plt.figure(figsize=(14, 9))
+def plot_q_est_difference_LKF_EKF(est_diff, est_err_diff, filename, target_dir='./'):
+    # Initialize the figure
+    plt.figure(figsize=(14, 5))
 
-    num = 0
-    for column in diff.drop('time', axis=1):
-        num += 1
+    # Find the right spot on the plot
+    plt.subplot(1, 2, 1)
+    plt.plot(est_diff['time'], est_diff['diff'], marker='', color='orange', linewidth=1.9, alpha=0.9)
+    plt.xlabel('time [a.u.]', fontsize=18)
+    plt.ylabel(r"$|q^{LKF}-q^{EKF}|$" + ' [a.u.]', fontsize=18)
+    plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
-        # Find the right spot on the plot
-        # plt.plot(waveform_ss_err['time'], waveform_ss_err[column], marker='', color='grey', linewidth=1.9, label=r"Steady State error")
-        plt.plot(diff['time'], diff[column], marker='', color='orange', linewidth=1.9)
-
-
-        plt.xlabel('time [a.u.]', fontsize=18)
-        plt.ylabel(column+' [a.u.]', fontsize=18)
-
-        # Not ticks everywhere
-        if num in range(7):
-            plt.tick_params(labelbottom='off')
-        if num not in [1, 4, 7]:
-            plt.tick_params(labelleft='off')
+    plt.subplot(1, 2, 2)
+    plt.plot(est_err_diff['time'], est_err_diff['diff'], marker='', color='orange', linewidth=1.9, alpha=0.9)
+    plt.xlabel('time [a.u.]', fontsize=18)
+    plt.ylabel(r"$|\Delta q^{LKF}-\Delta q^{EKF}|$" + ' [a.u.]', fontsize=18)
+    plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
     plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
     plt.close()
     return
 
-# def plot_histogram(waveform_err_ratio, filename, target_dir='./'):
-#     import seaborn as sns
-#     # Control the number of bins
-#     sns.distplot(waveform_err_ratio['ratios'])
-#     plt.show()
-#     plt.savefig(os.path.join(target_dir, filename))
-#     plt.close()
-#     return
+def plot_q_est_difference_num_exp(est_diff, est_err_diff, filename, target_dir='./'):
+    # Initialize the figure
+    plt.figure(figsize=(14, 5))
+
+    # Find the right spot on the plot
+    plt.subplot(1, 2, 1)
+    plt.plot(est_diff['time'], est_diff['diff'], marker='', color='orange', linewidth=1.9, alpha=0.9)
+    plt.xlabel('time [a.u.]', fontsize=18)
+    plt.ylabel(r"$|q^{num}-q^{exp}|$" + ' [a.u.]', fontsize=18)
+
+    plt.subplot(1, 2, 2)
+    plt.plot(est_err_diff['time'], est_err_diff['diff'], marker='', color='orange', linewidth=1.9, alpha=0.9)
+    plt.xlabel('time [a.u.]', fontsize=18)
+    plt.ylabel(r"$|\Delta q^{num}-\Delta q^{exp}|$" + ' [a.u.]', fontsize=18)
+
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
+
+def plot_ekf_lin_disc(ekf_lin, ekf_disc, err_ss_q, sim_q, filename, target_dir='./'):
+    # Initialize the figure
+    palette = plt.get_cmap('Set1')
+    plt.figure(figsize=(14, 5))
+
+    # Find the right spot on the plot
+    plt.subplot(1, 2, 1)
+    plt.plot(ekf_lin['time'], ekf_lin['q'], marker='', color=palette(1), linewidth=1.9, alpha=0.9)
+    plt.plot(ekf_disc['time'], ekf_disc['q'], marker='', color=palette(2), linewidth=1.9, alpha=0.9)
+    plt.plot(sim_q['time'][::25], sim_q['q'][::25], linestyle='none', marker='.', color='grey',
+             label='Simulation')
+    plt.xlabel('time [a.u.]', fontsize=18)
+    plt.ylabel(r"q" + ' [a.u.]', fontsize=18)
+
+    plt.subplot(1, 2, 2)
+    plt.plot(ekf_lin['time'], ekf_lin[r"$\Delta^2$q"], marker='', color=palette(1), linewidth=1.9, alpha=0.9, label="continuous")
+    plt.plot(ekf_lin['time'], ekf_disc[r"$\Delta^2$q"], marker='', color=palette(2), linewidth=1.9, alpha=0.9, label="discrete")
+    plt.plot(err_ss_q['time'], err_ss_q[r"$\Delta^2$q"], marker='', color='grey', linestyle='--', label='Steady State Error', linewidth=1.9, alpha=0.9)
+    plt.xlabel('time [a.u.]', fontsize=18)
+    plt.ylabel(r"$\Delta^2$q" + ' [a.u.]', fontsize=18)
+    plt.legend(fontsize=18)
+
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
 
 
 def plot__all_atomic_sensor(sensor,
@@ -223,6 +236,7 @@ def plot__all_atomic_sensor(sensor,
                             lkf_expint_approx_history_manager,
                             lkf_exp_approx_history_manager,
                             extended_kf_history_manager,
+                            extended_kf_history_manager_lin,
                             unscented_kf_history_manager,
                             steady_state_history_manager,
                             zs,
@@ -242,6 +256,7 @@ def plot__all_atomic_sensor(sensor,
     # PLOTS=========================================================
     logger = logging.getLogger(__name__)
     logger.info('Plotting data.')
+    target = './Simulation_plots'
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
 
@@ -249,7 +264,7 @@ def plot__all_atomic_sensor(sensor,
     simulation_state = pd.DataFrame({'time': time_arr, r"J$_y$": j_y_full_history, r"J$_z$": j_z_full_history, 'q': q_q_full_history, 'p': q_p_full_history})
     LKF_state = pd.DataFrame({'time': time_arr_filter, r"J$_y$": lkf_num_history_manager.jys, r"J$_z$": lkf_num_history_manager.jzs,
                        'q': lkf_num_history_manager.qs, 'p': lkf_num_history_manager.ps})
-    plot_state_LKF(LKF_state, simulation_state, filename='plt_state_gp_%r_wp_%r.png'%(config.coupling['g_p'], config.coupling['omega_p']))
+    plot_state_LKF(LKF_state, simulation_state, filename='plt_state_gp_%r_wp_%r.png'%(config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
 
     # PLOT STATE VECTOR ESTIMATION ERR
     err_cov = pd.DataFrame(
@@ -266,24 +281,25 @@ def plot__all_atomic_sensor(sensor,
          r"$\Delta^2$p": steady_state_history_manager.steady_posts_p})
     plot_state_err_LKF(err_cov,
                        err_ss,
-                       filename='plt_state_err_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
+                       filename='plt_state_err_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']),
+                       target_dir=target)
 
-    #PLOT REAL ESTIMATION ERR SQ(np.dot((x-x_est), (x-x_est).T))
-    err_LKF = pd.DataFrame(
-        {'time': time_arr_filter,
-         r"$\Delta^2$J$_y$": error_jy_LKF,
-         r"$\Delta^2$J$_z$": error_jz_LKF,
-         r"$\Delta^2$q": error_q_LKF,
-         r"$\Delta^2$p": error_p_LKF})
-    # err_EKF = pd.DataFrame(
+    # #PLOT REAL ESTIMATION ERR SQ(np.dot((x-x_est), (x-x_est).T))
+    # err_LKF = pd.DataFrame(
     #     {'time': time_arr_filter,
-    #      r"$\Delta^2$J$_y$": error_jy_EKF,
-    #      r"$\Delta^2$J$_z$": error_jz_EKF,
-    #      r"$\Delta^2$q": error_q_EKF,
-    #      r"$\Delta^2$p": error_p_EKF})
-    plot_state_real_err_LKF(err_LKF,
-                            err_ss,
-                            filename='plt_state_real_err_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
+    #      r"$\Delta^2$J$_y$": error_jy_LKF,
+    #      r"$\Delta^2$J$_z$": error_jz_LKF,
+    #      r"$\Delta^2$q": error_q_LKF,
+    #      r"$\Delta^2$p": error_p_LKF})
+    # # err_EKF = pd.DataFrame(
+    # #     {'time': time_arr_filter,
+    # #      r"$\Delta^2$J$_y$": error_jy_EKF,
+    # #      r"$\Delta^2$J$_z$": error_jz_EKF,
+    # #      r"$\Delta^2$q": error_q_EKF,
+    # #      r"$\Delta^2$p": error_p_EKF})
+    # plot_state_real_err_LKF(err_LKF,
+    #                         err_cov,
+    #                         filename='plt_state_real_err_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
 
     #PLOT zs/sigma
     zs_real = pd.DataFrame(
@@ -298,7 +314,7 @@ def plot__all_atomic_sensor(sensor,
             "$z_k/\sigma_D$": lkf_num_history_manager.zs_est
         }
     )
-    plot_zs(zs_real, zs_est_LKF, 'plt_zs_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
+    plot_zs(zs_real, zs_est_LKF, 'plt_zs_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
 
     #PLOT WAVEFORM
     waveform_real = pd.DataFrame(
@@ -313,9 +329,7 @@ def plot__all_atomic_sensor(sensor,
             r"$\varepsilon$": lkf_num_history_manager.waveform_est
         }
     )
-    plot_waveform(waveform_real, waveform_LKF, 'plt_waveform_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
 
-    #PLOT WAVEFORM ERR
     waveform_err_real = pd.DataFrame(
         {
             'time': time_arr_filter,
@@ -334,35 +348,61 @@ def plot__all_atomic_sensor(sensor,
             r"$\Delta^2 \varepsilon$": steady_state_history_manager.steady_waveform_err
         }
     )
-    plot_waveform_err(waveform_err_real, waveform_err_ss, 'plt_waveform_err_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
-
-    # #PLOT WAVEFORM HISTOGRAM
-    # waveform_histogram = pd.DataFrame(
-    #     {
-    #         'ratios': error_waveform_LKF
-    #     }
-    # )
-    # plot_histogram(waveform_histogram, 'plt_waveform_histogram_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
-    #
+    plot_waveform(waveform_real, waveform_LKF, waveform_err_cov, waveform_err_ss, 'plt_waveform_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
 
     #PLOT DIFFERENCE LKF-EKF ESTIMATES
     diff_LKF_EKF = pd.DataFrame(
         {
             'time': time_arr_filter,
-            r"$|q^{LKF}-q^{EKF}|$": np.abs(lkf_num_history_manager.qs-extended_kf_history_manager.qs)
+            'diff': np.abs(lkf_num_history_manager.qs-extended_kf_history_manager.qs)
         })
-    plot_EKF_LKF_DIFFERENCE(diff_LKF_EKF, 'plt_q_est_difference_gp_%r_wp_%r.png' % (config.coupling['g_p'], config.coupling['omega_p']))
 
-    # PLOT DIFFERENCE LKF-EKF ESTIMATES (COV)
-    diff_LKF_EKF = pd.DataFrame(
+    diff_LKF_EKF_err = pd.DataFrame(
         {
             'time': time_arr_filter,
-            r"$|\Delta q^{LKF}-\Delta q^{EKF}|$": np.abs(np.sqrt(lkf_num_history_manager.qs_err_post) - np.sqrt(extended_kf_history_manager.qs_err_post))
+            'diff': np.abs(np.sqrt(lkf_num_history_manager.qs_err_post) - np.sqrt(extended_kf_history_manager.qs_err_post))
         })
-    plot_EKF_LKF_DIFFERENCE(diff_LKF_EKF, 'plt_q_err_est_difference_gp_%r_wp_%r.png' % (
-    config.coupling['g_p'], config.coupling['omega_p']))
+    plot_q_est_difference_LKF_EKF(diff_LKF_EKF, diff_LKF_EKF_err, 'plt_q_LKF_EKF_difference_gp_%r_wp_%r.png' % (
+    config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
 
-    # labels = ['Linear kf num', 'Linear kf expint', 'Linear kf exp', 'Extended kf', 'Unscented kf', 'Exact data']
+    # PLOT DIFFERENCE LKF-num_exp ESTIMATES
+    diff_LKF_num_exp = pd.DataFrame(
+        {
+            'time': time_arr_filter,
+            'diff': np.abs(lkf_num_history_manager.qs - lkf_exp_approx_history_manager.qs)
+        })
+    diff_LKF_EKF_num_exp_err = pd.DataFrame(
+        {
+            'time': time_arr_filter,
+            'diff': np.abs(np.sqrt(lkf_num_history_manager.qs_err_post) - np.sqrt(lkf_exp_approx_history_manager.qs_err_post))
+        })
+    plot_q_est_difference_num_exp(diff_LKF_num_exp, diff_LKF_EKF_num_exp_err, 'plt_LKF_num_exp_difference_gp_%r_wp_%r.png' % (
+    config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
+
+
+    #PLOT EKF LIN AND DISC
+    ekf_lin = pd.DataFrame(
+        {
+            'time': time_arr_filter,
+            'q': extended_kf_history_manager_lin.qs,
+            r"$\Delta^2$q": extended_kf_history_manager_lin.qs_err_post
+        })
+    ekf_disc = pd.DataFrame(
+        {
+            'time': time_arr_filter,
+            'q': extended_kf_history_manager.qs,
+            r"$\Delta^2$q": extended_kf_history_manager.qs_err_post
+        })
+    err_ss_q = pd.DataFrame(
+        {'time': time_arr_filter,
+         r"$\Delta^2$q": steady_state_history_manager.steady_posts_q})
+    sim_q = pd.DataFrame({'time': time_arr, 'q': q_q_full_history})
+
+    plot_ekf_lin_disc(ekf_lin, ekf_disc, err_ss_q, sim_q,
+                                  'plt_EKF_lin_disc_gp_%r_wp_%r.png' % (
+                                      config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
+
+# labels = ['Linear kf num', 'Linear kf expint', 'Linear kf exp', 'Extended kf', 'Unscented kf', 'Exact data']
     # labels_err = ['Linear kf num err', 'Linear kf expint err', 'Linear kf exp err', 'Extended kf err',
     #               'Unscented kf err', 'Steady state']
     # # plot atoms jy

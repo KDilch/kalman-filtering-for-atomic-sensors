@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 import logging
+import numpy as np
 
 from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
 from atomic_sensor_simulation.run_atomic_sensor import run__atomic_sensor
@@ -98,7 +99,8 @@ def main():
     # parse some argument lists
     args = parser.parse_args()
     logger.info('Parsed input arguments %r' % stringify_namespace(args))
-    for element in [150]:
+    # for element in [150]:
+    for element in np.arange(5, 150, 20).tolist():
         args.gp = element
         args.func(args)
     logger.info('Ending execution of the application.')
