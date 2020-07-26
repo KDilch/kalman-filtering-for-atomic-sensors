@@ -166,4 +166,4 @@ class SteadyStateHistoryManager(object):
         self.__steady_posts_jz[index] = compute_squred_error_from_covariance(steady_post, 1)
         self.__steady_posts_q[index] = compute_squred_error_from_covariance(steady_post, 2)
         self.__steady_posts_p[index] = compute_squred_error_from_covariance(steady_post, 3)
-        self.__steady_waveform_err[index] = (self.config.coupling['g_p'])**2*(self.__steady_posts_q[index])
+        self.__steady_waveform_err[index] = (self.config.coupling['g_p'])**2*(self.__steady_posts_q[index]+self.__steady_posts_p[index])
