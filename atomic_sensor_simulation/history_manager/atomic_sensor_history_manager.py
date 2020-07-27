@@ -108,7 +108,7 @@ class SteadyStateHistoryManager(object):
     def __del__(self):
         print("Deleting SteadyStateHistoryManager")
 
-    def __init__(self, num_iter_filter, config):
+    def __init__(self, num_iter_filter, config, time):
         print("Creating SteadyStateHistoryManager")
         self.__steady_priors_jy = np.zeros(num_iter_filter)
         self.__steady_posts_jy = np.zeros(num_iter_filter)
@@ -120,6 +120,7 @@ class SteadyStateHistoryManager(object):
         self.__steady_posts_p = np.zeros(num_iter_filter)
         self.__steady_waveform_err = np.zeros(num_iter_filter)
         self.config = config
+        self.__time = time
 
     @property
     def steady_priors_jy(self):
@@ -166,4 +167,4 @@ class SteadyStateHistoryManager(object):
         self.__steady_posts_jz[index] = compute_squred_error_from_covariance(steady_post, 1)
         self.__steady_posts_q[index] = compute_squred_error_from_covariance(steady_post, 2)
         self.__steady_posts_p[index] = compute_squred_error_from_covariance(steady_post, 3)
-        self.__steady_waveform_err[index] = (self.config.coupling['g_p'])**2*(self.__steady_posts_q[index]+self.__steady_posts_p[index])
+        self.__steady_waveform_err[index] = self.config.coupling['g_p']**2*((((np.cos(self.config.coupling['omega_p']*self.__time[index]))**2)*self.__steady_posts_q[index])+(((np.sin(self.config.coupling['omega_p']*self.__time[index])**2)*(self.__steady_posts_p[index]))))

@@ -6,11 +6,11 @@ import os
 
 plt.style.use('seaborn-darkgrid')
 
-def plot_g_p(w_p, filename, target_dir='./'):
+def plot_w_p(gp, filename, target_dir='./'):
     palette = plt.get_cmap('Set1')
 
-    gps = np.arange(5, 170, 20).tolist()
-    gp = gps[0]
+    wps = np.arange(1., 10., 1.).tolist()
+    wp = wps[0]
     plt.figure(figsize=(14, 9))
 
     data_sim = pd.read_csv("./Simulation_data/data_sim_gp_%r_wp_%r.csv" % (gp, w_p), sep='\t', usecols=['time', 'q'])
@@ -20,16 +20,20 @@ def plot_g_p(w_p, filename, target_dir='./'):
              color='grey', label='Simulation')
     ax2 = plt.subplot(1, 2, 2)
 
+    if filename is None:
+        filename = 'plt_omega_gp%r' % gp
+
     num = 0
-    for gp in gps:
+    for wp in wps:
+        omega_ratio = wp/6.  # Larmour freq is 6.
         num += 1
         data_kf = pd.read_csv("./Simulation_data/data_kf_gp_%r_wp_%r.csv" % (gp, w_p), sep='\t',
                               usecols=['time_arr_filter', 'q_lin', 'q_err_lin_cov', 'q_steady_err'])
 
         ax1.plot(data_kf['time_arr_filter'], data_kf['q_lin'], marker='', linewidth=1.9, alpha=0.9,
-                 label="$g_p$=%r_a" % gp, color=palette(num))
+                 label="$\omega_p$=%r_a" % wp, color=palette(num))
         ax2.plot(data_kf['time_arr_filter'], data_kf['q_err_lin_cov'], marker='', linewidth=1.9, alpha=0.9,
-                 label="$g_p$=%r" % gp, color=palette(num))
+                 label="$\frac{\omega_p}{\omega_L}$=%r" % omega_ratio, color=palette(num))
         ax2.plot(data_kf['time_arr_filter'], data_kf['q_steady_err'], marker='', color=palette(num), linewidth=1.9,
                  alpha=0.9, linestyle='--')
             #
@@ -48,4 +52,5 @@ def plot_g_p(w_p, filename, target_dir='./'):
     # plt.legend()
     plt.close()
 
-plot_g_p(w_p=6.,filename='gp_wp_6.png')
+gp = 165
+plot_w_p(gp=gp, filename=None)

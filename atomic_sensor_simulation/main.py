@@ -100,9 +100,14 @@ def main():
     args = parser.parse_args()
     logger.info('Parsed input arguments %r' % stringify_namespace(args))
     # for element in [150]:
-    for element in np.arange(5, 150, 20).tolist():
-        args.gp = element
-        args.func(args)
+    for wp in np.arange(1., 10., 1.).tolist():
+        logger.info("Setting omega_p to %r" % wp)
+        for gp in np.arange(5, 170, 20).tolist():
+            logger.info("Setting g_p to %r" % gp)
+
+            args.gp = gp
+            args.wp = wp
+            args.func(args)
     logger.info('Ending execution of the application.')
     return 0
 

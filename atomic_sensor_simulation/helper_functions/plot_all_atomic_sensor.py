@@ -256,7 +256,9 @@ def plot__all_atomic_sensor(sensor,
     # PLOTS=========================================================
     logger = logging.getLogger(__name__)
     logger.info('Plotting data.')
-    target = './Simulation_plots'
+    target = "./Simulation_plots/gp_%r_wp_%r" % (int(config.coupling['g_p']), int(config.coupling['omega_p']))
+    if not os.path.exists(target):
+        os.makedirs(target)
     # Get history data from sensor state class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
 

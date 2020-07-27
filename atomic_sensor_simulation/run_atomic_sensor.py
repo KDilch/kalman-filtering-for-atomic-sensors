@@ -26,6 +26,7 @@ def run__atomic_sensor(*args):
     logger.info('Loading a config file from path %r' % args[0].config)
     config = import_config_from_path(args[0].config)
     config.coupling['g_p'] = args[0].gp
+    config.coupling['omega_p'] = args[0].wp
 
     logger.info(
         'Setting physical parameters to larmour_freq = %r, spin_correlation_const = %r, light_correlation_const=%r.' %
@@ -278,7 +279,7 @@ def run__atomic_sensor(*args):
         error_waveform_EKF[index] = config.coupling['g_p']*(np.cos(config.coupling['omega_p']*time)**2*error_q_EKF[index]+np.sin(config.coupling['omega_p']*time)**2*error_p_EKF[index])
 
     # FIND STEADY STATE SOLUTION
-    steady_state_history_manager = SteadyStateHistoryManager(num_iter_filter, config)
+    steady_state_history_manager = SteadyStateHistoryManager(num_iter_filter, config, time_arr_filter)
     for index, time_filter in enumerate(time_arr_filter):
         steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(t=time_filter,
                                                                                     F=eval_matrix_of_functions(
