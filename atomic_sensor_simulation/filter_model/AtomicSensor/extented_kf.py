@@ -160,7 +160,7 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
             index = np.where(self.time_arr == self.t)[0][0]
         except:
             index = np.where(np.abs(self.time_arr - self.t) < 0.0000001)[0][0]
-        # x[2] = self.sawtooth_signal[index]
+        # x[2] = self.square_signal[index]
         return x
 
     def predict_discretization_first(self, u=0):

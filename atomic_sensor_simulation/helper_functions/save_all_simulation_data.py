@@ -93,12 +93,12 @@ def save_data(sensor,
                                                                  error_q_EKF,
                                                                  steady_state_history_manager.steady_posts_q,
                                                                  lkf_num_history_manager.ps,
-                                                                 lkf_exp_approx_history_manager.ps_err_post,
                                                                  lkf_exp_approx_history_manager.ps,
                                                                  extended_kf_history_manager.ps,
                                                                  extended_kf_history_manager_lin.ps,
                                                                  unscented_kf_history_manager.ps,
                                                                  lkf_num_history_manager.ps_err_post,
+                                                                 lkf_exp_approx_history_manager.ps_err_post,
                                                                  extended_kf_history_manager.ps_err_post,
                                                                  extended_kf_history_manager_lin.ps_err_post,
                                                                  unscented_kf_history_manager.ps_err_post,
@@ -196,6 +196,6 @@ def save_data(sensor,
                                                               True,
                                                               True,
                                                               True])
-        all_data_filter.to_csv(file_basename + '_kf_gp_%r_wp_%r.csv'% (config.coupling['g_p'], config.coupling['omega_p']), sep='\t', na_rep='Unknown')
+        all_data_filter.to_csv(file_basename + '_kf_gp_%r_wp_%r.csv' % (config.coupling['g_p'], config.coupling['omega_p']), sep='\t', na_rep='Unknown')
         all_data_simulation.to_csv(file_basename + '_sim_gp_%r_wp_%r.csv' % (config.coupling['g_p'], config.coupling['omega_p']), sep='\t', na_rep='Unknown')
     return

@@ -8,6 +8,37 @@ from atomic_sensor_simulation.utilities import plot_data, generate_data_arr_for_
 
 plt.style.use('seaborn-darkgrid')
 
+def plot_state_simulation(simulation_state, filename, target_dir='./'):
+    # Initialize the figure
+    plt.figure(figsize=(14, 9))
+
+    num = 0
+    for column in simulation_state.drop('time', axis=1):
+        num += 1
+
+        # Find the right spot on the plot
+        plt.subplot(2, 2, num)
+
+        plt.plot(simulation_state['time'], simulation_state[column], color='grey', label='Simulation')
+
+        if num in [4, 3]:
+            plt.xlabel('time [a.u.]', fontsize=18)
+        plt.ylabel(column+' [a.u.]', fontsize=18)
+
+        if num == 4:
+            plt.legend(fontsize=18)
+
+        # Not ticks everywhere
+        if num in range(7):
+            plt.tick_params(labelbottom='off')
+        if num not in [1, 4, 7]:
+            plt.tick_params(labelleft='off')
+
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
+
 def plot_state_LKF(filter_state, simulation_state, filename, target_dir='./'):
     # Initialize the figure
     plt.figure(figsize=(14, 9))
@@ -21,6 +52,71 @@ def plot_state_LKF(filter_state, simulation_state, filename, target_dir='./'):
 
         plt.plot(simulation_state['time'][::25], simulation_state[column][::25], linestyle='none', marker='.', color='grey', label='Simulation')
         plt.plot(filter_state['time'], filter_state[column], marker='', color='orange', linewidth=1.9, alpha=0.9, label='LKF')
+
+        if num in [4, 3]:
+            plt.xlabel('time [a.u.]', fontsize=18)
+        plt.ylabel(column+' [a.u.]', fontsize=18)
+
+        if num == 4:
+            plt.legend(fontsize=18)
+
+        # Not ticks everywhere
+        if num in range(7):
+            plt.tick_params(labelbottom='off')
+        if num not in [1, 4, 7]:
+            plt.tick_params(labelleft='off')
+
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
+
+def plot_state_LKF_EKF(LKF_state, EKF_state, simulation_state, filename, target_dir='./'):
+    # Initialize the figure
+    palette = plt.get_cmap('Set1')
+    plt.figure(figsize=(14, 9))
+
+    num = 0
+    for column in LKF_state.drop('time', axis=1):
+        num += 1
+
+        # Find the right spot on the plot
+        plt.subplot(2, 2, num)
+
+        plt.plot(simulation_state['time'][::25], simulation_state[column][::25], linestyle='none', marker='.', color='grey', label='Simulation')
+        plt.plot(LKF_state['time'], LKF_state[column], marker='', color=palette(4), linewidth=1.9, alpha=0.9, label='LKF')
+        plt.plot(EKF_state['time'], EKF_state[column], marker='', color=palette(2), linewidth=1.9, alpha=0.9, label='EKF')
+
+        if num in [4, 3]:
+            plt.xlabel('time [a.u.]', fontsize=18)
+        plt.ylabel(column+' [a.u.]', fontsize=18)
+
+        if num == 4:
+            plt.legend(fontsize=18)
+
+        # Not ticks everywhere
+        if num in range(7):
+            plt.tick_params(labelbottom='off')
+        if num not in [1, 4, 7]:
+            plt.tick_params(labelleft='off')
+
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
+
+def plot_state_err_cov_LKF(err_cov, err_ss, filename, target_dir='./'):
+    plt.figure(figsize=(14, 9))
+
+    num = 0
+    for column in err_cov.drop('time', axis=1):
+        num += 1
+
+        # Find the right spot on the plot
+        plt.subplot(2, 2, num)
+
+        plt.plot(err_cov['time'], err_cov[column], marker='', color='orange', linewidth=1.9, label=r"LKF estimation error")
+        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State error')
 
         if num in [4, 3]:
             plt.xlabel('time [a.u.]', fontsize=18)
@@ -65,6 +161,41 @@ def plot_state_err_LKF(err_cov, err_ss, filename, target_dir='./'):
             plt.tick_params(labelbottom='off')
         if num not in [1, 4, 7]:
             plt.tick_params(labelleft='off')
+        plt.yscale("log")
+
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
+
+def plot_state_err_LKF_EKF(err_cov_LKF, err_cov_EKF, err_ss, filename, target_dir='./'):
+    palette = plt.get_cmap('Set1')
+    plt.figure(figsize=(14, 9))
+
+    num = 0
+    for column in err_cov_LKF.drop('time', axis=1):
+        num += 1
+
+        # Find the right spot on the plot
+        plt.subplot(2, 2, num)
+
+        plt.plot(err_cov_LKF['time'], err_cov_LKF[column], marker='', color=palette(4), linewidth=1.9, label=r"LKF estimation error")
+        plt.plot(err_cov_LKF['time'], err_cov_EKF[column], marker='', color=palette(2), linewidth=1.9, label=r"EKF estimation error")
+        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State error')
+
+        if num in [4, 3]:
+            plt.xlabel('time [a.u.]', fontsize=18)
+        plt.ylabel(column+' [a.u.]', fontsize=18)
+
+        if num == 4:
+            plt.legend(fontsize=18)
+
+        # Not ticks everywhere
+        if num in range(7):
+            plt.tick_params(labelbottom='off')
+        if num not in [1, 4, 7]:
+            plt.tick_params(labelleft='off')
+        plt.yscale("log")
 
     plt.savefig(os.path.join(target_dir, filename))
     # plt.show()
@@ -129,28 +260,88 @@ def plot_zs(zs_real, zs_est, filename, target_dir='./'):
     plt.close()
     return
 
+def plot_waveform_simulation(waveform_real, filename, target_dir='./'):
+    plt.figure(figsize=(14, 5))
+
+    # Find the right spot on the plot
+    for column in waveform_real.drop('time', axis=1):
+        plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.9, label=r"Simulation")
+
+        plt.xlabel('time [a.u.]', fontsize=18)
+        plt.ylabel(column+' [a.u.]', fontsize=18)
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
+
 def plot_waveform(waveform_real, waveform_est, waveform_est_err, waveform_ss, filename, target_dir='./'):
+    palette = plt.get_cmap('Set1')
     plt.figure(figsize=(14, 5))
 
     # Find the right spot on the plot
     plt.subplot(1, 2, 1)
     for column in waveform_real.drop('time', axis=1):
-        plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.9, label=r"Simulation")
-        plt.plot(waveform_est['time'], waveform_est[column], marker='', color='orange', linewidth=1.9, label='LKF estimate')
+        plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.9,
+                 label=r"Simulation")
+        plt.plot(waveform_est['time'], waveform_est[column], marker='', color=palette(4), linewidth=1.9,
+                 label='LKF estimate')
 
         plt.xlabel('time [a.u.]', fontsize=18)
-        plt.ylabel(column+' [a.u.]', fontsize=18)
+        plt.ylabel(column + ' [a.u.]', fontsize=18)
         plt.legend(fontsize=18)
 
     plt.subplot(1, 2, 2)
     for column in waveform_est_err.drop('time', axis=1):
         plt.plot(waveform_ss['time'], waveform_ss[column], marker='', color='grey', linewidth=1.9,
                  label=r"Steady State error")
-        plt.plot(waveform_est_err['time'], waveform_est_err[column], marker='', color='orange', linewidth=1.9,
+        plt.plot(waveform_est_err['time'], waveform_est_err[column], marker='', color=palette(4), linewidth=1.9,
                  label='LKF error')
 
         plt.xlabel('time [a.u.]', fontsize=18)
         plt.ylabel(column + ' [a.u.]', fontsize=18)
+        plt.yscale('log')
+        plt.legend(fontsize=18)
+
+    plt.savefig(os.path.join(target_dir, filename))
+    # plt.show()
+    plt.close()
+    return
+
+def plot_waveform_EKF_LKF(waveform_real,
+                          waveform_LKF,
+                          waveform_EKF,
+                          waveform_LKF_err,
+                          waveform_EKF_err,
+                          waveform_ss,
+                          filename,
+                          target_dir='./'):
+    palette = plt.get_cmap('Set1')
+    plt.figure(figsize=(14, 5))
+
+    # Find the right spot on the plot
+    plt.subplot(1, 2, 1)
+    for column in waveform_real.drop('time', axis=1):
+        plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.9, label=r"Simulation")
+        plt.plot(waveform_LKF['time'], waveform_LKF[column], marker='', color=palette(4), linewidth=1.9, label='LKF estimate')
+        plt.plot(waveform_EKF['time'], waveform_EKF[column], marker='', color=palette(2), linewidth=1.9, label='EKF estimate')
+
+
+        plt.xlabel('time [a.u.]', fontsize=18)
+        plt.ylabel(column+' [a.u.]', fontsize=18)
+        plt.legend(fontsize=18)
+
+    plt.subplot(1, 2, 2)
+    for column in waveform_LKF_err.drop('time', axis=1):
+        plt.plot(waveform_ss['time'], waveform_ss[column], marker='', color='grey', linewidth=1.9,
+                 label=r"Steady State error")
+        plt.plot(waveform_LKF_err['time'], waveform_LKF_err[column], marker='', color=palette(4), linewidth=1.9,
+                 label='LKF error')
+        plt.plot(waveform_EKF_err['time'], waveform_EKF_err[column], marker='', color=palette(2), linewidth=1.9,
+                 label='EKF error')
+
+        plt.xlabel('time [a.u.]', fontsize=18)
+        plt.ylabel(column + ' [a.u.]', fontsize=18)
+        plt.yscale('log')
         plt.legend(fontsize=18)
 
 

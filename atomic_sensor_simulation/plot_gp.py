@@ -9,7 +9,7 @@ plt.style.use('seaborn-darkgrid')
 def plot_g_p(w_p, filename, target_dir='./'):
     palette = plt.get_cmap('Set1')
 
-    gps = np.arange(5, 170, 20).tolist()
+    gps = np.arange(5, 150, 20).tolist()
     gp = gps[0]
     plt.figure(figsize=(14, 9))
 

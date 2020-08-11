@@ -63,6 +63,7 @@ class Filter_History_Manager(object):
     @property
     def qs_err_post(self):
         return self.__qs_err_post
+
     @property
     def ps(self):
         return self.__ps

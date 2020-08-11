@@ -271,12 +271,12 @@ def run__atomic_sensor(*args):
         error_jz_LKF[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=lkf_num.x)
         error_q_LKF[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=lkf_num.x)
         error_p_LKF[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=lkf_num.x)
-        error_jy_EKF[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=lkf_num.x)
-        error_jz_EKF[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=lkf_num.x)
-        error_q_EKF[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=lkf_num.x)
-        error_p_EKF[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=lkf_num.x)
+        error_jy_EKF[index] = calculate_error(config.W['W_jy'], x=x_filter_freq[index], x_est=extended_kf_filterpy.x)
+        error_jz_EKF[index] = calculate_error(config.W['W_jz'], x=x_filter_freq[index], x_est=extended_kf_filterpy.x)
+        error_q_EKF[index] = calculate_error(config.W['W_q'], x=x_filter_freq[index], x_est=extended_kf_filterpy.x)
+        error_p_EKF[index] = calculate_error(config.W['W_p'], x=x_filter_freq[index], x_est=extended_kf_filterpy.x)
         error_waveform_LKF[index] = (waveform_filter_freq[index]-lkf_num_history_manager.waveform_est[index])**2
-        error_waveform_EKF[index] = config.coupling['g_p']*(np.cos(config.coupling['omega_p']*time)**2*error_q_EKF[index]+np.sin(config.coupling['omega_p']*time)**2*error_p_EKF[index])
+        error_waveform_EKF[index] = (waveform_filter_freq[index]-extended_kf_history_manager.waveform_est[index])**2
 
     # FIND STEADY STATE SOLUTION
     steady_state_history_manager = SteadyStateHistoryManager(num_iter_filter, config, time_arr_filter)

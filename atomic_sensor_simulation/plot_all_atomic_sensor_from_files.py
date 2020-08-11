@@ -43,28 +43,76 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
     LKF_state = pd.DataFrame(
         {'time': data_kf['time_arr_filter'], r"J$_y$": data_kf['jy_lin'], r"J$_z$": data_kf['jz_lin'],
          'q': data_kf['q_lin'], 'p': data_kf['p_lin']})
-    plot_state_LKF(LKF_state, simulation_state,
-                   filename='plt_state_gp_%r_wp_%r.png' % (gp, w_p),
+    EKF_state = pd.DataFrame(
+        {'time': data_kf['time_arr_filter'], r"J$_y$": data_kf['jy_ext'], r"J$_z$": data_kf['jz_ext'],
+         'q': data_kf['q_ext'], 'p': data_kf['p_ext']})
+    plot_state_simulation(simulation_state,
+                          filename='plt_state_simulation_gp_%r_wp_%r.png' % (gp, w_p),
+                          target_dir=target_dir)
+    plot_state_LKF(EKF_state,
+                   simulation_state,
+                   filename='plt_state_LKF_gp_%r_wp_%r.png' % (gp, w_p),
                    target_dir=target_dir)
+    plot_state_LKF_EKF(LKF_state,
+                       EKF_state,
+                       simulation_state,
+                       filename='plt_state_LKF_EKF_gp_%r_wp_%r.png' % (gp, w_p),
+                       target_dir=target_dir)
 
     # PLOT STATE VECTOR ESTIMATION ERR
-    err_cov = pd.DataFrame(
+    err_cov_LKF = pd.DataFrame(
         {'time':  data_kf['time_arr_filter'],
          r"$\Delta^2$J$_y$": data_kf['jy_err_lin_cov'],
          r"$\Delta^2$J$_z$": data_kf['jz_err_lin_cov'],
          r"$\Delta^2$q": data_kf['q_err_lin_cov'],
          r"$\Delta^2$p": data_kf['p_err_lin_cov']})
+    err_LKF = pd.DataFrame(
+        {'time':  data_kf['time_arr_filter'],
+         r"$\Delta^2$J$_y$": np.divide(data_kf['jy_err_lin'], data_kf['jy_steady_err']),
+         r"$\Delta^2$J$_z$": np.divide(data_kf['jz_err_lin'], data_kf['jz_steady_err']),
+         r"$\Delta^2$q": np.divide(data_kf['q_err_lin'], data_kf['q_steady_err']),
+         r"$\Delta^2$p": np.divide(data_kf['p_err_lin'], data_kf['p_steady_err'])})
+    err_cov_EKF = pd.DataFrame(
+        {'time': data_kf['time_arr_filter'],
+         r"$\Delta^2$J$_y$": data_kf['jy_err_ext_cov'],
+         r"$\Delta^2$J$_z$": data_kf['jz_err_ext_cov'],
+         r"$\Delta^2$q": data_kf['q_err_ext_cov'],
+         r"$\Delta^2$p": data_kf['p_err_ext_cov']})
+    err_EKF = pd.DataFrame(
+        {'time': data_kf['time_arr_filter'],
+         r"$\Delta^2$J$_y$": np.divide(data_kf['jy_err_ext'], data_kf['jy_steady_err']),
+         r"$\Delta^2$J$_z$": np.divide(data_kf['jz_err_ext'], data_kf['jz_steady_err']),
+         r"$\Delta^2$q": np.divide(data_kf['q_err_ext'], data_kf['q_steady_err']),
+         r"$\Delta^2$p": np.divide(data_kf['p_err_ext'], data_kf['p_steady_err'])})
     err_ss = pd.DataFrame(
         {'time':  data_kf['time_arr_filter'],
          r"$\Delta^2$J$_y$": data_kf['jy_steady_err'],
          r"$\Delta^2$J$_z$": data_kf['jz_steady_err'],
          r"$\Delta^2$q": data_kf['q_steady_err'],
          r"$\Delta^2$p": data_kf['p_steady_err']})
-    plot_state_err_LKF(err_cov,
+    err_ss_div = pd.DataFrame(
+        {'time':  data_kf['time_arr_filter'],
+         r"$\Delta^2$J$_y$": np.divide(data_kf['jy_steady_err'], data_kf['jy_steady_err']),
+         r"$\Delta^2$J$_z$": np.divide(data_kf['jz_steady_err'], data_kf['jz_steady_err']),
+         r"$\Delta^2$q": np.divide(data_kf['q_steady_err'], data_kf['q_steady_err']),
+         r"$\Delta^2$p": np.divide(data_kf['p_steady_err'], data_kf['p_steady_err'])})
+    plot_state_err_cov_LKF(err_cov_LKF,
                        err_ss,
-                       filename='plt_state_err_gp_%r_wp_%r.png' % (
+                       filename='plt_state_err_cov_LKF_gp_%r_wp_%r.png' % (
                        gp, w_p),
                        target_dir=target_dir)
+    plot_state_err_LKF(err_LKF,
+                       err_ss_div,
+                       filename='plt_state_err_LKF_gp_%r_wp_%r.png' % (
+                       gp, w_p),
+                       target_dir=target_dir)
+    plot_state_err_LKF_EKF(err_LKF,
+                           err_EKF,
+                           err_ss_div,
+                           filename='plt_state_err_LKF_EKF_gp_%r_wp_%r.png' % (
+                               gp, w_p),
+                           target_dir=target_dir
+                           )
 
     # #PLOT REAL ESTIMATION ERR SQ(np.dot((x-x_est), (x-x_est).T))
     # err_LKF = pd.DataFrame(
@@ -112,28 +160,59 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
             r"$\varepsilon$": data_kf['waveform_est_LKF']
         }
     )
-
-    waveform_err_real = pd.DataFrame(
+    waveform_EKF = pd.DataFrame(
         {
             'time':  data_kf['time_arr_filter'],
-            r"$\Delta^2 \varepsilon$": data_kf['waveform_real_LKF_err']
+            r"$\varepsilon$": data_kf['waveform_est_EKF']
         }
     )
-    waveform_err_cov = pd.DataFrame(
+
+    waveform_err_real_LKF = pd.DataFrame(
+        {
+            'time':  data_kf['time_arr_filter'],
+            r"$\Delta^2 \varepsilon$": np.divide(data_kf['waveform_real_LKF_err'], data_kf['waveform_ss_error'])
+        }
+    )
+    waveform_err_cov_LKF = pd.DataFrame(
         {
             'time':  data_kf['time_arr_filter'],
             r"$\Delta^2 \varepsilon$": data_kf['waveform_est_LKF']
         }
     )
+    waveform_err_cov_EKF = pd.DataFrame(
+        {
+            'time':  data_kf['time_arr_filter'],
+            r"$\Delta^2 \varepsilon$": data_kf['waveform_est_EKF']
+        }
+    )
+    waveform_err_real_EKF = pd.DataFrame(
+        {
+            'time':  data_kf['time_arr_filter'],
+            r"$\Delta^2 \varepsilon$": np.divide(data_kf['waveform_real_EKF_err'], data_kf['waveform_ss_error'])
+        }
+    )
     waveform_err_ss = pd.DataFrame(
         {
             'time':  data_kf['time_arr_filter'],
-            r"$\Delta^2 \varepsilon$": data_kf['waveform_ss_error']
+            r"$\Delta^2 \varepsilon$": np.divide(data_kf['waveform_ss_error'], data_kf['waveform_ss_error'])
         }
     )
-    plot_waveform(waveform_real, waveform_LKF, waveform_err_cov, waveform_err_ss,
+    plot_waveform_simulation(waveform_real,
+                             'plt_waveform_simulation_gp_%r_wp_%r.png' % (gp, w_p),
+                             target_dir=target_dir
+                             )
+    plot_waveform(waveform_real, waveform_LKF, waveform_err_real_LKF, waveform_err_ss,
                   'plt_waveform_gp_%r_wp_%r.png' % (gp, w_p),
                   target_dir=target_dir)
+    plot_waveform_EKF_LKF(waveform_real,
+                          waveform_LKF,
+                          waveform_EKF,
+                          waveform_err_real_LKF,
+                          waveform_err_real_EKF,
+                          waveform_err_ss,
+                          'plt_waveform_gp_%r_wp_%r_LKF_EKF.png' % (gp, w_p),
+                          target_dir=target_dir
+                          )
 
     # PLOT DIFFERENCE LKF-EKF ESTIMATES
     diff_LKF_EKF = pd.DataFrame(
@@ -151,21 +230,21 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
     plot_q_est_difference_LKF_EKF(diff_LKF_EKF, diff_LKF_EKF_err, 'plt_q_LKF_EKF_difference_gp_%r_wp_%r.png' % (
         gp, w_p), target_dir=target_dir)
 
-    # PLOT DIFFERENCE LKF-num_exp ESTIMATES
-    diff_LKF_num_exp = pd.DataFrame(
-        {
-            'time':  data_kf['time_arr_filter'],
-            'diff': np.abs(data_kf['q_lin'] - data_kf['q_lin_approx'])
-        })
-    diff_LKF_EKF_num_exp_err = pd.DataFrame(
-        {
-            'time':  data_kf['time_arr_filter'],
-            'diff': np.abs(
-                np.sqrt(data_kf['q_err_lin_cov']) - np.sqrt(data_kf['q_err_lin_approx_cov']))
-        })
-    plot_q_est_difference_num_exp(diff_LKF_num_exp, diff_LKF_EKF_num_exp_err,
-                                  'plt_LKF_num_exp_difference_gp_%r_wp_%r.png' % (
-                                      gp, w_p), target_dir=target_dir)
+    # # PLOT DIFFERENCE LKF-num_exp ESTIMATES
+    # diff_LKF_num_exp = pd.DataFrame(
+    #     {
+    #         'time':  data_kf['time_arr_filter'],
+    #         'diff': np.abs(data_kf['q_lin'] - data_kf['q_lin_approx'])
+    #     })
+    # diff_LKF_EKF_num_exp_err = pd.DataFrame(
+    #     {
+    #         'time':  data_kf['time_arr_filter'],
+    #         'diff': np.abs(
+    #             np.sqrt(data_kf['q_err_lin_cov']) - np.sqrt(data_kf['q_err_lin_approx_cov']))
+    #     })
+    # plot_q_est_difference_num_exp(diff_LKF_num_exp, diff_LKF_EKF_num_exp_err,
+    #                               'plt_LKF_num_exp_difference_gp_%r_wp_%r.png' % (
+    #                                   gp, w_p), target_dir=target_dir)
 
     # PLOT EKF LIN AND DISC
     ekf_lin = pd.DataFrame(
@@ -197,4 +276,11 @@ for gp in gps:
         os.makedirs(target_dir)
     plot__all_atomic_sensor_from_files(gp, wp, target_dir=target_dir)
 
+wps = np.arange(0., 10., 1.).tolist()
+for wp in wps:
+    gp = 145
+    target_dir = "./Simulation_plots/gp_%r_wp_%r" % (int(gp), int(wp))
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+    plot__all_atomic_sensor_from_files(gp, wp, target_dir=target_dir)
 

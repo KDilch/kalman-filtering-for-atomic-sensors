@@ -33,12 +33,12 @@ config.filter = {
 }
 
 config.noise_and_measurement = {
-    'QJy': 0.001,
-    'QJz': 0.001,
-    'Qq': 0.001,
-    'Qp': 0.001,
+    'QJy': 0.01,
+    'QJz': 0.01,
+    'Qq': 0.01,
+    'Qp': 0.01,
     'gD': 100.,
-    'QD': 0.001
+    'QD': 0.01
 }
 
 config.W = {
