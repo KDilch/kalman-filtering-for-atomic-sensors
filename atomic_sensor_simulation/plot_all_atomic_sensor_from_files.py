@@ -68,10 +68,10 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
          r"$\Delta^2$p": data_kf['p_err_lin_cov']})
     err_LKF = pd.DataFrame(
         {'time':  data_kf['time_arr_filter'],
-         r"$\Delta^2$J$_y$": np.divide(data_kf['jy_err_lin'], data_kf['jy_steady_err']),
-         r"$\Delta^2$J$_z$": np.divide(data_kf['jz_err_lin'], data_kf['jz_steady_err']),
-         r"$\Delta^2$q": np.divide(data_kf['q_err_lin'], data_kf['q_steady_err']),
-         r"$\Delta^2$p": np.divide(data_kf['p_err_lin'], data_kf['p_steady_err'])})
+         r"$\Delta^2$J$_y/\Delta^2$J$_y^{ss}$": np.divide(data_kf['jy_err_lin'], data_kf['jy_steady_err']),
+         r"$\Delta^2$J$_z/\Delta^2$J$_z^{ss}$": np.divide(data_kf['jz_err_lin'], data_kf['jz_steady_err']),
+         r"$\Delta^2$q$/\Delta^2$q$^{ss}$": np.divide(data_kf['q_err_lin'], data_kf['q_steady_err']),
+         r"$\Delta^2$p$/\Delta^2$p$^{ss}$": np.divide(data_kf['p_err_lin'], data_kf['p_steady_err'])})
     err_cov_EKF = pd.DataFrame(
         {'time': data_kf['time_arr_filter'],
          r"$\Delta^2$J$_y$": data_kf['jy_err_ext_cov'],
@@ -80,10 +80,10 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
          r"$\Delta^2$p": data_kf['p_err_ext_cov']})
     err_EKF = pd.DataFrame(
         {'time': data_kf['time_arr_filter'],
-         r"$\Delta^2$J$_y$": np.divide(data_kf['jy_err_ext'], data_kf['jy_steady_err']),
-         r"$\Delta^2$J$_z$": np.divide(data_kf['jz_err_ext'], data_kf['jz_steady_err']),
-         r"$\Delta^2$q": np.divide(data_kf['q_err_ext'], data_kf['q_steady_err']),
-         r"$\Delta^2$p": np.divide(data_kf['p_err_ext'], data_kf['p_steady_err'])})
+         r"$\Delta^2$J$_y/\Delta^2$J$_y^{ss}$": np.divide(data_kf['jy_err_ext'], data_kf['jy_steady_err']),
+         r"$\Delta^2$J$_z/\Delta^2$J$_z^{ss}$": np.divide(data_kf['jz_err_ext'], data_kf['jz_steady_err']),
+         r"$\Delta^2$q$/\Delta^2$q$^{ss}$": np.divide(data_kf['q_err_ext'], data_kf['q_steady_err']),
+         r"$\Delta^2$p$/\Delta^2$p$^{ss}$": np.divide(data_kf['p_err_ext'], data_kf['p_steady_err'])})
     err_ss = pd.DataFrame(
         {'time':  data_kf['time_arr_filter'],
          r"$\Delta^2$J$_y$": data_kf['jy_steady_err'],
@@ -92,10 +92,10 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
          r"$\Delta^2$p": data_kf['p_steady_err']})
     err_ss_div = pd.DataFrame(
         {'time':  data_kf['time_arr_filter'],
-         r"$\Delta^2$J$_y$": np.divide(data_kf['jy_steady_err'], data_kf['jy_steady_err']),
-         r"$\Delta^2$J$_z$": np.divide(data_kf['jz_steady_err'], data_kf['jz_steady_err']),
-         r"$\Delta^2$q": np.divide(data_kf['q_steady_err'], data_kf['q_steady_err']),
-         r"$\Delta^2$p": np.divide(data_kf['p_steady_err'], data_kf['p_steady_err'])})
+         r"$\Delta^2$J$_y/\Delta^2$J$_y^{ss}$": np.divide(data_kf['jy_steady_err'], data_kf['jy_steady_err']),
+         r"$\Delta^2$J$_z/\Delta^2$J$_z^{ss}$": np.divide(data_kf['jz_steady_err'], data_kf['jz_steady_err']),
+         r"$\Delta^2$q$/\Delta^2$q$^{ss}$": np.divide(data_kf['q_steady_err'], data_kf['q_steady_err']),
+         r"$\Delta^2$p$/\Delta^2$p$^{ss}$": np.divide(data_kf['p_steady_err'], data_kf['p_steady_err'])})
     plot_state_err_cov_LKF(err_cov_LKF,
                        err_ss,
                        filename='plt_state_err_cov_LKF_gp_%r_wp_%r.png' % (
@@ -170,7 +170,7 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
     waveform_err_real_LKF = pd.DataFrame(
         {
             'time':  data_kf['time_arr_filter'],
-            r"$\Delta^2 \varepsilon$": np.divide(data_kf['waveform_real_LKF_err'], data_kf['waveform_ss_error'])
+            r"$\Delta^2 \varepsilon / \Delta^2 \varepsilon^{ss}$": np.divide(data_kf['waveform_real_LKF_err'], data_kf['waveform_ss_error'])
         }
     )
     waveform_err_cov_LKF = pd.DataFrame(
@@ -188,20 +188,20 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
     waveform_err_real_EKF = pd.DataFrame(
         {
             'time':  data_kf['time_arr_filter'],
-            r"$\Delta^2 \varepsilon$": np.divide(data_kf['waveform_real_EKF_err'], data_kf['waveform_ss_error'])
+            r"$\Delta^2 \varepsilon / \Delta^2 \varepsilon^{ss}$": np.divide(data_kf['waveform_real_EKF_err'], data_kf['waveform_ss_error'])
         }
     )
-    waveform_err_ss = pd.DataFrame(
+    waveform_err_ss_div = pd.DataFrame(
         {
             'time':  data_kf['time_arr_filter'],
-            r"$\Delta^2 \varepsilon$": np.divide(data_kf['waveform_ss_error'], data_kf['waveform_ss_error'])
+            r"$\Delta^2 \varepsilon / \Delta^2 \varepsilon^{ss}$": np.divide(data_kf['waveform_ss_error'], data_kf['waveform_ss_error'])
         }
     )
     plot_waveform_simulation(waveform_real,
                              'plt_waveform_simulation_gp_%r_wp_%r.png' % (gp, w_p),
                              target_dir=target_dir
                              )
-    plot_waveform(waveform_real, waveform_LKF, waveform_err_real_LKF, waveform_err_ss,
+    plot_waveform(waveform_real, waveform_LKF, waveform_err_real_LKF, waveform_err_ss_div,
                   'plt_waveform_gp_%r_wp_%r.png' % (gp, w_p),
                   target_dir=target_dir)
     plot_waveform_EKF_LKF(waveform_real,
@@ -209,7 +209,7 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
                           waveform_EKF,
                           waveform_err_real_LKF,
                           waveform_err_real_EKF,
-                          waveform_err_ss,
+                          waveform_err_ss_div,
                           'plt_waveform_gp_%r_wp_%r_LKF_EKF.png' % (gp, w_p),
                           target_dir=target_dir
                           )

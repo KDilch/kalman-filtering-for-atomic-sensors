@@ -115,8 +115,8 @@ def plot_state_err_cov_LKF(err_cov, err_ss, filename, target_dir='./'):
         # Find the right spot on the plot
         plt.subplot(2, 2, num)
 
-        plt.plot(err_cov['time'], err_cov[column], marker='', color='orange', linewidth=1.9, label=r"LKF estimation error")
-        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State error')
+        plt.plot(err_cov['time'], err_cov[column], marker='', color='orange', linewidth=1.9, label=r"LKF")
+        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State')
 
         if num in [4, 3]:
             plt.xlabel('time [a.u.]', fontsize=18)
@@ -146,7 +146,7 @@ def plot_state_err_LKF(err_cov, err_ss, filename, target_dir='./'):
         # Find the right spot on the plot
         plt.subplot(2, 2, num)
 
-        plt.plot(err_cov['time'], err_cov[column], marker='', color='orange', linewidth=1.9, label=r"LKF estimation error")
+        plt.plot(err_cov['time'], err_cov[column], marker='', color='orange', linewidth=1.9, label=r"LKF")
         plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State error')
 
         if num in [4, 3]:
@@ -179,9 +179,9 @@ def plot_state_err_LKF_EKF(err_cov_LKF, err_cov_EKF, err_ss, filename, target_di
         # Find the right spot on the plot
         plt.subplot(2, 2, num)
 
-        plt.plot(err_cov_LKF['time'], err_cov_LKF[column], marker='', color=palette(4), linewidth=1.9, label=r"LKF estimation error")
-        plt.plot(err_cov_LKF['time'], err_cov_EKF[column], marker='', color=palette(2), linewidth=1.9, label=r"EKF estimation error")
-        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State error')
+        plt.plot(err_cov_LKF['time'], err_cov_LKF[column], marker='', color=palette(4), linewidth=1.9, label=r"LKF")
+        plt.plot(err_cov_LKF['time'], err_cov_EKF[column], marker='', color=palette(2), linewidth=1.9, label=r"EKF")
+        plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State')
 
         if num in [4, 3]:
             plt.xlabel('time [a.u.]', fontsize=18)
@@ -407,9 +407,9 @@ def plot_ekf_lin_disc(ekf_lin, ekf_disc, err_ss_q, sim_q, filename, target_dir='
     plt.ylabel(r"q" + ' [a.u.]', fontsize=18)
 
     plt.subplot(1, 2, 2)
-    plt.plot(ekf_lin['time'], ekf_lin[r"$\Delta^2$q"], marker='', color=palette(1), linewidth=1.9, alpha=0.9, label="continuous")
-    plt.plot(ekf_lin['time'], ekf_disc[r"$\Delta^2$q"], marker='', color=palette(2), linewidth=1.9, alpha=0.9, label="discrete")
-    plt.plot(err_ss_q['time'], err_ss_q[r"$\Delta^2$q"], marker='', color='grey', linestyle='--', label='Steady State Error', linewidth=1.9, alpha=0.9)
+    plt.plot(ekf_lin['time'], ekf_lin[r"$\Delta^2$q"], marker='', color=palette(1), linewidth=1.9, alpha=0.9, label="linearization first")
+    plt.plot(ekf_lin['time'], ekf_disc[r"$\Delta^2$q"], marker='', color=palette(2), linewidth=1.9, alpha=0.9, label="discretization first")
+    plt.plot(err_ss_q['time'], err_ss_q[r"$\Delta^2$q"], marker='', color='grey', linestyle='--', label='Steady State', linewidth=1.9, alpha=0.9)
     plt.xlabel('time [a.u.]', fontsize=18)
     plt.ylabel(r"$\Delta^2$q" + ' [a.u.]', fontsize=18)
     plt.legend(fontsize=18)
