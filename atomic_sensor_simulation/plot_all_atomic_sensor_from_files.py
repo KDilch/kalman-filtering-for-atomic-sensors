@@ -113,6 +113,14 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
                                gp, w_p),
                            target_dir=target_dir
                            )
+    plot_state_err_LKF_EKF(err_cov_LKF,
+                           err_cov_EKF,
+                           err_ss,
+                           filename='plt_state_err_cov_LKF_EKF_gp_%r_wp_%r.png' % (
+                               gp, w_p),
+                           target_dir=target_dir
+                           )
+
 
     # #PLOT REAL ESTIMATION ERR SQ(np.dot((x-x_est), (x-x_est).T))
     # err_LKF = pd.DataFrame(
@@ -230,21 +238,24 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
     plot_q_est_difference_LKF_EKF(diff_LKF_EKF, diff_LKF_EKF_err, 'plt_q_LKF_EKF_difference_gp_%r_wp_%r.png' % (
         gp, w_p), target_dir=target_dir)
 
-    # # PLOT DIFFERENCE LKF-num_exp ESTIMATES
-    # diff_LKF_num_exp = pd.DataFrame(
-    #     {
-    #         'time':  data_kf['time_arr_filter'],
-    #         'diff': np.abs(data_kf['q_lin'] - data_kf['q_lin_approx'])
-    #     })
-    # diff_LKF_EKF_num_exp_err = pd.DataFrame(
-    #     {
-    #         'time':  data_kf['time_arr_filter'],
-    #         'diff': np.abs(
-    #             np.sqrt(data_kf['q_err_lin_cov']) - np.sqrt(data_kf['q_err_lin_approx_cov']))
-    #     })
-    # plot_q_est_difference_num_exp(diff_LKF_num_exp, diff_LKF_EKF_num_exp_err,
-    #                               'plt_LKF_num_exp_difference_gp_%r_wp_%r.png' % (
-    #                                   gp, w_p), target_dir=target_dir)
+    # PLOT DIFFERENCE LKF-num_exp ESTIMATES
+    diff_LKF_num_exp = pd.DataFrame(
+        {
+            'time':  data_kf['time_arr_filter'],
+            'diff': np.abs(data_kf['q_lin'] - data_kf['q_lin_approx']),
+            'diff_EKF_num': np.abs(data_kf['q_ext'] - data_kf['q_lin_approx'])
+        })
+    diff_LKF_EKF_num_exp_err = pd.DataFrame(
+        {
+            'time':  data_kf['time_arr_filter'],
+            'diff': np.abs(
+                np.sqrt(data_kf['q_err_lin_cov']) - np.sqrt(data_kf['q_err_lin_approx_cov'])),
+            'diff_EKF_num': np.abs(
+                np.sqrt(data_kf['q_err_ext_cov']) - np.sqrt(data_kf['q_err_lin_approx_cov']))
+        })
+    plot_q_est_difference_num_exp(diff_LKF_num_exp, diff_LKF_EKF_num_exp_err,
+                                  'plt_LKF_num_exp_difference_gp_%r_wp_%r.png' % (
+                                      gp, w_p), target_dir=target_dir)
 
     # PLOT EKF LIN AND DISC
     ekf_lin = pd.DataFrame(
@@ -269,12 +280,12 @@ def plot__all_atomic_sensor_from_files(gp, w_p, target_dir='./'):
                           gp, w_p), target_dir=target_dir)
 
 gps = np.arange(5, 170, 20).tolist()
-for gp in gps:
-    wp = 6.
-    target_dir = "./Simulation_plots/gp_%r_wp_%r" % (int(gp), int(wp))
-    if not os.path.exists(target_dir):
-        os.makedirs(target_dir)
-    plot__all_atomic_sensor_from_files(gp, wp, target_dir=target_dir)
+# for gp in gps:
+#     wp = 6.
+#     target_dir = "./Simulation_plots/gp_%r_wp_%r" % (int(gp), int(wp))
+#     if not os.path.exists(target_dir):
+#         os.makedirs(target_dir)
+#     plot__all_atomic_sensor_from_files(gp, wp, target_dir=target_dir)
 
 wps = np.arange(0., 10., 1.).tolist()
 for wp in wps:

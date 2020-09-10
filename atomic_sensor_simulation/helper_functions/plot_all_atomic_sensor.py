@@ -179,7 +179,7 @@ def plot_state_err_LKF_EKF(err_cov_LKF, err_cov_EKF, err_ss, filename, target_di
         # Find the right spot on the plot
         plt.subplot(2, 2, num)
 
-        plt.plot(err_cov_LKF['time'], err_cov_LKF[column], marker='', color=palette(4), linewidth=1.9, label=r"LKF")
+        plt.plot(err_cov_LKF['time'], err_cov_LKF[column], marker='', color='orange', linewidth=1.9, label=r"LKF")
         plt.plot(err_cov_LKF['time'], err_cov_EKF[column], marker='', color=palette(2), linewidth=1.9, label=r"EKF")
         plt.plot(err_ss['time'], err_ss[column], marker='', color='grey', linewidth=1.9, linestyle='--', label='Steady State')
 
@@ -281,25 +281,27 @@ def plot_waveform(waveform_real, waveform_est, waveform_est_err, waveform_ss, fi
     # Find the right spot on the plot
     plt.subplot(1, 2, 1)
     for column in waveform_real.drop('time', axis=1):
-        plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.9,
+        plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.,
                  label=r"Simulation")
-        plt.plot(waveform_est['time'], waveform_est[column], marker='', color=palette(4), linewidth=1.9,
+        plt.plot(waveform_est['time'], waveform_est[column], marker='', color='orange', linewidth=1.9,
                  label='LKF estimate')
 
         plt.xlabel('time [a.u.]', fontsize=18)
         plt.ylabel(column + ' [a.u.]', fontsize=18)
-        plt.legend(fontsize=18)
+        # plt.ylim(-150, 250)
+        plt.legend(fontsize=18, loc="upper right")
 
     plt.subplot(1, 2, 2)
     for column in waveform_est_err.drop('time', axis=1):
         plt.plot(waveform_ss['time'], waveform_ss[column], marker='', color='grey', linewidth=1.9,
                  label=r"Steady State error")
-        plt.plot(waveform_est_err['time'], waveform_est_err[column], marker='', color=palette(4), linewidth=1.9,
+        plt.plot(waveform_est_err['time'], waveform_est_err[column], marker='', color='orange', linewidth=1.9,
                  label='LKF error')
 
         plt.xlabel('time [a.u.]', fontsize=18)
         plt.ylabel(column + ' [a.u.]', fontsize=18)
         plt.yscale('log')
+        # plt.ylim(10**(-5), 10**(4))
         plt.legend(fontsize=18)
 
     plt.savefig(os.path.join(target_dir, filename))
@@ -322,29 +324,32 @@ def plot_waveform_EKF_LKF(waveform_real,
     plt.subplot(1, 2, 1)
     for column in waveform_real.drop('time', axis=1):
         plt.plot(waveform_real['time'], waveform_real[column], marker='', color='grey', linewidth=1.9, label=r"Simulation")
-        plt.plot(waveform_LKF['time'], waveform_LKF[column], marker='', color=palette(4), linewidth=1.9, label='LKF estimate')
+        plt.plot(waveform_LKF['time'], waveform_LKF[column], marker='', color='orange', linewidth=1.9, label='LKF estimate')
         plt.plot(waveform_EKF['time'], waveform_EKF[column], marker='', color=palette(2), linewidth=1.9, label='EKF estimate')
-
 
         plt.xlabel('time [a.u.]', fontsize=18)
         plt.ylabel(column+' [a.u.]', fontsize=18)
-        plt.legend(fontsize=18)
+        plt.ylim(-300, 280)
+        plt.legend(fontsize=16, loc="upper right")
+        # plt.legend(bbox_to_anchor=(1, 1), loc="upper left", fontsize=16)
 
     plt.subplot(1, 2, 2)
     for column in waveform_LKF_err.drop('time', axis=1):
-        plt.plot(waveform_ss['time'], waveform_ss[column], marker='', color='grey', linewidth=1.9,
-                 label=r"Steady State error")
-        plt.plot(waveform_LKF_err['time'], waveform_LKF_err[column], marker='', color=palette(4), linewidth=1.9,
+        plt.plot(waveform_LKF_err['time'], waveform_LKF_err[column], marker='', color='orange', linewidth=1.9,
                  label='LKF error')
         plt.plot(waveform_EKF_err['time'], waveform_EKF_err[column], marker='', color=palette(2), linewidth=1.9,
                  label='EKF error')
+        plt.plot(waveform_ss['time'], waveform_ss[column], marker='', color='grey', linewidth=1.9,
+                 label=r"Steady State error")
 
         plt.xlabel('time [a.u.]', fontsize=18)
         plt.ylabel(column + ' [a.u.]', fontsize=18)
         plt.yscale('log')
-        plt.legend(fontsize=18)
+        plt.ylim(10**(-7), 10**(7))
+        # plt.legend(fontsize=18)
+        plt.legend(loc="upper right", fontsize=16)
 
-
+    plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=None)
     plt.savefig(os.path.join(target_dir, filename))
     # plt.show()
     plt.close()
@@ -375,20 +380,24 @@ def plot_q_est_difference_LKF_EKF(est_diff, est_err_diff, filename, target_dir='
 def plot_q_est_difference_num_exp(est_diff, est_err_diff, filename, target_dir='./'):
     # Initialize the figure
     plt.figure(figsize=(14, 5))
+    palette = plt.get_cmap('Set1')
 
     # Find the right spot on the plot
     plt.subplot(1, 2, 1)
+    plt.plot(est_diff['time'], est_diff['diff_EKF_num'], marker='', color=palette(2), linewidth=1.9, alpha=0.9)
     plt.plot(est_diff['time'], est_diff['diff'], marker='', color='orange', linewidth=1.9, alpha=0.9)
     plt.xlabel('time [a.u.]', fontsize=18)
     plt.ylabel(r"$|q^{num}-q^{exp}|$" + ' [a.u.]', fontsize=18)
 
     plt.subplot(1, 2, 2)
-    plt.plot(est_err_diff['time'], est_err_diff['diff'], marker='', color='orange', linewidth=1.9, alpha=0.9)
+    plt.plot(est_err_diff['time'], est_err_diff['diff_EKF_num'], marker='', color=palette(2), linewidth=1.9, alpha=0.9, label="EKF")
+    plt.plot(est_err_diff['time'], est_err_diff['diff'], marker='', color='orange', linewidth=1.9, alpha=0.9, label="LKF")
     plt.xlabel('time [a.u.]', fontsize=18)
     plt.ylabel(r"$|\Delta q^{num}-\Delta q^{exp}|$" + ' [a.u.]', fontsize=18)
+    plt.legend(fontsize=16)
 
     plt.savefig(os.path.join(target_dir, filename))
-    # plt.show()
+    plt.show()
     plt.close()
     return
 

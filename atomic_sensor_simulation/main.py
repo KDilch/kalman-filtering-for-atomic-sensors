@@ -106,14 +106,14 @@ def main():
             args.gp = gp
             args.wp = wp
             args.func(args)
-    for wp in [6.]:
-        logger.info("Setting omega_p to %r" % wp)
-        # for gp in [165]:
-        for gp in np.arange(5, 170, 20).tolist():
-            logger.info("Setting g_p to %r and wp to %r" % (gp, wp))
-            args.gp = gp
-            args.wp = wp
-            args.func(args)
+    # for wp in [6.]:
+    #     logger.info("Setting omega_p to %r" % wp)
+    #     # for gp in [165]:
+    #     for gp in [800]:
+    #         logger.info("Setting g_p to %r and wp to %r" % (gp, wp))
+    #         args.gp = gp
+    #         args.wp = wp
+    #         args.func(args)
     logger.info('Ending execution of the application.')
     return 0
 
