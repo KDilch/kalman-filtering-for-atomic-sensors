@@ -9,4 +9,4 @@ install:
   - pip install -r requirements.txt
 # command to run tests
 script:
-  - atomic_sensor_simulation/tests/test_main.py
+  - python atomic_sensor_simulation/tests/test_main.py
