@@ -7,5 +7,9 @@ python:
 install:
   - pip install -r requirements.txt
 # command to run tests
+env:
+  - PYTHONUNBUFFERED=1
+before_script:
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)/atomic_sensor_simulation
 script:
   - python atomic_sensor_simulation/main.py run-tests
