@@ -1,9 +1,13 @@
 import unittest
+import logging
+import sys
 from atomic_sensor_simulation.tests import test_noise
 from atomic_sensor_simulation.tests import linear_kf_tests
 
 def main():
     # initialize the test suite
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
