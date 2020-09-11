@@ -4,3 +4,6 @@ numpy
 scipy
 matplotlib
 filterpy
+control
+numdifftools
+pandas

@@ -18,32 +18,32 @@ R = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0.],
                 lambda t: np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift'])],
               [lambda t: 0., lambda t: 0., lambda t: -np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
                lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift'])]])
-steady_cov_predict_RF = None
-steady_cov_update_RF = None
+# steady_cov_predict_RF = None
+# steady_cov_update_RF = None
 R_T = R.transpose()
 
 def compute_steady_state_solution_for_atomic_sensor(t, F, model):
-    global steady_cov_predict_RF
-    global steady_cov_update_RF
+    # global steady_cov_predict_RF
+    # global steady_cov_update_RF
     R_derivative = differentiate_matrix_of_functions(R, t)
-    if steady_cov_predict_RF is None or steady_cov_update_RF is None:
-        F_RF = change_reference_frame_rotating(F,
-                                               eval_matrix_of_functions(R, t),
-                                               eval_matrix_of_functions(R_T, t),
-                                               R_derivative)
-        R_delta = model.R_delta
-        Phi_delta_RF = expm(F_RF * model.dt)
-        Phi_RF = expm(F_RF*t)
-        Q_delta = compute_Q_delta_sympy(F_RF, Matrix(model.Q), model.dt)
+    # if steady_cov_predict_RF is None or steady_cov_update_RF is None:
+    F_RF = change_reference_frame_rotating(F,
+                                           eval_matrix_of_functions(R, t),
+                                           eval_matrix_of_functions(R_T, t),
+                                           R_derivative)
+    R_delta = model.R_delta
+    Phi_delta_RF = expm(F_RF * model.dt)
+    Phi_RF = expm(F_RF*t)
+    Q_delta = compute_Q_delta_sympy(F_RF, Matrix(model.Q), model.dt)
 
-        steady_cov_predict_RF = solve_discrete_are(a=np.transpose(Phi_delta_RF),
-                                                b=np.transpose(model.H),
-                                                r=R_delta,
-                                                q=Q_delta)
-        print('steady cov prediction', steady_cov_predict_RF)
-        S_steady = model.R_delta + np.dot(np.dot(model.H, steady_cov_predict_RF), np.transpose(model.H))
-        K_steady = np.dot(np.dot(steady_cov_predict_RF, np.transpose(model.H)), np.linalg.inv(S_steady))
-        steady_cov_update_RF = np.dot((np.identity(model.dim_x) - np.dot(K_steady, model.H)), steady_cov_predict_RF)
+    steady_cov_predict_RF = solve_discrete_are(a=np.transpose(Phi_delta_RF),
+                                            b=np.transpose(model.H),
+                                            r=R_delta,
+                                            q=Q_delta)
+    # print('steady cov prediction', steady_cov_predict_RF)
+    S_steady = model.R_delta + np.dot(np.dot(model.H, steady_cov_predict_RF), np.transpose(model.H))
+    K_steady = np.dot(np.dot(steady_cov_predict_RF, np.transpose(model.H)), np.linalg.inv(S_steady))
+    steady_cov_update_RF = np.dot((np.identity(model.dim_x) - np.dot(K_steady, model.H)), steady_cov_predict_RF)
 
     # go back to LAB reference frame
     steady_cov_predict = change_reference_frame_rotating1(steady_cov_predict_RF,

@@ -1,0 +1,15 @@
+language: python
+python:
+  - "3.7"
+  - "3.8"
+  - "3.8-dev"  # 3.8 development branch
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+# command to run tests
+env:
+  - PYTHONUNBUFFERED=1
+before_script:
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)/atomic_sensor_simulation
+script:
+  - python atomic_sensor_simulation/main.py run-tests
