@@ -6,3 +6,4 @@ matplotlib
 filterpy
 control
 numdifftools
+pandas
