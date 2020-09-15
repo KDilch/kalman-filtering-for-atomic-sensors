@@ -1,16 +1,17 @@
 from types import SimpleNamespace
 import numpy as np
+
 config = SimpleNamespace()
 
 config.physical_parameters = {
-        'larmour_freq': 6.,
-        'spin_correlation_const': 0.33,
-        'light_correlation_const': 1.
-    }
+    'larmour_freq': 6.,
+    'spin_correlation_const': 0.33,
+    'light_correlation_const': 1.
+}
 
 config.coupling = {
-    'omega_p': 6.,
-    'g_p': 150.,
+    'omega_p': [6., 0., 5., 8., 10., 0.5],
+    'g_p': [150., 10., 50.],
     'phase_shift': 0.
 }
 
@@ -43,13 +44,13 @@ config.noise_and_measurement = {
 
 config.W = {
     'W_jy': np.array([[1., 0., 0., 0.],
-                  [0., 0., 0., 0.],
-                  [0., 0., 0., 0.],
-                  [0., 0., 0., 0.]]),
+                      [0., 0., 0., 0.],
+                      [0., 0., 0., 0.],
+                      [0., 0., 0., 0.]]),
     'W_jz': np.array([[0., 0., 0., 0.],
-                     [0., 1., 0., 0.],
-                     [0., 0., 0., 0.],
-                     [0., 0., 0., 0.]]),
+                      [0., 1., 0., 0.],
+                      [0., 0., 0., 0.],
+                      [0., 0., 0., 0.]]),
     'W_q': np.array([[0., 0., 0., 0.],
                      [0., 0., 0., 0.],
                      [0., 0., 1., 0.],

@@ -9,6 +9,7 @@ import logging
 from scipy.linalg import expm
 from scipy.integrate import quad
 from importlib import import_module
+from copy import deepcopy
 
 
 def stringify_namespace(namespace):
@@ -26,6 +27,31 @@ def stringify_namespace(namespace):
 def import_config_from_path(module_name):
     module_object = import_module(module_name)
     return getattr(module_object, 'config')
+
+def get_configs_from_config(config):
+    configs = []
+    keys_namespace = sorted(config.__dict__)
+    for key_namespace in keys_namespace:
+        entry = config.__dict__[key_namespace]
+        for k in entry.keys():
+            if type(entry[k]) is list:
+                if len(configs) == 0:
+                    for element in entry[k]:
+                        temp_config = deepcopy(config)
+                        temp_config.__dict__[key_namespace][k] = element
+                        configs.append(temp_config)
+                else:
+                    temp_configs = []
+                    for config in configs:
+                        for element in entry[k]:
+                            temp_config = deepcopy(config)
+                            temp_config.__dict__[key_namespace][k] = element
+                            temp_configs.append(temp_config)
+                    configs = temp_configs
+    if not configs:
+        return [config]
+    else:
+        return configs
 
 
 def load_logging_config(default_path='logging.json', default_level=logging.INFO):

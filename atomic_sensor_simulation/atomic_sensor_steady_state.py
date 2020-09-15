@@ -10,19 +10,19 @@ from scipy.integrate import odeint
 
 
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions, differentiate_matrix_of_functions
-from config import config
 
-R = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0.],
-              [lambda t: 0., lambda t: 1., lambda t: 0., lambda t: 0.],
-              [lambda t: 0., lambda t: 0., lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
-                lambda t: np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift'])],
-              [lambda t: 0., lambda t: 0., lambda t: -np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
-               lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift'])]])
-# steady_cov_predict_RF = None
-# steady_cov_update_RF = None
-R_T = R.transpose()
-
-def compute_steady_state_solution_for_atomic_sensor(t, F, model):
+def compute_steady_state_solution_for_atomic_sensor(t, F, model, config):
+    R = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0.],
+                  [lambda t: 0., lambda t: 1., lambda t: 0., lambda t: 0.],
+                  [lambda t: 0., lambda t: 0.,
+                   lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
+                   lambda t: np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift'])],
+                  [lambda t: 0., lambda t: 0.,
+                   lambda t: -np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
+                   lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift'])]])
+    # steady_cov_predict_RF = None
+    # steady_cov_update_RF = None
+    R_T = R.transpose()
     # global steady_cov_predict_RF
     # global steady_cov_update_RF
     R_derivative = differentiate_matrix_of_functions(R, t)
