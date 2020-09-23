@@ -3,6 +3,7 @@
 import argparse
 import logging
 import threading
+import multiprocessing
 import queue
 
 from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
@@ -108,6 +109,8 @@ def main():
         logger.info('Loading a config file from path %r' % args.config)
         config = import_config_from_path(args.config)
         configs = get_configs_from_config(config)
+        # pool = multiprocessing.Pool(len(configs))
+        # mp_sim = pool.map(run__atomic_sensor('a', 'b'))
 
         class myThread(threading.Thread):
             def __init__(self, thread_id, name, q):
@@ -117,9 +120,9 @@ def main():
                 self.q = q
 
             def run(self):
-                logger.info("Starting ", self.name)
+                logger.info("Starting %s" % self.name)
                 run__atomic_sensor(self.name, self.q, args)
-                logger.info("Exiting ", self.name)
+                logger.info("Exiting %s" % self.name)
 
         # Fill the queue
         workQueue = queue.Queue()

@@ -23,6 +23,7 @@ def run__atomic_sensor(threadName, q, *args):
     # Logger for storing errors and logs in separate file, creates separate folder
     logger = logging.getLogger(__name__)
     queueLock = threading.Lock()
+    rLock = threading.RLock()
     queueLock.acquire()
     config = None
     if not q.empty():
@@ -160,6 +161,7 @@ def run__atomic_sensor(threadName, q, *args):
 
         # RUN FILTERPY KALMAN FILTER
         logger.info("Initializing linear_kf_filterpy Kalman Filter")
+        lock = threading.Lock()
 
         lkf_exp_approx = linear_kf_model.initialize_filterpy()
         lkf_exp_approx_history_manager = Filter_History_Manager(lkf_exp_approx, num_iter_filter, config, time_arr_filter)
@@ -189,6 +191,7 @@ def run__atomic_sensor(threadName, q, *args):
             coupling_amplitude=config.coupling['g_p'],
             coupling_freq=config.coupling['omega_p'],
             coupling_phase_shift=config.coupling['phase_shift'])
+
         extended_kf_history_manager = Filter_History_Manager(extended_kf_filterpy, num_iter_filter, config, time_arr_filter)
         extended_kf_history_manager_lin = Filter_History_Manager(extended_kf_filterpy_lin, num_iter_filter, config, time_arr_filter)
 
@@ -208,13 +211,14 @@ def run__atomic_sensor(threadName, q, *args):
 
             extended_kf_filterpy_lin.set_Q(lkf_num.Q) # THIS LINE NEEDS TO BE ADDED IF LINEARIZATION FIRST
             extended_kf_filterpy_lin.predict()
+
             extended_kf_filterpy_lin.update(z,
                                         extended_kf_model_lin.HJacobianat,
                                         extended_kf_model_lin.hx,
                                         R=extended_kf_model_lin.R_delta)
             extended_kf_history_manager_lin.add_entry(index)
-
             extended_kf_filterpy.predict_discretization_first()
+
             extended_kf_filterpy.update(z,
                                         extended_kf_model.HJacobianat,
                                         extended_kf_model.hx,
@@ -236,6 +240,7 @@ def run__atomic_sensor(threadName, q, *args):
             lkf_expint_approx.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time)
             lkf_exp_approx.predict()
             lkf_exp_approx.F = linear_kf_model.compute_Phi_delta_solve_ode_numerically(from_time=time)
+
             # logger.debug('Setting Phi to [%r]' % str(lkf_num.F))
             lkf_num.update(z)
             # lkf_expint_approx.update(z)
@@ -268,31 +273,31 @@ def run__atomic_sensor(threadName, q, *args):
             logger.debug("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
             steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
-        # # # # PLOT DATA
-        # plot__all_atomic_sensor(sensor,
-        #                         time_arr_filter,
-        #                         time_arr,
-        #                         lkf_num_history_manager,
-        #                         lkf_expint_approx_history_manager,
-        #                         lkf_exp_approx_history_manager,
-        #                         extended_kf_history_manager,
-        #                         extended_kf_history_manager_lin,
-        #                         unscented_kf_history_manager,
-        #                         steady_state_history_manager,
-        #                         np.transpose(zs_filter_freq[:-1])[0],
-        #                         error_jy_LKF,
-        #                         error_jz_LKF,
-        #                         error_q_LKF,
-        #                         error_p_LKF,
-        #                         error_waveform_LKF,
-        #                         error_jy_EKF,
-        #                         error_jz_EKF,
-        #                         error_q_EKF,
-        #                         error_p_EKF,
-        #                         error_waveform_EKF,
-        #                         np.transpose(zs_sigma[:-1])[0],
-        #                         args,
-        #                         config)
+        # # # PLOT DATA
+        plot__all_atomic_sensor(sensor,
+                                time_arr_filter,
+                                time_arr,
+                                lkf_num_history_manager,
+                                lkf_expint_approx_history_manager,
+                                lkf_exp_approx_history_manager,
+                                extended_kf_history_manager,
+                                extended_kf_history_manager_lin,
+                                unscented_kf_history_manager,
+                                steady_state_history_manager,
+                                np.transpose(zs_filter_freq[:-1])[0],
+                                error_jy_LKF,
+                                error_jz_LKF,
+                                error_q_LKF,
+                                error_p_LKF,
+                                error_waveform_LKF,
+                                error_jy_EKF,
+                                error_jz_EKF,
+                                error_q_EKF,
+                                error_p_EKF,
+                                error_waveform_EKF,
+                                np.transpose(zs_sigma[:-1])[0],
+                                args,
+                                config)
         #
         # # SAVE DATA TO A FILE
         # save_data(sensor,
