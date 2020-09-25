@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 import argparse
 import logging
-import threading
 import multiprocessing
-import queue
+import itertools
+import time
 
 from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
 from atomic_sensor_simulation.run_atomic_sensor import run__atomic_sensor
@@ -68,6 +68,11 @@ def main():
                                    action='store_true',
                                    help='Bool specifying if you want to save the data in a file',
                                    default=False)
+    simulation_parser.add_argument('--max_num_processes',
+                                   action='store',
+                                   help='Int specifying the maximum number of processes that should'
+                                        'be spawned while running the simulation.',
+                                   default=8)
     simulation_parser.set_defaults(func=run__atomic_sensor)
 
     # create the parser for the "run-frequency-extractor" command
@@ -105,48 +110,22 @@ def main():
     # if running atomic sensor simulation spawn multiple threads, prepare a config for each thread
     if args.command == 'run-atomic-sensor':
         logger.info('Starting execution of run-atomic-sensor command.')
-
-        logger.info('Loading a config file from path %r' % args.config)
         config = import_config_from_path(args.config)
         configs = get_configs_from_config(config)
-        # pool = multiprocessing.Pool(len(configs))
-        # mp_sim = pool.map(run__atomic_sensor('a', 'b'))
 
-        class myThread(threading.Thread):
-            def __init__(self, thread_id, name, q):
-                threading.Thread.__init__(self)
-                self.threadID = thread_id
-                self.name = name
-                self.q = q
-
-            def run(self):
-                logger.info("Starting %s" % self.name)
-                run__atomic_sensor(self.name, self.q, args)
-                logger.info("Exiting %s" % self.name)
-
-        # Fill the queue
-        workQueue = queue.Queue()
-        queueLock = threading.Lock()
-        queueLock.acquire()
-        for config in configs:
-            workQueue.put(config)
-        queueLock.release()
-
-        # Create new threads
-        threadList = ["Thread-%d" % num for num in range(len(configs))]
-        threads = []
-        threadID = 1
-        for tName in threadList:
-            thread = myThread(threadID, tName, workQueue)
-            thread.start()
-            threads.append(thread)
-            threadID += 1
-
-        # Exit the threads
-        for t in threads:
-            t.join()
-        logger.info("Exiting Main Thread")
-
+        logger.info('Preparing multiprocessing Queue.')
+        args_list = itertools.repeat(args, len(configs))
+        args_tuples = tuple(zip(configs, args_list))
+        processes = args.max_num_processes if len(configs) >= args.max_num_processes else len(configs)
+        pool = multiprocessing.Pool(processes=processes)
+        simulation_results = pool.starmap(run__atomic_sensor, args_tuples)
+        pool.close()
+        pool.join()
+        logger.info('Simulation with %s processes spawned finished in %s' % (str(processes),
+                                                                             str(time.time() - start_time_multiprocessing)))
+        if any(simulation_results) != 0:
+            logger.warning('Exit code other than 0 detected.')
+            raise UserWarning('Not all simulation exit codes were 0.')
     else:
         args.func(args)
 

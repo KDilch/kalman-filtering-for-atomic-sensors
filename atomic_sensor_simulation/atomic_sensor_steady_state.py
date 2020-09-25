@@ -40,7 +40,6 @@ def compute_steady_state_solution_for_atomic_sensor(t, F, model, config):
                                             b=np.transpose(model.H),
                                             r=R_delta,
                                             q=Q_delta)
-    # print('steady cov prediction', steady_cov_predict_RF)
     S_steady = model.R_delta + np.dot(np.dot(model.H, steady_cov_predict_RF), np.transpose(model.H))
     K_steady = np.dot(np.dot(steady_cov_predict_RF, np.transpose(model.H)), np.linalg.inv(S_steady))
     steady_cov_update_RF = np.dot((np.identity(model.dim_x) - np.dot(K_steady, model.H)), steady_cov_predict_RF)

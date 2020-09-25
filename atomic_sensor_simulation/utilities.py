@@ -25,10 +25,14 @@ def stringify_namespace(namespace):
 
 
 def import_config_from_path(module_name):
+    logger = logging.getLogger(__name__)
+    logger.info('Loading a config file from path %r' % module_name)
     module_object = import_module(module_name)
     return getattr(module_object, 'config')
 
 def get_configs_from_config(config):
+    logger = logging.getLogger(__name__)
+    logger.info('Generating config files for multiple processes')
     configs = []
     keys_namespace = sorted(config.__dict__)
     for key_namespace in keys_namespace:
@@ -49,8 +53,10 @@ def get_configs_from_config(config):
                             temp_configs.append(temp_config)
                     configs = temp_configs
     if not configs:
+        logger.info('No additional config files generated.')
         return [config]
     else:
+        logger.info('Generated %s config files' % str(len(configs)))
         return configs
 
 
