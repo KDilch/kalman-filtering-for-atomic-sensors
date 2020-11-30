@@ -8,6 +8,6 @@ def listener_process(queue):
     while True:
         while not queue.empty():
             record = queue.get()
-            logger = logging.getLogger(record.name)
+            logger = logging.getLogger(__name__)
             logger.handle(record)
         sleep(1)

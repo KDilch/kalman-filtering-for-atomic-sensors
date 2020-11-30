@@ -10,7 +10,7 @@ config.physical_parameters = {
 }
 
 config.coupling = {
-    'omega_p': [6.],
+    'omega_p': [6., 0.],
     'g_p': 150.,
     'phase_shift': 0.
 }

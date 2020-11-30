@@ -7,6 +7,7 @@ import itertools
 import time
 
 from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
+from atomic_sensor_simulation.listener import listener_process
 from atomic_sensor_simulation.run_atomic_sensor import run__atomic_sensor
 from atomic_sensor_simulation.run_frequency_extractor import run__frequency_extractor
 from atomic_sensor_simulation.run_tests import run_tests
@@ -116,16 +117,30 @@ def main():
         logger.info('Preparing multiprocessing Queue.')
         args_list = itertools.repeat(args, len(configs))
         args_tuples = tuple(zip(configs, args_list))
-        processes = args.max_num_processes if len(configs) >= args.max_num_processes else len(configs)
-        pool = multiprocessing.Pool(processes=processes)
-        simulation_results = pool.starmap(run__atomic_sensor, args_tuples)
-        pool.close()
-        pool.join()
-        logger.info('Simulation with %s processes spawned finished in %s' % (str(processes),
-                                                                             str(time.time() - start_time_multiprocessing)))
-        if any(simulation_results) != 0:
-            logger.warning('Exit code other than 0 detected.')
-            raise UserWarning('Not all simulation exit codes were 0.')
+        queue = multiprocessing.Queue(len(args_tuples))
+        queue.put(list(args_tuples))
+        # listener_process(queue)
+
+        logger.info('Preparing multiprocessing Processes.')
+        start_time = time.time()
+        num_processes = args.max_num_processes if len(configs) >= args.max_num_processes else len(configs)
+        workers = []
+        for i in range(num_processes):
+            worker = multiprocessing.Process(target=run__atomic_sensor, args=(queue,))
+            workers.append(worker)
+            worker.start()
+        for w in workers:
+            w.join()
+
+        # pool = multiprocessing.Pool(processes=processes)
+        # simulation_results = pool.starmap(run__atomic_sensor, args_tuples)
+        # pool.close()
+        # pool.join()
+        logger.info('Simulation with %s processes spawned finished in %s' % (str(num_processes),
+                                                                             str(time.time() - start_time)))
+        # if any(simulation_results) != 0:
+        #     logger.warning('Exit code other than 0 detected.')
+        #     raise UserWarning('Not all simulation exit codes were 0.')
     else:
         args.func(args)
 

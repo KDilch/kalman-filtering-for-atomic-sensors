@@ -17,11 +17,12 @@ from history_manager.atomic_sensor_history_manager import Filter_History_Manager
 from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
 
 
-def run__atomic_sensor(config, *args):
-
+def run__atomic_sensor(queue):
     # Logger for storing errors and logs in separate file, creates separate folder
     logger = logging.getLogger(__name__+'_PID_'+str(os.getpid()))
+    logger.addHandler(logging.handlers.QueueHandler(queue))
     logger.info('Starting execution of atomic sensor simulation.')
+    config, args = queue.get()[0]
 
     num_iter_sensor = (2 * np.pi * config.simulation['number_periods'] /
                        config.physical_parameters['larmour_freq']) / config.simulation['dt_sensor']
