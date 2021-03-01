@@ -10,7 +10,7 @@ config.physical_parameters = {
 }
 
 config.coupling = {
-    'omega_p': [6., 0.],
+    'omega_p': 6.,
     'g_p': 150.,
     'phase_shift': 0.
 }
@@ -18,8 +18,8 @@ config.coupling = {
 config.simulation = {
     'number_periods': 10.,
     'dt_sensor': 0.005,
-    'spin_y_initial_val': 2.,
-    'spin_z_initial_val': 2.,
+    'spin_y_initial_val': 1.,
+    'spin_z_initial_val': 0.,
     'q_initial_val': 2.,
     'p_initial_val': 2.
 }
