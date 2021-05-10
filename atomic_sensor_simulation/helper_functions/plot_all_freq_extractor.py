@@ -16,12 +16,12 @@ def plot__all_atomic_sensor(sensor,
     # PLOTS=========================================================
     logger = logging.getLogger(__name__)
     logger.info('Plotting data.')
-    # Get history data from sensor state class and separate into blocks using "zip".
+    # Get history data from sensor dynamical_model class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
 
     labels = ['Linear kf num', 'Linear kf expint', 'Linear kf exp', 'Extended kf', 'Unscented kf', 'Exact data']
     labels_err = ['Linear kf num err', 'Linear kf expint err', 'Linear kf exp err', 'Extended kf err',
-                  'Unscented kf err', 'Steady state']
+                  'Unscented kf err', 'Steady dynamical_model']
 
     # plot atoms jy
     if np.any([args[0].lkf_num, args[0].lkf_exp, args[0].lkf_expint, args[0].ekf, args[0].ukf]):

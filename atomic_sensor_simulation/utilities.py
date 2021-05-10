@@ -184,9 +184,6 @@ def differentiate_matrix_of_functions(matrix, at_t):
         matrix_derivative[index] = derivative(matrix_flat[index], at_t, dx=1e-6)
     return np.reshape(matrix_derivative, shape)
 
-
-
-
 def calculate_error(W, x, x_est):
     x = np.array([x]).T
     Sigma = np.dot((x-x_est), (x-x_est).T)

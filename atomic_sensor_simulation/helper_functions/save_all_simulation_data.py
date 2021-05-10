@@ -33,7 +33,7 @@ def save_data(sensor,
     # PLOTS=========================================================
     logger = logging.getLogger(__name__)
     logger.info('Preparing data for saving.')
-    # Get history data from sensor state class and separate into blocks using "zip".
+    # Get history data from sensor dynamical_model class and separate into blocks using "zip".
     j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
     waveform = sensor.waveform_history
     print(len(zs_sigma), len(zs_filter_freq))

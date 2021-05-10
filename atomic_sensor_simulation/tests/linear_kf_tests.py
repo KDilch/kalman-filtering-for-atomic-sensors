@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from filter_model.AtomicSensor.linear_kf import Linear_KF
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
+from atomic_sensor_simulation.dynamical_model.atomic_state import AtomicSensorState
 
 
 # class TestNumericalSolutionForPhi(unittest.TestCase):
@@ -15,7 +15,7 @@ from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
 #                       [0., 0., 0., 0.001]])
 #         H = np.array([[0., 0.01, 0., 0.]])
 #         R = np.array([[0.01]])
-#         state = AtomicSensorState(initial_vec=np.array([2., 2., 0., 0.]),
+#         dynamical_model = AtomicSensorState(initial_vec=np.array([2., 2., 0., 0.]),
 #                                   noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.],
 #                                                                cov=Q,
 #                                                                dt=0.005),
@@ -27,12 +27,12 @@ from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
 #                                   coupling_amplitude=50.,
 #                                   coupling_freq=0.,
 #                                   coupling_phase_shift=0.)
-#         fil = Linear_KF(F=state.F_transition_matrix,
+#         fil = Linear_KF(F=dynamical_model.F_transition_matrix,
 #                         Q=Q,
 #                         H=H,
 #                         R_delta=R / 0.02,
-#                         Gamma=state.Gamma_control_evolution_matrix,
-#                         u=state.u_control_vec,
+#                         Gamma=dynamical_model.Gamma_control_evolution_matrix,
+#                         u=dynamical_model.u_control_vec,
 #                         z0=[198.7521958574962],
 #                         dt=0.02,
 #                         x0=np.array([2., 2., 0., 0.]),

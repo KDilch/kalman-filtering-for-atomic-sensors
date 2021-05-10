@@ -5,7 +5,7 @@ import numpy as np
 
 from atomic_sensor_simulation.utilities import import_config_from_path
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.state.freq_state import FrequencySensorState
+from atomic_sensor_simulation.dynamical_model.freq_state import FrequencySensorState
 from atomic_sensor_simulation.sensor.frequency_sensor import FrequencySensor
 from filter_model.FrequencyExtractor.extended_kf import Extended_KF
 from atomic_sensor_simulation.utilities import calculate_error, plot_data, \
@@ -33,7 +33,7 @@ def run__frequency_extractor(*args):
                  )
                 )
 
-    logger.info('Setting initial state vec to  [%r, %r, %r].' %
+    logger.info('Setting initial dynamical_model vec to  [%r, %r, %r].' %
                 (str(config.simulation['x1']),
                  str(config.simulation['x2']),
                  str(config.simulation['x3'])
@@ -90,8 +90,8 @@ def run__frequency_extractor(*args):
     #                                   Q=linear_kf_model.Q_delta,
     #                                   hx=hx,
     #                                   R=R / config.filter['dt_filter'],
-    #                                   Gamma=state.Gamma_control_evolution_matrix,
-    #                                   u=state.u_control_vec,
+    #                                   Gamma=dynamical_model.Gamma_control_evolution_matrix,
+    #                                   u=dynamical_model.u_control_vec,
     #                                   z0=[zs[0]],
     #                                   dt=config.filter['dt_filter'],
     #                                   x0=linear_kf_model.x0,
@@ -131,11 +131,11 @@ def run__frequency_extractor(*args):
         extended_kf_history_manager.add_entry(index)
 
     # PLOTS=========================================================
-    # Get history data from sensor state class and separate into blocks using "zip".
+    # Get history data from sensor dynamical_model class and separate into blocks using "zip".
     x1_full_history, x2_full_history, x3_full_history = zip(*sensor.state_vec_full_history)
 
     labels = ['Extended kf', 'Exact data']
-    labels_err = ['Extended kf err', 'Steady state']
+    labels_err = ['Extended kf err', 'Steady dynamical_model']
 
     if np.any([True]):
         logger.info("Plotting data x1")

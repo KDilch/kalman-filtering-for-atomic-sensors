@@ -274,7 +274,7 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         I_KH = self._I - np.dot(self.K, H)
         self.P = np.dot(np.dot(I_KH, self.P), I_KH.T) + np.dot(np.dot(self.K, R), self.K.T)
 
-        # save measurement and posterior state
+        # save measurement and posterior dynamical_model
         self.z = copy.deepcopy(z)
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()

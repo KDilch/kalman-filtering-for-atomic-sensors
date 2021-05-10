@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.state.atomic_state import AtomicSensorState
+from atomic_sensor_simulation.dynamical_model.atomic_state import AtomicSensorState
 from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
 from filter_model.AtomicSensor.linear_kf import Linear_KF
 from filter_model.AtomicSensor.unscented_kf import Unscented_KF
@@ -259,7 +259,7 @@ def run__atomic_sensor(queue):
                                                                                         time_filter),
                                                                                     model=linear_kf_model,
                                                                                     config=config)
-        logger.debug("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
+        logger.debug("Steady dynamical_model solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
         steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
     # # PLOT DATA #TODO make process save

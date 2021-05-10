@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from enum import Enum
 
-from atomic_sensor_simulation.state.state import State
+from atomic_sensor_simulation.dynamical_model.state import State
 
 from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func, \
     create_operable_sin_func
@@ -19,14 +19,14 @@ class AtomicSensorCoordinates(Enum):
 
 class AtomicSensorState(State):
     """
-    Specialization of a state abstract class. Represents a state vector x_t_k = [j, q].
+    Specialization of a dynamical_model abstract class. Represents a dynamical_model vector x_t_k = [j, q].
     """
 
     def __init__(self, initial_vec, noise_vec, initial_time, time_arr, dt=1., logger=None, **kwargs):
         """
         :param initial_vec:
         :param noise_vec:
-        :param initial_time: float; a member variable __time of class state is initialized to initial time
+        :param initial_time: float; a member variable __time of class dynamical_model is initialized to initial time
         :param logger: an instance of logger.Logger; if not passed a new instance of a logger is initialized
         :param kwargs: key word args specific to a given simulation;
                        in this case they are: atoms_wiener_const, g_a_coupling_const
@@ -100,36 +100,16 @@ class AtomicSensorState(State):
                        time=initial_time,
                        gp=self.__coupling_amplitude,
                        omega_p=self.__coupling_freq,
-                       u_control_vec=np.array([create_operable_const_func(0.),
-                                               create_operable_const_func(0.),
-                                               create_operable_const_func(0.),
-                                               create_operable_const_func(0.)]).T,
-                       Gamma_control_evolution_matrix=np.array([[create_operable_const_func(1.),
-                                                                 create_operable_const_func(0.),
-                                                                 create_operable_const_func(0.),
-                                                                 create_operable_const_func(0.)],
-                                                                [create_operable_const_func(0.),
-                                                                 create_operable_const_func(1.),
-                                                                 create_operable_const_func(0.),
-                                                                 create_operable_const_func(0.)],
-                                                                [create_operable_const_func(0.),
-                                                                 create_operable_const_func(0.),
-                                                                 create_operable_const_func(1.),
-                                                                 create_operable_const_func(0.)],
-                                                                [create_operable_const_func(0.),
-                                                                 create_operable_const_func(0.),
-                                                                 create_operable_const_func(0.),
-                                                                 create_operable_const_func(1.)]]),
                        logger=logger)
 
     @property
     def state_vec(self):
-        """Returns a numpy array representing a state vector x=(spin, quadrature)."""
+        """Returns a numpy array representing a dynamical_model vector x=(spin, quadrature)."""
         return self._state_vec
 
     @property
     def mean_state_vec(self):
-        """Returns a numpy array representing a state vector x without any noise."""
+        """Returns a numpy array representing a dynamical_model vector x without any noise."""
         return np.array(self._mean_state_vec)
 
     @property
