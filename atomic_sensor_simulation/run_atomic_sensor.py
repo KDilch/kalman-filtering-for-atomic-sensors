@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.dynamical_model.atomic_state import AtomicSensorState
+from state.atomic_state import AtomicSensorState
 from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
 from filter_model.AtomicSensor.linear_kf import Linear_KF
 from filter_model.AtomicSensor.unscented_kf import Unscented_KF

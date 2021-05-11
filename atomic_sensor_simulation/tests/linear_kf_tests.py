@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-import unittest
-import numpy as np
-from filter_model.AtomicSensor.linear_kf import Linear_KF
-from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.dynamical_model.atomic_state import AtomicSensorState
 
 
 # class TestNumericalSolutionForPhi(unittest.TestCase):

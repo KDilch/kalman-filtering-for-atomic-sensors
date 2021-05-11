@@ -5,10 +5,10 @@ import numpy as np
 
 from atomic_sensor_simulation.utilities import import_config_from_path
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.dynamical_model.freq_state import FrequencySensorState
+from state.freq_state import FrequencySensorState
 from atomic_sensor_simulation.sensor.frequency_sensor import FrequencySensor
 from filter_model.FrequencyExtractor.extended_kf import Extended_KF
-from atomic_sensor_simulation.utilities import calculate_error, plot_data, \
+from atomic_sensor_simulation.utilities import plot_data, \
     generate_data_arr_for_plotting
 from history_manager.frequency_extractor_history_manager import Filter_History_Manager
 

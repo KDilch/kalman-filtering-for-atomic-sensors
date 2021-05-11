@@ -2,8 +2,12 @@
 import numpy as np
 from abc import ABC
 import logging
+from scipy.signal import square, sawtooth
+
 from atomic_sensor_simulation.operable_functions import create_operable_const_func, create_operable_cos_func, create_operable_sin_func
 
+# self.square_signal = square(2 * np.pi * time_arr / 6)
+# self.sawtooth_signal = sawtooth(2 * np.pi * time_arr / 6)
 
 class DynamicalModel(ABC):
     """Class holding a matrix of functions - linear/ non-linear, discrete/continuous, time-dependent/time independent"""
@@ -32,7 +36,7 @@ class LinearDifferentialDynamicalModel(DynamicalModel):
     def __init__(self, transition_matrix, logger=None):
         self.transition_matrix = transition_matrix
         self._logger = logger or logging.getLogger(__name__)
-        DynamicalModel.__init__(self, transition_matrix, logger)
+        DynamicalModel.__init__(self, transition_matrix)
 
     def step(self, state_mean, state, time, time_step, intrinsic_noise=None):
         self._logger.debug('Performing a step for time %r' % str(time))
@@ -43,6 +47,7 @@ class LinearDifferentialDynamicalModel(DynamicalModel):
         else:
             state.update(state_mean)
         return
+
 
 class AtomicSensorLinearDifferentialDynamicalModel(LinearDifferentialDynamicalModel):
 
@@ -82,4 +87,28 @@ class AtomicSensorLinearDifferentialDynamicalModel(LinearDifferentialDynamicalMo
                                          create_operable_const_func(-light_correlation_const)]])
 
         LinearDifferentialDynamicalModel.__init__(self, transition_matrix=transition_matrix, logger=logger)
-    
+
+
+class AtomicSensorSinDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel):
+    def __init__(self,
+                 logger=None,
+                 **kwargs
+                 ):
+        self._logger = logger if logger else logging.getLogger(__name__)
+        AtomicSensorLinearDifferentialDynamicalModel.__init__(**kwargs)
+
+    def step(self, state_mean, state, time, time_step, intrinsic_noise=None):
+        LinearDifferentialDynamicalModel.step(state_mean,
+                                              state,
+                                              time,
+                                              time_step,
+                                              intrinsic_noise)
+        state_mean.vec[2] = np.sin(2 * np.pi * (time+time_step) / 6)
+
+
+class AtomicSensorSquareWaveDynamicalModel(DynamicalModel):
+    pass
+
+
+class AtomicSensorSawToothDynamicalModel(DynamicalModel):
+    pass

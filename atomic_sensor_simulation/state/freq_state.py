@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import logging
 from enum import Enum
 
-from atomic_sensor_simulation.dynamical_model.state import State
+from state.state import State
 
-from atomic_sensor_simulation.operable_functions import create_operable_cos_func, create_operable_const_func, \
-    create_operable_sin_func
+from atomic_sensor_simulation.operable_functions import create_operable_const_func
 
 
 class FrequencySensorCoordinates(Enum):
