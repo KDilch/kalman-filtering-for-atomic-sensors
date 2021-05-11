@@ -6,6 +6,24 @@ from scipy.signal import square, sawtooth
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions, operable
 from atomic_sensor_simulation.operable_functions import create_operable_const_func
 
+class LinearDynamics(object):
+    "A class representing a state dynamics"
+    def __init__(self,
+                 F_transition_matrix,
+                 time_step,
+                 is_discrete,
+                 time,
+                 logger=None):
+        self._logger = logger or logging.getLogger(__name__)
+        self._F_transition_matrix = F_transition_matrix
+        self._dt = time_step
+        self._time = time
+        self._is_discrete = is_discrete
+
+
+class NonLinearDynamics(object):
+    pass
+
 
 class State(ABC):
     """An abstract class representing any dynamical_model vector."""
@@ -20,8 +38,6 @@ class State(ABC):
                  time_arr,
                  gp=0,
                  omega_p=0,
-                 u_control_vec=None,
-                 x_jacobian=None,
                  logger=None):
         """
         :param initial_vec: numpy array

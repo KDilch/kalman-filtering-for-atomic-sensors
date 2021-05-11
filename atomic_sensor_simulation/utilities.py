@@ -153,7 +153,7 @@ class operable:
     def __add__(self, other):
         return operable(lambda x: self(x) + other(x))
 
-
+#TODO remove when all references are gone
 def eval_matrix_of_functions(matrix, x):
     matrix_flat = matrix.flatten()
     shape = np.shape(matrix)
