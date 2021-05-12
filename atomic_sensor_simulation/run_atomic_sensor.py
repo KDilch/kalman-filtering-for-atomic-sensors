@@ -53,7 +53,7 @@ def run__atomic_sensor(queue):
         atomic_state_lin_dynamics_manager.step(time)
         simulation_history_manager.add_history_point(history_point=[time, atomic_state_lin_dynamics_manager.vec])
 
-    simulation_history_manager.plot()
+    simulation_history_manager.plot(show=True)
 
     # PERFORM THE MEASUREMENT=====================================================
     sensor = AtomicSensor(state,
