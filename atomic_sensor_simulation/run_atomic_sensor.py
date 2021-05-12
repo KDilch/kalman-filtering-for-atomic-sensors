@@ -14,7 +14,7 @@ from atomic_sensor_simulation.helper_functions.plot_all_atomic_sensor import plo
 from atomic_sensor_simulation.helper_functions.save_all_simulation_data import save_data
 from history_manager.atomic_sensor_history_manager import Filter_History_Manager, SteadyStateHistoryManager
 from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
-from state_dynamics_manager.atomic_state_linear_dynamics_manager import AtomicStateLinearDynamicsManager
+from state_dynamics_manager.atomic_state_linear_dynamics_manager import AtomicStateLinearDynamicsManager, AtomicStateSquareWaveManager, AtomicStateSawtoothWaveManager, AtomicStateSinWaveManager
 from atomic_sensor_simulation.history_manager.atomic_sensor_simulation_history_manager import AtomicSensorSimulationHistoryManager
 
 
@@ -47,13 +47,29 @@ def run__atomic_sensor(queue):
 
 
     atomic_state_lin_dynamics_manager = AtomicStateLinearDynamicsManager(config)
-    simulation_history_manager = AtomicSensorSimulationHistoryManager()
+    atomic_state_square_wave_dynamics_manager = AtomicStateSquareWaveManager(config)
+    atomic_state_sawtooth_wave_dynamics_manager = AtomicStateSawtoothWaveManager(config)
+    atomic_state_sin_wave_dynamics_manager = AtomicStateSinWaveManager(config)
+
+    linear_simulation_history_manager = AtomicSensorSimulationHistoryManager()
+    square_wave_simulation_history_manager = AtomicSensorSimulationHistoryManager()
+    sawtooth_wave_simulation_history_manager = AtomicSensorSimulationHistoryManager()
+    sin_wave_simulation_history_manager = AtomicSensorSimulationHistoryManager()
+
 
     for time in time_arr:
         atomic_state_lin_dynamics_manager.step(time)
-        simulation_history_manager.add_history_point(history_point=[time, atomic_state_lin_dynamics_manager.vec])
+        atomic_state_square_wave_dynamics_manager.step(time)
+        atomic_state_sawtooth_wave_dynamics_manager.step(time)
+        atomic_state_sin_wave_dynamics_manager.step(time)
 
-    simulation_history_manager.plot(show=True)
+        linear_simulation_history_manager.add_history_point(history_point=[time, atomic_state_lin_dynamics_manager.vec])
+        square_wave_simulation_history_manager.add_history_point(history_point=[time, atomic_state_square_wave_dynamics_manager.vec])
+        sawtooth_wave_simulation_history_manager.add_history_point(history_point=[time, atomic_state_sawtooth_wave_dynamics_manager.vec])
+        sin_wave_simulation_history_manager.add_history_point(history_point=[time, atomic_state_sin_wave_dynamics_manager.vec])
+
+
+    sin_wave_simulation_history_manager.plot(show=True)
 
     # PERFORM THE MEASUREMENT=====================================================
     sensor = AtomicSensor(state,

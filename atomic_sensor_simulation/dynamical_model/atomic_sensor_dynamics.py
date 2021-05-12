@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
 import numpy as np
-from scipy import signal
 
 from atomic_sensor_simulation.dynamical_model.dynamics import LinearDifferentialDynamicalModel
 from atomic_sensor_simulation.operable_functions import create_operable_const_func, create_operable_cos_func, create_operable_sin_func
@@ -53,15 +52,21 @@ class AtomicSensorSinDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel
                  **kwargs
                  ):
         self._logger = logger if logger else logging.getLogger(__name__)
-        AtomicSensorLinearDifferentialDynamicalModel.__init__(**kwargs)
+        self.__sin_wave_frequency = kwargs['sin_wave_frequency']
+        self.__sin_wave_amplitude = kwargs['sin_wave_amplitude']
+        AtomicSensorLinearDifferentialDynamicalModel.__init__(self, **kwargs)
 
     def step(self, state_mean, state, time, time_step, intrinsic_noise=None):
-        LinearDifferentialDynamicalModel.step(state_mean,
+        LinearDifferentialDynamicalModel.step(self,
+                                              state_mean,
                                               state,
                                               time,
                                               time_step,
                                               intrinsic_noise)
-        state_mean.vec[2] = np.sin(2 * np.pi * (time+time_step) / 6)
+        state_mean.vec[2] = self.__sin_wave_func(time+time_step)
+
+    def __sin_wave_func(self, time):
+        return np.sin(2*np.pi*time*self.__sin_wave_frequency)
 
 
 class AtomicSensorSquareWaveDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel):
@@ -70,13 +75,13 @@ class AtomicSensorSquareWaveDynamicalModel(AtomicSensorLinearDifferentialDynamic
                  **kwargs
                  ):
         self._logger = logger if logger else logging.getLogger(__name__)
-        self._square_wave_frequency = np.pi/3
-        self._square_wave_shift = 0
-        self._square_wave_scaling_factor = 1.
-        AtomicSensorLinearDifferentialDynamicalModel.__init__(**kwargs)
+        self._square_wave_frequency = kwargs['square_wave_frequency']
+        self._square_wave_amplitude = kwargs['square_wave_amplitude']
+        AtomicSensorLinearDifferentialDynamicalModel.__init__(self, **kwargs)
 
     def step(self, state_mean, state, time, time_step, intrinsic_noise=None):
-        LinearDifferentialDynamicalModel.step(state_mean,
+        LinearDifferentialDynamicalModel.step(self,
+                                              state_mean,
                                               state,
                                               time,
                                               time_step,
@@ -84,21 +89,27 @@ class AtomicSensorSquareWaveDynamicalModel(AtomicSensorLinearDifferentialDynamic
         state_mean.vec[2] = self.__square_wave_func(time+time_step)
 
     def __square_wave_func(self, time):
-        return signal.square(2*np.pi*self._square_wave_frequency*time)
+        return self._square_wave_amplitude*np.sign(np.sin(2*np.pi*self._square_wave_frequency*time))
 
 
-class AtomicSensorSawToothDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel):
+class AtomicSensorSawtoothDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel):
     def __init__(self,
                  logger=None,
                  **kwargs
                  ):
         self._logger = logger if logger else logging.getLogger(__name__)
-        AtomicSensorLinearDifferentialDynamicalModel.__init__(**kwargs)
+        self._sawtooth_wave_frequency = kwargs['sawtooth_wave_frequency']
+        self._sawtooth_wave_amplitude = kwargs['sawtooth_wave_amplitude']
+        AtomicSensorLinearDifferentialDynamicalModel.__init__(self, **kwargs)
 
     def step(self, state_mean, state, time, time_step, intrinsic_noise=None):
-        LinearDifferentialDynamicalModel.step(state_mean,
+        LinearDifferentialDynamicalModel.step(self,
+                                              state_mean,
                                               state,
                                               time,
                                               time_step,
                                               intrinsic_noise)
-        state_mean.vec[2] = np.sin(2 * np.pi * (time + time_step) / 6)
+        state_mean.vec[2] = self.__sawtooth_func(time)
+
+    def __sawtooth_func(self, time):
+        return self._sawtooth_wave_amplitude*2*((time*self._sawtooth_wave_frequency)-np.floor(0.5+time*self._sawtooth_wave_frequency))

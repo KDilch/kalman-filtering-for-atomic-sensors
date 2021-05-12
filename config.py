@@ -25,6 +25,21 @@ config.simulation = {
     'R': np.array([[0.01]])
 }
 
+config.sin_waveform = {
+    'frequency': 1./3,
+    'amplitude': 10.
+}
+
+config.sawtooth_waveform = {
+    'frequency': 1./3,
+    'amplitude': 10.
+}
+
+config.square_waveform = {
+    'frequency': 1./3,
+    'amplitude': 10.
+}
+
 config.filter = {
     'dt_filter': 0.01,
     'spin_y_initial_val': None,
