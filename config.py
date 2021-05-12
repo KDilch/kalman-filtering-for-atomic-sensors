@@ -17,7 +17,7 @@ config.coupling = {
 
 config.simulation = {
     'number_periods': 10.,
-    'dt_sensor': 0.005,
+    'dt_simulation': 0.005,
     'spin_y_initial_val': 1.,
     'spin_z_initial_val': 0.,
     'q_initial_val': 2.,

@@ -15,18 +15,19 @@ from atomic_sensor_simulation.helper_functions.plot_all_atomic_sensor import plo
 from atomic_sensor_simulation.helper_functions.save_all_simulation_data import save_data
 from history_manager.atomic_sensor_history_manager import Filter_History_Manager, SteadyStateHistoryManager
 from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
-
-
+from atomic_sensor_simulation.dynamical_model import atomic_sensor_dynamics
+from atomic_sensor_simulation.state_dynamics_manager import StateDynamicsManager
 def run__atomic_sensor(queue):
     # Logger for storing errors and logs in separate file, creates separate folder
+    #TODO move those to a config file
     logger = logging.getLogger(__name__+'_PID_'+str(os.getpid()))
     logger.addHandler(logging.handlers.QueueHandler(queue))
     logger.info('Starting execution of atomic sensor simulation.')
     config, args = queue.get()[0]
 
     num_iter_sensor = (2 * np.pi * config.simulation['number_periods'] /
-                       config.physical_parameters['larmour_freq']) / config.simulation['dt_sensor']
-    num_iter_filter = np.int(np.floor_divide(num_iter_sensor * config.simulation['dt_sensor'],
+                       config.physical_parameters['larmour_freq']) / config.simulation['dt_simulation']
+    num_iter_filter = np.int(np.floor_divide(num_iter_sensor * config.simulation['dt_simulation'],
                                              config.filter['dt_filter']))
 
     every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
@@ -45,34 +46,47 @@ def run__atomic_sensor(queue):
                  )
                 )
 
-    time_arr = np.arange(0, num_iter_sensor * config.simulation['dt_sensor'], config.simulation['dt_sensor'])
+    time_arr = np.arange(0, num_iter_sensor * config.simulation['dt_simulation'], config.simulation['dt_simulation'])
     time_arr_filter = np.arange(0, num_iter_filter * config.filter['dt_filter'], config.filter['dt_filter'])
 
-    # SIMULATING DYNAMICS=====================================================
-
+    # SIMULATE DYNAMICS=====================================================
     state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
                                                     config.simulation['spin_z_initial_val'],
                                                     config.simulation['q_initial_val'],
                                                     config.simulation['p_initial_val']]),
-                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.],
-                                                           cov=Q*config.simulation['dt_sensor'],
-                                                           dt=config.simulation['dt_sensor']),
-                              initial_time=0,
-                              time_arr=time_arr,
-                              dt=config.simulation['dt_sensor'],
-                              light_correlation_const=config.physical_parameters['light_correlation_const'],
-                              spin_correlation_const=config.physical_parameters['spin_correlation_const'],
-                              larmour_freq=config.physical_parameters['larmour_freq'],
-                              coupling_amplitude=config.coupling['g_p'],
-                              coupling_freq=config.coupling['omega_p'],
-                              coupling_phase_shift=config.coupling['phase_shift'])
+                              initial_time=0)
+    state_mean = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
+                                                    config.simulation['spin_z_initial_val'],
+                                                    config.simulation['q_initial_val'],
+                                                    config.simulation['p_initial_val']]),
+                              initial_time=0)
+    intrinsic_noise = GaussianWhiteNoise(mean=0.,
+                                         cov=R / config.simulation['dt_simulation'],
+                                         dt=config.simulation['dt_simulation'])
+    linear_atomic_sensor_dynamics = atomic_sensor_dynamics.AtomicSensorLinearDifferentialDynamicalModel(
+        light_correlation_const=config.physical_parameters['light_correlation_const'],
+        spin_correlation_const=config.physical_parameters['spin_correlation_const'],
+        larmour_freq=config.physical_parameters['larmour_freq'],
+        coupling_amplitude=config.coupling['g_p'],
+        coupling_freq=config.coupling['omega_p'],
+        coupling_phase_shift=config.coupling['phase_shift'])
 
+    state_dynamics_manager = StateDynamicsManager(state_mean=state_mean,
+                                                  state=state,
+                                                  intrinsic_noise=intrinsic_noise,
+                                                  dynamics=linear_atomic_sensor_dynamics,
+                                                  time_step=config.simulation['dt_simulation'],
+                                                  time=0)
+    for time in time_arr:
+        state_dynamics_manager.step(time)
+        
+    # PERFORM THE MEASUREMENT=====================================================
     sensor = AtomicSensor(state,
                           sensor_noise=GaussianWhiteNoise(mean=0.,
-                                                          cov=R / config.simulation['dt_sensor'],
-                                                          dt=config.simulation['dt_sensor']),
+                                                          cov=R / config.simulation['dt_simulation'],
+                                                          dt=config.simulation['dt_simulation']),
                           H=H,
-                          dt=config.simulation['dt_sensor'])
+                          dt=config.simulation['dt_simulation'])
 
     zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
     logger.info('Filter frequency is  %r' % every_nth_z)
