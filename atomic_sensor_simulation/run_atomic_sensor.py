@@ -5,7 +5,6 @@ import numpy as np
 import os
 
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from state.atomic_state import AtomicSensorState
 from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
 from filter_model.AtomicSensor.linear_kf import Linear_KF
 from filter_model.AtomicSensor.unscented_kf import Unscented_KF
@@ -15,8 +14,10 @@ from atomic_sensor_simulation.helper_functions.plot_all_atomic_sensor import plo
 from atomic_sensor_simulation.helper_functions.save_all_simulation_data import save_data
 from history_manager.atomic_sensor_history_manager import Filter_History_Manager, SteadyStateHistoryManager
 from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
-from atomic_sensor_simulation.dynamical_model import atomic_sensor_dynamics
-from atomic_sensor_simulation.state_dynamics_manager import StateDynamicsManager
+from state_dynamics_manager.atomic_state_linear_dynamics_manager import AtomicStateLinearDynamicsManager
+from atomic_sensor_simulation.history_manager.atomic_sensor_simulation_history_manager import AtomicSensorSimulationHistoryManager
+
+
 def run__atomic_sensor(queue):
     # Logger for storing errors and logs in separate file, creates separate folder
     #TODO move those to a config file
@@ -37,49 +38,23 @@ def run__atomic_sensor(queue):
                   [0., 0., config.noise_and_measurement['Qq'], 0.],
                   [0., 0., 0., config.noise_and_measurement['Qp']]])
     H = np.array([[0., config.noise_and_measurement['gD'], 0., 0.]])
-    R = np.array([[config.noise_and_measurement['QD']]])
 
-    logger.info('Setting Q, H and R to Q = %r, H = %r, R = %r' %
-                (str(Q),
-                 str(H),
-                 str(R)
-                 )
-                )
 
     time_arr = np.arange(0, num_iter_sensor * config.simulation['dt_simulation'], config.simulation['dt_simulation'])
     time_arr_filter = np.arange(0, num_iter_filter * config.filter['dt_filter'], config.filter['dt_filter'])
 
-    # SIMULATE DYNAMICS=====================================================
-    state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
-                                                    config.simulation['spin_z_initial_val'],
-                                                    config.simulation['q_initial_val'],
-                                                    config.simulation['p_initial_val']]),
-                              initial_time=0)
-    state_mean = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
-                                                    config.simulation['spin_z_initial_val'],
-                                                    config.simulation['q_initial_val'],
-                                                    config.simulation['p_initial_val']]),
-                              initial_time=0)
-    intrinsic_noise = GaussianWhiteNoise(mean=0.,
-                                         cov=R / config.simulation['dt_simulation'],
-                                         dt=config.simulation['dt_simulation'])
-    linear_atomic_sensor_dynamics = atomic_sensor_dynamics.AtomicSensorLinearDifferentialDynamicalModel(
-        light_correlation_const=config.physical_parameters['light_correlation_const'],
-        spin_correlation_const=config.physical_parameters['spin_correlation_const'],
-        larmour_freq=config.physical_parameters['larmour_freq'],
-        coupling_amplitude=config.coupling['g_p'],
-        coupling_freq=config.coupling['omega_p'],
-        coupling_phase_shift=config.coupling['phase_shift'])
+    # SIMULATE THE DYNAMICS=====================================================
 
-    state_dynamics_manager = StateDynamicsManager(state_mean=state_mean,
-                                                  state=state,
-                                                  intrinsic_noise=intrinsic_noise,
-                                                  dynamics=linear_atomic_sensor_dynamics,
-                                                  time_step=config.simulation['dt_simulation'],
-                                                  time=0)
+
+    atomic_state_lin_dynamics_manager = AtomicStateLinearDynamicsManager(config)
+    simulation_history_manager = AtomicSensorSimulationHistoryManager()
+
     for time in time_arr:
-        state_dynamics_manager.step(time)
-        
+        atomic_state_lin_dynamics_manager.step(time)
+        simulation_history_manager.add_history_point(history_point=[time, atomic_state_lin_dynamics_manager.vec])
+
+    simulation_history_manager.plot()
+
     # PERFORM THE MEASUREMENT=====================================================
     sensor = AtomicSensor(state,
                           sensor_noise=GaussianWhiteNoise(mean=0.,

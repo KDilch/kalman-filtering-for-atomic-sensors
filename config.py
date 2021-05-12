@@ -21,7 +21,8 @@ config.simulation = {
     'spin_y_initial_val': 1.,
     'spin_z_initial_val': 0.,
     'q_initial_val': 2.,
-    'p_initial_val': 2.
+    'p_initial_val': 2.,
+    'R': np.array([[0.01]])
 }
 
 config.filter = {
@@ -38,9 +39,7 @@ config.noise_and_measurement = {
     'QJz': 0.01,
     'Qq': 0.01,
     'Qp': 0.01,
-    'gD': 100.,
-    'QD': 0.01
-}
+    'gD': 100.}
 
 config.W = {
     'W_jy': np.array([[1., 0., 0., 0.],

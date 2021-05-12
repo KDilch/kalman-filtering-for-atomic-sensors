@@ -13,3 +13,6 @@ class StateDynamicsManager(object):
         self._time = time
         self._dynamics.step(self._state_mean, self._state, self._time, self._time_step, self._intrinsic_noise)
 
+    @property
+    def vec(self):
+        return self._state.vec
