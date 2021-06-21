@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
-from atomic_sensor_simulation.sensor.atomic_sensor import AtomicSensor
+from atomic_sensor_simulation.sensor.atomic_sensor_measurement_model import AtomicSensorMeasurementModel
 from filter_model.AtomicSensor.linear_kf import Linear_KF
 from filter_model.AtomicSensor.unscented_kf import Unscented_KF
 from filter_model.AtomicSensor.extented_kf import Extended_KF
@@ -20,66 +20,53 @@ from atomic_sensor_simulation.history_manager.atomic_sensor_simulation_history_m
 
 def run__atomic_sensor(queue):
     # Logger for storing errors and logs in separate file, creates separate folder
-    #TODO move those to a config file
     logger = logging.getLogger(__name__+'_PID_'+str(os.getpid()))
     logger.addHandler(logging.handlers.QueueHandler(queue))
     logger.info('Starting execution of atomic sensor simulation.')
     config, args = queue.get()[0]
+    # atomic_state_lin_dynamics_manager = args.dynamics
+    num_iter_simulation = (2 * np.pi * config.simulation['number_periods'] /
+                           config.physical_parameters['larmour_freq']) / config.simulation['dt_simulation']
+    num_iter_measurement = np.int(np.floor_divide(num_iter_simulation, config.filter['measure_every_nth']))
+    dt_filter = num_iter_simulation*config.simulation['dt_simulation']/num_iter_measurement
 
-    num_iter_sensor = (2 * np.pi * config.simulation['number_periods'] /
-                       config.physical_parameters['larmour_freq']) / config.simulation['dt_simulation']
-    num_iter_filter = np.int(np.floor_divide(num_iter_sensor * config.simulation['dt_simulation'],
-                                             config.filter['dt_filter']))
+    time_arr_simulation = np.arange(0, num_iter_simulation * config.simulation['dt_simulation'], config.simulation['dt_simulation'])
+    time_arr_measurement = np.arange(0, num_iter_measurement * dt_filter, dt_filter)
 
-    every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
+    # SIMULATE THE DYNAMICS AND PERFORM A REAL TIME MEASUREMENT FOR EVERY NTH SIMULATED VALUE===========================
 
-    Q = np.array([[config.noise_and_measurement['QJy'], 0., 0., 0.],
-                  [0., config.noise_and_measurement['QJz'], 0., 0.],
-                  [0., 0., config.noise_and_measurement['Qq'], 0.],
-                  [0., 0., 0., config.noise_and_measurement['Qp']]])
-    H = np.array([[0., config.noise_and_measurement['gD'], 0., 0.]])
+    # INITIALIZE THE SIMULATION
+    # There is a StateDynamicsManager for every case of dynamical model considered for an atomic sensor
+    if config.simulation['simulation_type'] == 'sin':
+        atomic_state_dynamics_manager = AtomicStateSinWaveManager(config)
+    if config.simulation['simulation_type'] == 'square':
+        atomic_state_dynamics_manager = AtomicStateSquareWaveManager(config)
+    if config.simulation['simulation_type'] == 'sawtooth':
+        atomic_state_dynamics_manager = AtomicStateSawtoothWaveManager(config)
+    if config.simulation['simulation_type'] == 'linear':
+        atomic_state_dynamics_manager = AtomicStateLinearDynamicsManager(config)
+    else:
+        raise ValueError('Invalid simulation type %r.' % config.simulation['simulation_type'])
 
+    simulation_history_manager = AtomicSensorSimulationHistoryManager()
 
-    time_arr = np.arange(0, num_iter_sensor * config.simulation['dt_simulation'], config.simulation['dt_simulation'])
-    time_arr_filter = np.arange(0, num_iter_filter * config.filter['dt_filter'], config.filter['dt_filter'])
+    # INITIALIZE THE MEASUREMENT
+    sensor = AtomicSensorMeasurementModel(config)
+    simulation_steps_counter = 0
+    for time in time_arr_simulation:
+        simulation_steps_counter += 1
+        # SIMULATE THE DYNAMICS
+        atomic_state_dynamics_manager.step(time)
+        # UPDATE THE SIMULATION HISTORY
+        simulation_history_manager.add_history_point(history_point=[time, atomic_state_dynamics_manager.vec])
 
-    # SIMULATE THE DYNAMICS=====================================================
-
-
-    atomic_state_lin_dynamics_manager = AtomicStateLinearDynamicsManager(config)
-    atomic_state_square_wave_dynamics_manager = AtomicStateSquareWaveManager(config)
-    atomic_state_sawtooth_wave_dynamics_manager = AtomicStateSawtoothWaveManager(config)
-    atomic_state_sin_wave_dynamics_manager = AtomicStateSinWaveManager(config)
-
-    linear_simulation_history_manager = AtomicSensorSimulationHistoryManager()
-    square_wave_simulation_history_manager = AtomicSensorSimulationHistoryManager()
-    sawtooth_wave_simulation_history_manager = AtomicSensorSimulationHistoryManager()
-    sin_wave_simulation_history_manager = AtomicSensorSimulationHistoryManager()
-
-
-    for time in time_arr:
-        atomic_state_lin_dynamics_manager.step(time)
-        atomic_state_square_wave_dynamics_manager.step(time)
-        atomic_state_sawtooth_wave_dynamics_manager.step(time)
-        atomic_state_sin_wave_dynamics_manager.step(time)
-
-        linear_simulation_history_manager.add_history_point(history_point=[time, atomic_state_lin_dynamics_manager.vec])
-        square_wave_simulation_history_manager.add_history_point(history_point=[time, atomic_state_square_wave_dynamics_manager.vec])
-        sawtooth_wave_simulation_history_manager.add_history_point(history_point=[time, atomic_state_sawtooth_wave_dynamics_manager.vec])
-        sin_wave_simulation_history_manager.add_history_point(history_point=[time, atomic_state_sin_wave_dynamics_manager.vec])
+        # IF it's THE nth SIMULATED VALUE - PERFORM A MEASUREMENT AND FILTER
+        if simulation_steps_counter % config.filter['measure_every_nth']:
+            measurement_outcome = sensor.read(state_vec=atomic_state_dynamics_manager.vec)
 
 
-    sin_wave_simulation_history_manager.plot(show=True)
 
-    # PERFORM THE MEASUREMENT=====================================================
-    sensor = AtomicSensor(state,
-                          sensor_noise=GaussianWhiteNoise(mean=0.,
-                                                          cov=R / config.simulation['dt_simulation'],
-                                                          dt=config.simulation['dt_simulation']),
-                          H=H,
-                          dt=config.simulation['dt_simulation'])
-
-    zs = np.array([np.array((sensor.read(_))) for _ in time_arr])  # noisy measurement
+    zs = np.array([np.array((sensor.read(_))) for _ in time_arr_simulation])  # noisy measurement
     logger.info('Filter frequency is  %r' % every_nth_z)
     zs_filter_freq = zs[::every_nth_z]
     x_filter_freq = sensor.state_vec_full_history[::every_nth_z]
@@ -270,7 +257,7 @@ def run__atomic_sensor(queue):
     # # PLOT DATA #TODO make process save
     plot__all_atomic_sensor(sensor,
                             time_arr_filter,
-                            time_arr,
+                            time_arr_simulation,
                             lkf_num_history_manager,
                             lkf_expint_approx_history_manager,
                             lkf_exp_approx_history_manager,
@@ -296,7 +283,7 @@ def run__atomic_sensor(queue):
     # SAVE DATA TO A FILE
     save_data(sensor,
               time_arr_filter,
-              time_arr,
+              time_arr_simulation,
               lkf_num_history_manager,
               lkf_exp_approx_history_manager,
               extended_kf_history_manager,

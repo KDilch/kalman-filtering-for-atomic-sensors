@@ -30,6 +30,18 @@ def import_config_from_path(module_name):
     module_object = import_module(module_name)
     return getattr(module_object, 'config')
 
+
+def check_atomic_sensor_config(config, constants):
+    if config.simulation['simulation_type']:
+        for simulation_type in config.simulation['simulation_type']:
+            if simulation_type not in constants.ATOMIC_SENSOR_DYNAMICS_TYPES:
+                raise ValueError('Invalid simulation type %r, should be an element of %r' % (simulation_type,
+                                                                                             constants.ATOMIC_SENSOR_DYNAMICS_TYPES))
+    else:
+        raise ValueError('No simulation type chosen. Please add a simulation type in config.simulation')
+    return
+
+
 def get_configs_from_config(config):
     logger = logging.getLogger(__name__)
     logger.info('Generating config files for multiple processes')

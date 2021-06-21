@@ -22,7 +22,8 @@ config.simulation = {
     'spin_z_initial_val': 0.,
     'q_initial_val': 2.,
     'p_initial_val': 2.,
-    'R': np.array([[0.01]])
+    'R': np.array([[0.01]]),
+    'simulation_type': ['linear', 'sin']  # must be a list or value [NOT ND.ARRAY], input verification according to ATOMIC_SENSOR_DYNAMICS_TYPES in main.py
 }
 
 config.sin_waveform = {
@@ -41,7 +42,7 @@ config.square_waveform = {
 }
 
 config.filter = {
-    'dt_filter': 0.01,
+    'measure_every_nth': 20,
     'spin_y_initial_val': None,
     'spin_z_initial_val': None,
     'q_initial_val': None,
@@ -50,10 +51,11 @@ config.filter = {
 }
 
 config.noise_and_measurement = {
-    'QJy': 0.01,
-    'QJz': 0.01,
-    'Qq': 0.01,
-    'Qp': 0.01,
+    # Q00 = QJy, Q11=QJz, Q22=Qq, Q33=Qp]
+    'Q': np.array([[0.01, 0., 0., 0.],
+                  [0., 0.01, 0., 0.],
+                  [0., 0., 0.01, 0.],
+                  [0., 0., 0., 0.01]]),
     'gD': 100.}
 
 config.W = {

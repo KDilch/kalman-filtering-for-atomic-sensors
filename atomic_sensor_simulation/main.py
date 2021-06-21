@@ -6,12 +6,12 @@ import multiprocessing
 import itertools
 import time
 
-from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config
-from atomic_sensor_simulation.listener import listener_process
+from atomic_sensor_simulation.utilities import stringify_namespace, load_logging_config, check_atomic_sensor_config
 from atomic_sensor_simulation.run_atomic_sensor import run__atomic_sensor
 from atomic_sensor_simulation.run_frequency_extractor import run__frequency_extractor
 from atomic_sensor_simulation.run_tests import run_tests
 from atomic_sensor_simulation.utilities import import_config_from_path, get_configs_from_config
+from atomic_sensor_simulation.constants import AtomicSensorConstants
 
 
 def main():
@@ -111,9 +111,10 @@ def main():
     # if running atomic sensor simulation spawn multiple threads, prepare a config for each thread
     if args.command == 'run-atomic-sensor':
         logger.info('Starting execution of run-atomic-sensor command.')
+        constants = AtomicSensorConstants()
         config = import_config_from_path(args.config)
+        check_atomic_sensor_config(config, constants)
         configs = get_configs_from_config(config)
-
         logger.info('Preparing multiprocessing Queue.')
         args_list = itertools.repeat(args, len(configs))
         args_tuples = tuple(zip(configs, args_list))
