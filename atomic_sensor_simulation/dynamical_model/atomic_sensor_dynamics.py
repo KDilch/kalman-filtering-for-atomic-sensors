@@ -62,7 +62,7 @@ class AtomicSensorSinDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel
                                               state,
                                               time,
                                               time_step,
-                                              intrinsic_noise)
+                                                )
         state_mean.vec[2] = self.__sin_wave_func(time+time_step)
 
     def __sin_wave_func(self, time):

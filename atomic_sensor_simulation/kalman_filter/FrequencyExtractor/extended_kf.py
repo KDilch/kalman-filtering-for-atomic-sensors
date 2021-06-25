@@ -4,9 +4,9 @@ from filterpy.kalman import ExtendedKalmanFilter
 from scipy.integrate import odeint, simps
 import sympy
 import numpy as np
-from atomic_sensor_simulation.filter_model.model import Model
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions
-
+class Model():
+    pass
 
 class Extended_KF(Model):
 

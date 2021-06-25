@@ -27,7 +27,6 @@ class LinearMeasurementModel(MeasurementModel):
         self.__H = H
 
     def read(self, state_vec):
-        print(self._noise)
         return self.__H.dot(state_vec) + self._noise.step()
 
     def read_mean(self, state_vec):

@@ -7,7 +7,7 @@ import copy
 import numdifftools
 from scipy.signal import square, sawtooth
 from scipy.linalg import expm
-from atomic_sensor_simulation.filter_model.model import Model
+from atomic_sensor_simulation.kalman_filter.model import Model
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions
 
 
@@ -92,7 +92,7 @@ class Extended_KF(Model):
         return filterpy
 
 
-class AtomicSensorEKF(ExtendedKalmanFilter):
+class AtomicSensorFrequencyEKF(ExtendedKalmanFilter):
     def __init__(self, dim_x, dim_z, dt, x0, P0, F, H, R, R_delta, time_resolution_ode_solver, time_arr, **kwargs):
         ExtendedKalmanFilter.__init__(self, dim_x, dim_z)
         self.dt = dt

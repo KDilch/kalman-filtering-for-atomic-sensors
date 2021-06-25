@@ -35,8 +35,13 @@ def check_atomic_sensor_config(config, constants):
     if config.simulation['simulation_type']:
         for simulation_type in config.simulation['simulation_type']:
             if simulation_type not in constants.ATOMIC_SENSOR_DYNAMICS_TYPES:
-                raise ValueError('Invalid simulation type %r, should be an element of %r' % (simulation_type,
-                                                                                             constants.ATOMIC_SENSOR_DYNAMICS_TYPES))
+                raise ValueError('Invalid simulation type %r, should be an element of %r' % (simulation_type,                                                                                     constants.ATOMIC_SENSOR_DYNAMICS_TYPES))
+    else:
+        raise ValueError('No simulation type chosen. Please add a simulation type in config.simulation')
+    if config.filter['filter_type']:
+        for simulation_type in config.filter['filter_type']:
+            if simulation_type not in constants.ATOMIC_SENSOR_FILTER_TYPES:
+                raise ValueError('Invalid filter type %r, should be an element of %r' % (simulation_type,                                                                                     constants.ATOMIC_SENSOR_DYNAMICS_TYPES))
     else:
         raise ValueError('No simulation type chosen. Please add a simulation type in config.simulation')
     return

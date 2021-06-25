@@ -7,7 +7,7 @@ from atomic_sensor_simulation.utilities import import_config_from_path
 from atomic_sensor_simulation.noise import GaussianWhiteNoise
 from state.freq_state import FrequencySensorState
 from atomic_sensor_simulation.sensor.frequency_sensor import FrequencySensor
-from filter_model.FrequencyExtractor.extended_kf import Extended_KF
+from kalman_filter.FrequencyExtractor.extended_kf import Extended_KF
 from atomic_sensor_simulation.utilities import plot_data, \
     generate_data_arr_for_plotting
 from history_manager.frequency_extractor_history_manager import Filter_History_Manager

@@ -20,6 +20,7 @@ class AtomicStateLinearDynamicsManager(StateDynamicsManager):
                                                              config.simulation['q_initial_val'],
                                                              config.simulation['p_initial_val']]),
                                        initial_time=0)
+        #shouldn't it be Q???
         intrinsic_noise = GaussianWhiteNoise(mean=0.,
                                              cov=config.simulation['R'] / config.simulation['dt_simulation'],
                                              dt=config.simulation['dt_simulation'])

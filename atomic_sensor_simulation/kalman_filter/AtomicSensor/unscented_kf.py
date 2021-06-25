@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 from filterpy.kalman import MerweScaledSigmaPoints, UnscentedKalmanFilter
 
-from atomic_sensor_simulation.filter_model.model import Model
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions
-
+class Model():
+    pass
 
 class Unscented_KF(Model):
 

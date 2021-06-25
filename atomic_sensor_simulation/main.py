@@ -41,25 +41,9 @@ def main():
                                    action='store',
                                    help='A string representing a module name of a config file. Config is a python file.',
                                    default='config')
-    simulation_parser.add_argument('--lkf_num',
+    simulation_parser.add_argument('--save_measurement_history',
                                    action='store_true',
                                    help='Plot Linear kf',
-                                   default=False)
-    simulation_parser.add_argument('--lkf_expint',
-                                   action='store_true',
-                                   help='Plot Linear kf with solving for Phi using exp(integral Fdt) approx.',
-                                   default=False)
-    simulation_parser.add_argument('--lkf_exp',
-                                   action='store_true',
-                                   help='Plot Linear kf with solving for Phi using exp(Fdt) approx.',
-                                   default=False)
-    simulation_parser.add_argument('--ekf',
-                                   action='store_true',
-                                   help='Extended kf.',
-                                   default=False)
-    simulation_parser.add_argument('--ukf',
-                                   action='store_true',
-                                   help='Unscented kf.',
                                    default=False)
     simulation_parser.add_argument('--save_plots',
                                    action='store_true',

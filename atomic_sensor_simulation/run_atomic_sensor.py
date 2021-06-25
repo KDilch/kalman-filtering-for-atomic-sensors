@@ -4,11 +4,10 @@ import logging
 import numpy as np
 import os
 
-from atomic_sensor_simulation.noise import GaussianWhiteNoise
 from atomic_sensor_simulation.sensor.atomic_sensor_measurement_model import AtomicSensorMeasurementModel
-from filter_model.AtomicSensor.linear_kf import Linear_KF
-from filter_model.AtomicSensor.unscented_kf import Unscented_KF
-from filter_model.AtomicSensor.extented_kf import Extended_KF
+from kalman_filter.kalmanfilter import KalmanFilter
+from kalman_filter.AtomicSensor.unscented_kf import Unscented_KF
+from kalman_filter.AtomicSensor.extented_kf import Extended_KF
 from atomic_sensor_simulation.utilities import calculate_error, eval_matrix_of_functions
 from atomic_sensor_simulation.helper_functions.plot_all_atomic_sensor import plot__all_atomic_sensor
 from atomic_sensor_simulation.helper_functions.save_all_simulation_data import save_data
@@ -16,7 +15,7 @@ from history_manager.atomic_sensor_history_manager import Filter_History_Manager
 from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_state_solution_for_atomic_sensor
 from state_dynamics_manager.atomic_state_linear_dynamics_manager import AtomicStateLinearDynamicsManager, AtomicStateSquareWaveManager, AtomicStateSawtoothWaveManager, AtomicStateSinWaveManager
 from atomic_sensor_simulation.history_manager.atomic_sensor_simulation_history_manager import AtomicSensorSimulationHistoryManager
-
+from atomic_sensor_simulation.history_manager.atomic_sensor_measurement_history_manager import AtomicSensorMeasurementHistoryManager
 
 def run__atomic_sensor(queue):
     # Logger for storing errors and logs in separate file, creates separate folder
@@ -52,52 +51,48 @@ def run__atomic_sensor(queue):
 
     # INITIALIZE THE MEASUREMENT
     sensor = AtomicSensorMeasurementModel(config)
+    measurement_history_manager = AtomicSensorMeasurementHistoryManager(is_store_all=args.save_measurement_history)
     simulation_steps_counter = 0
     for time in time_arr_simulation:
         simulation_steps_counter += 1
         # SIMULATE THE DYNAMICS
         atomic_state_dynamics_manager.step(time)
         # UPDATE THE SIMULATION HISTORY
-        simulation_history_manager.add_history_point(history_point=[time, atomic_state_dynamics_manager.vec])
+        is_measurement_performed = simulation_steps_counter % config.filter['measure_every_nth']
+        simulation_history_manager.add_history_point(history_point=[time, atomic_state_dynamics_manager.vec],
+                                                     is_measurement_performed=is_measurement_performed)
 
-        # IF it's THE nth SIMULATED VALUE - PERFORM A MEASUREMENT AND FILTER
-        if simulation_steps_counter % config.filter['measure_every_nth']:
+        # IF it's THE nth SIMULATED VALUE - PERFORM A MEASUREMENT
+        if is_measurement_performed:
             measurement_outcome = sensor.read(state_vec=atomic_state_dynamics_manager.vec)
-
-
-
-    zs = np.array([np.array((sensor.read(_))) for _ in time_arr_simulation])  # noisy measurement
-    logger.info('Filter frequency is  %r' % every_nth_z)
-    zs_filter_freq = zs[::every_nth_z]
-    x_filter_freq = sensor.state_vec_full_history[::every_nth_z]
-    waveform_filter_freq = sensor.waveform_history[::every_nth_z]
-
-    zs_sigma = zs_filter_freq/np.sqrt(R/config.filter['dt_filter'])
-
+            measurement_history_manager.add_history_point(history_point=[time, measurement_outcome])
+    print(measurement_history_manager.full_history)
 
     # KALMAN FILTER====================================================
-    # Linear Kalman Filter
-    linear_kf_model = Linear_KF(F=state.F_transition_matrix,
-                                Q=Q,
-                                H=H,
-                                R=R,
-                                R_delta=R / config.filter['dt_filter'],
-                                Gamma=state.Gamma_control_evolution_matrix,
-                                u=state.u_control_vec,
-                                z0=[zs[0]],
-                                dt=config.filter['dt_filter'],
-                                x0=np.array([config.filter['spin_y_initial_val'],
+    # Kalman Filter
+    kf_dynamical_model = None
+    kf_measurement_model = None
+    linear_kf_model = KalmanFilter(F=state.F_transition_matrix,
+                                   Q=Q,
+                                   H=H,
+                                   R=R,
+                                   R_delta=R / config.filter['dt_filter'],
+                                   Gamma=state.Gamma_control_evolution_matrix,
+                                   u=state.u_control_vec,
+                                   z0=[zs[0]],
+                                   dt=config.filter['dt_filter'],
+                                   x0=np.array([config.filter['spin_y_initial_val'],
                                              config.filter['spin_z_initial_val'],
                                              config.filter['q_initial_val'],
                                              config.filter['p_initial_val']]),
-                                P0=config.filter['P0'],
-                                light_correlation_const=config.physical_parameters['light_correlation_const'],
-                                spin_correlation_const=config.physical_parameters['spin_correlation_const'],
-                                larmour_freq=config.physical_parameters['larmour_freq'],
-                                coupling_amplitude=config.coupling['g_p'],
-                                coupling_freq=config.coupling['omega_p'],
-                                coupling_phase_shift=config.coupling['phase_shift']
-                                )
+                                   P0=config.filter['P0'],
+                                   light_correlation_const=config.physical_parameters['light_correlation_const'],
+                                   spin_correlation_const=config.physical_parameters['spin_correlation_const'],
+                                   larmour_freq=config.physical_parameters['larmour_freq'],
+                                   coupling_amplitude=config.coupling['g_p'],
+                                   coupling_freq=config.coupling['omega_p'],
+                                   coupling_phase_shift=config.coupling['phase_shift']
+                                   )
 
     unscented_kf_model = Unscented_KF(F=state.F_transition_matrix,
                                       Q=linear_kf_model.Q_delta,

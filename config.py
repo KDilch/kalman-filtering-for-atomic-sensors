@@ -47,7 +47,8 @@ config.filter = {
     'spin_z_initial_val': None,
     'q_initial_val': None,
     'p_initial_val': None,
-    'P0': None
+    'P0': None,
+    'filter_type': ['lkf', 'ukf']
 }
 
 config.noise_and_measurement = {
