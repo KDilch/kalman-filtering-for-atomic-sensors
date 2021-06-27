@@ -50,9 +50,6 @@ class AtomicStateSquareWaveManager(StateDynamicsManager):
                                                              config.simulation['q_initial_val'],
                                                              config.simulation['p_initial_val']]),
                                        initial_time=0)
-        intrinsic_noise = GaussianWhiteNoise(mean=0.,
-                                             cov=config.simulation['R'] / config.simulation['dt_simulation'],
-                                             dt=config.simulation['dt_simulation'])
         square_wave_atomic_sensor_dynamics = AtomicSensorSquareWaveDynamicalModel(light_correlation_const=config.physical_parameters['light_correlation_const'],
                                                                                   spin_correlation_const=config.physical_parameters['spin_correlation_const'],
                                                                                   larmour_freq=config.physical_parameters['larmour_freq'],
@@ -60,7 +57,9 @@ class AtomicStateSquareWaveManager(StateDynamicsManager):
                                                                                   coupling_freq=config.coupling['omega_p'],
                                                                                   coupling_phase_shift=config.coupling['phase_shift'],
                                                                                   square_wave_frequency=config.square_waveform['frequency'],
-                                                                                  square_wave_amplitude=config.square_waveform['amplitude']
+                                                                                  square_wave_amplitude=config.square_waveform['amplitude'],
+                                                                                  intrinsic_noise=config.noise_and_measurement['Q'],
+                                                                                  dt=dt
                                                                                   )
 
         StateDynamicsManager.__init__(self,
