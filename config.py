@@ -23,7 +23,7 @@ config.simulation = {
     'q_initial_val': 2.,
     'p_initial_val': 2.,
     'R': np.array([[0.01]]),
-    'simulation_type': ['linear', 'sin']  # must be a list or value [NOT ND.ARRAY], input verification according to ATOMIC_SENSOR_DYNAMICS_TYPES in main.py
+    'simulation_type': ['linear', 'sin', 'square', 'sawtooth']  # must be a list or value [NOT ND.ARRAY], input verification according to ATOMIC_SENSOR_DYNAMICS_TYPES in main.py
 }
 
 config.sin_waveform = {

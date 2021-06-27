@@ -2,10 +2,8 @@
 import numpy as np
 from abc import ABC
 import logging
-from scipy.linalg import expm, solve_discrete_are
+from scipy.linalg import expm
 from scipy.integrate import odeint, simps
-
-from atomic_sensor_simulation.utilities import integrate_matrix_of_functions, eval_matrix_of_functions
 
 
 class DynamicalModel(ABC):
@@ -13,12 +11,14 @@ class DynamicalModel(ABC):
 
     def __init__(self,
                  transition_matrix,
+                 dt,
                  intrinsic_noise=None,
                  is_model_discrete=False):
         """
         :param transition_matrix: matrix of functions
         """
         self.transition_matrix = transition_matrix
+        self.dt = dt
         self.intrinsic_noise = intrinsic_noise
         self.__state_vec_shape = transition_matrix.shape[0]
         self.__is_model_discrete = is_model_discrete
@@ -57,7 +57,6 @@ class DynamicalModel(ABC):
                 integrand_split = [map(list, zip(*integrands.reshape(*integrands.shape[:1], -1)))]
                 # calculate integral numerically using simpsons rule
                 self.num_discrete_intrinsic_noise = np.reshape(np.array([simps(i, t) for i in integrand_split]), (self.__state_vec_shape, self.__state_vec_shape))
-
             self.num_discrete_transition_matrix = Phi_s_matrix_form[1]
             return
         else:
@@ -124,22 +123,20 @@ class DynamicalModel(ABC):
             self.evaluate_transition_matrix_at_time_t(from_time) * (to_time - from_time))
         return self.time_inv_discrete_transition_matrix
 
-
-
-    def step(self, state_mean, state, time, time_step):
+    def step(self, state_mean, state, time):
         raise NotImplementedError('step function not implemented')
 
 
 class LinearDifferentialDynamicalModel(DynamicalModel):
 
-    def __init__(self, transition_matrix, intrinsic_noise=None, logger=None):
+    def __init__(self, transition_matrix, dt, intrinsic_noise=None, logger=None):
         self._logger = logger or logging.getLogger(__name__)
-        DynamicalModel.__init__(self, transition_matrix, intrinsic_noise=intrinsic_noise)
+        DynamicalModel.__init__(self, transition_matrix, intrinsic_noise=intrinsic_noise, dt=dt)
 
-    def step(self, state_mean, state, time, time_step):
+    def step(self, state_mean, state, time):
         self._logger.debug('Performing a step for time %r' % str(time))
         state_mean.update(state_mean.vec + self.evaluate_transition_matrix_at_time_t(time).dot(
-            state_mean.vec) * time_step)
+            state_mean.vec) * self.dt)
         if self.intrinsic_noise:
             state.update(state_mean.vec + self.intrinsic_noise.step())
         else:

@@ -41,9 +41,9 @@ def run__atomic_sensor(queue):
     if config.simulation['simulation_type'] == 'square':
         atomic_state_dynamics_manager = AtomicStateSquareWaveManager(config)
     if config.simulation['simulation_type'] == 'sawtooth':
-        atomic_state_dynamics_manager = AtomicStateSawtoothWaveManager(config)
+        atomic_state_dynamics_manager = AtomicStateSawtoothWaveManager(config, dt=config.simulation['dt_simulation'])
     if config.simulation['simulation_type'] == 'linear':
-        atomic_state_dynamics_manager = AtomicStateLinearDynamicsManager(config)
+        atomic_state_dynamics_manager = AtomicStateLinearDynamicsManager(config, dt=config.simulation['dt_simulation'])
     else:
         raise ValueError('Invalid simulation type %r.' % config.simulation['simulation_type'])
 
@@ -66,75 +66,15 @@ def run__atomic_sensor(queue):
         if is_measurement_performed:
             measurement_outcome = sensor.read(state_vec=atomic_state_dynamics_manager.vec)
             measurement_history_manager.add_history_point(history_point=[time, measurement_outcome])
-    print(measurement_history_manager.full_history)
 
     # KALMAN FILTER====================================================
     # Kalman Filter
     kf_dynamical_model = None
     kf_measurement_model = None
-    linear_kf_model = KalmanFilter(F=state.F_transition_matrix,
-                                   Q=Q,
-                                   H=H,
-                                   R=R,
-                                   R_delta=R / config.filter['dt_filter'],
-                                   Gamma=state.Gamma_control_evolution_matrix,
-                                   u=state.u_control_vec,
-                                   z0=[zs[0]],
-                                   dt=config.filter['dt_filter'],
-                                   x0=np.array([config.filter['spin_y_initial_val'],
-                                             config.filter['spin_z_initial_val'],
-                                             config.filter['q_initial_val'],
-                                             config.filter['p_initial_val']]),
-                                   P0=config.filter['P0'],
-                                   light_correlation_const=config.physical_parameters['light_correlation_const'],
-                                   spin_correlation_const=config.physical_parameters['spin_correlation_const'],
-                                   larmour_freq=config.physical_parameters['larmour_freq'],
-                                   coupling_amplitude=config.coupling['g_p'],
-                                   coupling_freq=config.coupling['omega_p'],
-                                   coupling_phase_shift=config.coupling['phase_shift']
-                                   )
+    kalman_filter = None
+    unscented_kalman_filter = None
+    extended_kalman_filter = None
 
-    unscented_kf_model = Unscented_KF(F=state.F_transition_matrix,
-                                      Q=linear_kf_model.Q_delta,
-                                      R=R,
-                                      H=H,
-                                      R_delta=R / config.filter['dt_filter'],
-                                      Gamma=state.Gamma_control_evolution_matrix,
-                                      u=state.u_control_vec,
-                                      z0=[zs[0]],
-                                      dt=config.filter['dt_filter'],
-                                      x0=linear_kf_model.x0,
-                                      P0=linear_kf_model.P0)
-
-    extended_kf_model = Extended_KF(F=state.F_transition_matrix,
-                                    H=H,
-                                    Q=Q,
-                                    R=R,
-                                    R_delta=R / config.filter['dt_filter'],
-                                    Gamma=state.Gamma_control_evolution_matrix,
-                                    u=state.u_control_vec,
-                                    z0=[zs[0]],
-                                    dt=config.filter['dt_filter'],
-                                    x0=linear_kf_model.x0,
-                                    P0=linear_kf_model.P0,
-                                    num_terms=3,
-                                    time_arr=time_arr_filter
-                                    )
-
-    extended_kf_model_lin = Extended_KF(F=state.F_transition_matrix,
-                                    H=H,
-                                    Q=Q,
-                                    R=R,
-                                    R_delta=R / config.filter['dt_filter'],
-                                    Gamma=state.Gamma_control_evolution_matrix,
-                                    u=state.u_control_vec,
-                                    z0=[zs[0]],
-                                    dt=config.filter['dt_filter'],
-                                    x0=linear_kf_model.x0,
-                                    P0=linear_kf_model.P0,
-                                    num_terms=3,
-                                    time_arr=time_arr_filter
-                                    )
 
     # RUN FILTERPY KALMAN FILTER
     logger.info("Initializing linear_kf_filterpy Kalman Filter")
@@ -249,7 +189,7 @@ def run__atomic_sensor(queue):
         logger.debug("Steady dynamical_model solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
         steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
-    # # PLOT DATA #TODO make process save
+    # # PLOT DATA #TODO make process safe
     plot__all_atomic_sensor(sensor,
                             time_arr_filter,
                             time_arr_simulation,

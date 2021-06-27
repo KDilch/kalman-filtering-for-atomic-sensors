@@ -4,11 +4,13 @@ import numpy as np
 
 from atomic_sensor_simulation.dynamical_model.dynamics import LinearDifferentialDynamicalModel
 from atomic_sensor_simulation.operable_functions import create_operable_const_func, create_operable_cos_func, create_operable_sin_func
+from atomic_sensor_simulation.noise import GaussianWhiteNoise
 
 
 class AtomicSensorLinearDifferentialDynamicalModel(LinearDifferentialDynamicalModel):
 
     def __init__(self,
+                 dt,
                  logger=None,
                  **kwargs
                  ):
@@ -19,6 +21,7 @@ class AtomicSensorLinearDifferentialDynamicalModel(LinearDifferentialDynamicalMo
         coupling_phase_shift = kwargs['coupling_phase_shift']
         larmour_freq = kwargs['larmour_freq']
         spin_correlation_const = kwargs['spin_correlation_const']
+        intrinsic_noise = kwargs['intrinsic_noise']
         transition_matrix = np.array([[create_operable_const_func(-spin_correlation_const),
                                        create_operable_const_func(larmour_freq),
                                        create_operable_const_func(0),
@@ -43,7 +46,11 @@ class AtomicSensorLinearDifferentialDynamicalModel(LinearDifferentialDynamicalMo
                                        create_operable_const_func(0),
                                        create_operable_const_func(-light_correlation_const)]])
 
-        LinearDifferentialDynamicalModel.__init__(self, transition_matrix=transition_matrix, logger=logger)
+        intrinsic_noise = GaussianWhiteNoise(mean=[0., 0., 0., 0.],
+                                             cov=intrinsic_noise,
+                                             dt=dt)
+
+        LinearDifferentialDynamicalModel.__init__(self, transition_matrix=transition_matrix, intrinsic_noise=intrinsic_noise, logger=logger, dt=dt)
 
 
 class AtomicSensorSinDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel):
@@ -56,14 +63,12 @@ class AtomicSensorSinDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel
         self.__sin_wave_amplitude = kwargs['sin_wave_amplitude']
         AtomicSensorLinearDifferentialDynamicalModel.__init__(self, **kwargs)
 
-    def step(self, state_mean, state, time, time_step, intrinsic_noise=None):
+    def step(self, state_mean, state, time, intrinsic_noise=None):
         LinearDifferentialDynamicalModel.step(self,
                                               state_mean,
                                               state,
-                                              time,
-                                              time_step,
-                                                )
-        state_mean.vec[2] = self.__sin_wave_func(time+time_step)
+                                              time)
+        state_mean.vec[2] = self.__sin_wave_func(time+self.dt)
 
     def __sin_wave_func(self, time):
         return np.sin(2*np.pi*time*self.__sin_wave_frequency)
@@ -79,14 +84,12 @@ class AtomicSensorSquareWaveDynamicalModel(AtomicSensorLinearDifferentialDynamic
         self._square_wave_amplitude = kwargs['square_wave_amplitude']
         AtomicSensorLinearDifferentialDynamicalModel.__init__(self, **kwargs)
 
-    def step(self, state_mean, state, time, time_step, intrinsic_noise=None):
+    def step(self, state_mean, state, time, intrinsic_noise=None):
         LinearDifferentialDynamicalModel.step(self,
                                               state_mean,
                                               state,
-                                              time,
-                                              time_step,
-                                              intrinsic_noise)
-        state_mean.vec[2] = self.__square_wave_func(time+time_step)
+                                              time)
+        state_mean.vec[2] = self.__square_wave_func(time+self.dt)
 
     def __square_wave_func(self, time):
         return self._square_wave_amplitude*np.sign(np.sin(2*np.pi*self._square_wave_frequency*time))

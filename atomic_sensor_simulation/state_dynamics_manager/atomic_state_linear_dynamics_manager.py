@@ -9,7 +9,8 @@ from atomic_sensor_simulation.dynamical_model.atomic_sensor_dynamics import Atom
 
 
 class AtomicStateLinearDynamicsManager(StateDynamicsManager):
-    def __init__(self, config):
+    def __init__(self, config, dt):
+        #dt must be a parameter to make it possible to reuse this object for a filter
         state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
                                                         config.simulation['spin_z_initial_val'],
                                                         config.simulation['q_initial_val'],
@@ -20,28 +21,25 @@ class AtomicStateLinearDynamicsManager(StateDynamicsManager):
                                                              config.simulation['q_initial_val'],
                                                              config.simulation['p_initial_val']]),
                                        initial_time=0)
-        #shouldn't it be Q???
-        intrinsic_noise = GaussianWhiteNoise(mean=0.,
-                                             cov=config.simulation['R'] / config.simulation['dt_simulation'],
-                                             dt=config.simulation['dt_simulation'])
-        linear_atomic_sensor_dynamics = AtomicSensorLinearDifferentialDynamicalModel(
-            light_correlation_const=config.physical_parameters['light_correlation_const'],
-            spin_correlation_const=config.physical_parameters['spin_correlation_const'],
-            larmour_freq=config.physical_parameters['larmour_freq'],
-            coupling_amplitude=config.coupling['g_p'],
-            coupling_freq=config.coupling['omega_p'],
-            coupling_phase_shift=config.coupling['phase_shift'])
+
+        linear_atomic_sensor_dynamics = AtomicSensorLinearDifferentialDynamicalModel(light_correlation_const=config.physical_parameters['light_correlation_const'],
+                                                                                     spin_correlation_const=config.physical_parameters['spin_correlation_const'],
+                                                                                     larmour_freq=config.physical_parameters['larmour_freq'],
+                                                                                     coupling_amplitude=config.coupling['g_p'],
+                                                                                     coupling_freq=config.coupling['omega_p'],
+                                                                                     coupling_phase_shift=config.coupling['phase_shift'],
+                                                                                     intrinsic_noise=config.noise_and_measurement['Q'],
+                                                                                     dt=dt)
         StateDynamicsManager.__init__(self,
                                       state_mean=state_mean,
                                       state=state,
-                                      intrinsic_noise=intrinsic_noise,
                                       dynamics=linear_atomic_sensor_dynamics,
                                       time_step=config.simulation['dt_simulation'],
                                       time=0)
 
 
 class AtomicStateSquareWaveManager(StateDynamicsManager):
-    def __init__(self, config):
+    def __init__(self, config, dt):
         state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
                                                         config.simulation['spin_z_initial_val'],
                                                         config.simulation['q_initial_val'],
@@ -68,14 +66,13 @@ class AtomicStateSquareWaveManager(StateDynamicsManager):
         StateDynamicsManager.__init__(self,
                                       state_mean=state_mean,
                                       state=state,
-                                      intrinsic_noise=intrinsic_noise,
                                       dynamics=square_wave_atomic_sensor_dynamics,
                                       time_step=config.simulation['dt_simulation'],
                                       time=0)
 
 
 class AtomicStateSawtoothWaveManager(StateDynamicsManager):
-    def __init__(self, config):
+    def __init__(self, config, dt):
         state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
                                                         config.simulation['spin_z_initial_val'],
                                                         config.simulation['q_initial_val'],
@@ -102,14 +99,13 @@ class AtomicStateSawtoothWaveManager(StateDynamicsManager):
         StateDynamicsManager.__init__(self,
                                       state_mean=state_mean,
                                       state=state,
-                                      intrinsic_noise=intrinsic_noise,
                                       dynamics=sawtooth_wave_atomic_sensor_dynamics,
                                       time_step=config.simulation['dt_simulation'],
                                       time=0)
 
 
 class AtomicStateSinWaveManager(StateDynamicsManager):
-    def __init__(self, config):
+    def __init__(self, config, dt):
         state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
                                                         config.simulation['spin_z_initial_val'],
                                                         config.simulation['q_initial_val'],
@@ -135,7 +131,6 @@ class AtomicStateSinWaveManager(StateDynamicsManager):
         StateDynamicsManager.__init__(self,
                                       state_mean=state_mean,
                                       state=state,
-                                      intrinsic_noise=intrinsic_noise,
                                       dynamics=sin_wave_atomic_sensor_dynamics,
                                       time_step=config.simulation['dt_simulation'],
                                       time=0)
