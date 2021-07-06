@@ -4,7 +4,7 @@ import numpy as np
 config = SimpleNamespace()
 
 config.physical_parameters = {
-    'larmour_freq': 6.,
+    'larmour_freq': [6., 5.],
     'spin_correlation_const': 0.33,
     'light_correlation_const': 1.
 }

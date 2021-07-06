@@ -29,6 +29,7 @@ class DD_KalmanFilter(object):
             self.x0, self.P0 = prior
 
         self.x_prior = None
+        self.x = self.x0
         self.P_prior = None
         self.x_post = None
         self.P_post = None

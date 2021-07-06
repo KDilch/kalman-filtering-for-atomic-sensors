@@ -84,6 +84,7 @@ def run__atomic_sensor(queue):
                 kalman_filter = DD_KalmanFilter(dynamical_model=kf_dynamical_model,
                                                 measurement_model=kf_measurement_model,
                                                 z0=measurement_outcome)
+    return 0
 
     # # FIND STEADY STATE SOLUTION
     # steady_state_history_manager = SteadyStateHistoryManager(num_iter_filter, config, time_arr_filter)
@@ -97,4 +98,3 @@ def run__atomic_sensor(queue):
     #     logger.debug("Steady dynamical_model solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
     #     steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
-    return 1
