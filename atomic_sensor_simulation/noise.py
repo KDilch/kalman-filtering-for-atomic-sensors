@@ -29,14 +29,18 @@ class GaussianWhiteNoise(Noise):
         :param logger: instance of logging.Logger or None (if None a new instance of this class will be created)
         """
         self.__logger = logger if logger else logging.getLogger(__name__)
-        self.__value = None
         self.__cov = cov
         self.__mean = mean
         self.__dt = dt
+        self.__value = self.step()
 
     @property
     def value(self):
         return self.__value
+
+    @property
+    def cov(self):
+        return self.__cov
 
     def step(self):
         self.__value = multivariate_normal.rvs(mean=self.__mean, cov=self.__cov)
@@ -67,3 +71,6 @@ class GaussianWhiteNoise(Noise):
                       xlabel="time",
                       ylabel="Gaussian White Noise",
                       is_show=is_show)
+
+    def cov_delta(self, delta_t):
+        return self.__cov/delta_t

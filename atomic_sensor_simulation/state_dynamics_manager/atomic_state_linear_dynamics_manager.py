@@ -9,7 +9,13 @@ from atomic_sensor_simulation.dynamical_model.atomic_sensor_dynamics import Atom
 
 
 class AtomicStateLinearDynamicsManager(StateDynamicsManager):
-    def __init__(self, config, dt):
+    def __init__(self,
+                 config,
+                 dt,
+                 discretization_active=False,
+                 is_model_time_invariant=False,
+                 initial_time=None,
+                 discrete_dt=None):
         #dt must be a parameter to make it possible to reuse this object for a filter
         state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
                                                         config.simulation['spin_z_initial_val'],
@@ -29,7 +35,11 @@ class AtomicStateLinearDynamicsManager(StateDynamicsManager):
                                                                                      coupling_freq=config.coupling['omega_p'],
                                                                                      coupling_phase_shift=config.coupling['phase_shift'],
                                                                                      intrinsic_noise=config.noise_and_measurement['Q'],
-                                                                                     dt=dt)
+                                                                                     dt=dt,
+                                                                                     is_model_time_invariant=is_model_time_invariant,
+                                                                                     discretization_active=discretization_active,
+                                                                                     initial_time=initial_time,
+                                                                                     discrete_dt=discrete_dt)
         StateDynamicsManager.__init__(self,
                                       state_mean=state_mean,
                                       state=state,

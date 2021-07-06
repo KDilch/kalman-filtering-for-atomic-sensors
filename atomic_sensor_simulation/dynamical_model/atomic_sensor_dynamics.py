@@ -12,6 +12,10 @@ class AtomicSensorLinearDifferentialDynamicalModel(LinearDifferentialDynamicalMo
     def __init__(self,
                  dt,
                  logger=None,
+                 discretization_active=False,
+                 is_model_time_invariant=False,
+                 initial_time=None,
+                 discrete_dt=None,
                  **kwargs
                  ):
         self._logger = logger or logging.getLogger(__name__)
@@ -50,7 +54,15 @@ class AtomicSensorLinearDifferentialDynamicalModel(LinearDifferentialDynamicalMo
                                              cov=intrinsic_noise,
                                              dt=dt)
 
-        LinearDifferentialDynamicalModel.__init__(self, transition_matrix=transition_matrix, intrinsic_noise=intrinsic_noise, logger=logger, dt=dt)
+        LinearDifferentialDynamicalModel.__init__(self,
+                                                  transition_matrix=transition_matrix,
+                                                  intrinsic_noise=intrinsic_noise,
+                                                  logger=logger,
+                                                  dt=dt,
+                                                  is_model_time_invariant=is_model_time_invariant,
+                                                  discretization_active=discretization_active,
+                                                  initial_time=initial_time,
+                                                  discrete_dt=discrete_dt)
 
 
 class AtomicSensorSinDynamicalModel(AtomicSensorLinearDifferentialDynamicalModel):

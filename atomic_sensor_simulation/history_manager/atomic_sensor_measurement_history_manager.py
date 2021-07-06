@@ -26,6 +26,12 @@ class AtomicSensorMeasurementHistoryManager(HistoryManager):
             self.__measurement_data.append(history_point[1])
         self.__add_current_history_point(history_point)
 
+    def is_the_first_measurement(self):
+        if len(self.__measurement_data) == 1:
+            return True
+        else:
+            return False
+
     def __add_current_history_point(self, current_history_point):
         self.__previous_time = copy.deepcopy(self.__current_time)
         self.__previous_point = copy.deepcopy(self.__current_point)

@@ -3,7 +3,7 @@ import numpy as np
 from abc import ABC
 import logging
 from scipy.linalg import expm
-from scipy.integrate import odeint, simps
+from scipy.integrate import odeint, simps, trapz
 
 
 class DynamicalModel(ABC):
@@ -16,7 +16,8 @@ class DynamicalModel(ABC):
                  is_model_differential=True,
                  discretization_active=False,
                  is_model_time_invariant=False,
-                 discrete_dt=None
+                 discrete_dt=None,
+                 initial_time=None
                  ):
         """
         :param transition_matrix: matrix of functions
@@ -29,10 +30,16 @@ class DynamicalModel(ABC):
         self.__discretization_active = discretization_active
         self.__is_model_time_invariant = is_model_time_invariant
         if self.__is_model_differential and self.__discretization_active:
-            self.discrete_transition_matrix = None
-            self.discrete_transition_matrix_T = None
-            self.discrete_intrinsic_noise = None
-            self.discrete_dt = discrete_dt
+            if initial_time is None:
+                raise ValueError("Initial time not defined - the discretization cannot be performed.")
+            else:
+                self.__discrete_transition_matrix = None
+                self.__discrete_transition_matrix_T = None
+                self.__discrete_intrinsic_noise = None
+                self.__discrete_dt = discrete_dt
+                self.__num_compute_discrete_transition_and_noise_matrices(initial_time,
+                                                                          initial_time + self.__discrete_dt,
+                                                                          time_resolution=30)
 
     def evaluate_transition_matrix_at_time_t(self, time):
         """Evaluates the matrix of functions at time t"""
@@ -43,7 +50,7 @@ class DynamicalModel(ABC):
             evaluated_matrix[index] = matrix_flat[index](time)
         return np.reshape(evaluated_matrix, shape)
 
-    def num_compute_discrete_transition_noise_matrices(self, from_time, to_time, time_resolution):
+    def __num_compute_discrete_transition_and_noise_matrices(self, from_time, to_time, time_resolution):
         """Computes discrete model (Phi, Q^{\Delta})"""
         if self.__is_model_differential and self.__discretization_active:
             Phi_0 = np.reshape(np.identity(self.__state_vec_shape),
@@ -55,19 +62,41 @@ class DynamicalModel(ABC):
                                   self.__state_vec_shape ** 2)
 
             t = np.linspace(from_time, to_time, num=time_resolution)  # times to report solution
+            t_matrix_shape = np.array([np.repeat(time, self.__state_vec_shape**2) for time in t])
             # solve ODE
             Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, self.__state_vec_shape**2), t, full_output=True)
             Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (self.__state_vec_shape, self.__state_vec_shape)) for i in range(len(Phi_deltas))]
             if self.intrinsic_noise:
                 Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
-                integrands = np.array([np.dot(np.dot(a, self.intrinsic_noise), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
-                integrand_split = [map(list, zip(*integrands.reshape(*integrands.shape[:1], -1)))]
+                Q_delta_integrands = np.array([np.dot(np.dot(Phi, self.intrinsic_noise.cov), PhiT) for Phi, PhiT in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
+                Q_delta_integrand_split = np.array([Q_delta_integrand.flatten().tolist() for Q_delta_integrand in Q_delta_integrands])
                 # calculate integral numerically using simpsons rule
-                self.discrete_intrinsic_noise = np.reshape(np.array([simps(i, t) for i in integrand_split]), (self.__state_vec_shape, self.__state_vec_shape))
-            self.discrete_transition_matrix = Phi_s_matrix_form[1]
+                self.__discrete_intrinsic_noise = np.array([trapz(Q_delta_integrand_split, t_matrix_shape)])
+                a = simps(Q_delta_integrand_split, t_matrix_shape)
+            self.__discrete_transition_matrix = Phi_s_matrix_form[-1]
             return
         else:
-            raise RuntimeError("This dynamical model is already discrete!")
+            raise RuntimeError("")
+
+    @property
+    def discrete_transition_matrix(self):
+        return self.__discrete_transition_matrix
+
+    @property
+    def discrete_transition_matrix_T(self):
+        return self.__discrete_transition_matrix
+
+    @property
+    def discrete_intrinsic_noise(self):
+        return self.__discrete_transition_matrix
+
+    @property
+    def discrete_dt(self):
+        return self.__discrete_dt
+
+    @property
+    def state_vec_shape(self):
+        return self.__state_vec_shape
 
     def time_inv_compute_discrete_transition_matrix(self, from_time, to_time):
         """Returns solution for Phi from t_k to t_k+dt_filter for an time invariant transition matrix.
@@ -77,8 +106,8 @@ class DynamicalModel(ABC):
         :return: exp(F*dt)
         """
         if self.__is_model_differential and self.__discretization_active and self.__is_model_time_invariant:
-            self.discrete_transition_matrix = expm(self.evaluate_transition_matrix_at_time_t(from_time) * (to_time - from_time))
-        return self.discrete_transition_matrix
+            self.__discrete_transition_matrix = expm(self.evaluate_transition_matrix_at_time_t(from_time) * (to_time - from_time))
+        return self.__discrete_transition_matrix
 
     def step(self, state_mean, state, time):
         raise NotImplementedError('step function not implemented')
@@ -86,9 +115,25 @@ class DynamicalModel(ABC):
 
 class LinearDifferentialDynamicalModel(DynamicalModel):
 
-    def __init__(self, transition_matrix, dt, intrinsic_noise=None, logger=None):
+    def __init__(self,
+                 transition_matrix,
+                 dt,
+                 intrinsic_noise=None,
+                 logger=None,
+                 discretization_active=False,
+                 is_model_time_invariant=False,
+                 initial_time=None,
+                 discrete_dt=None):
         self._logger = logger or logging.getLogger(__name__)
-        DynamicalModel.__init__(self, transition_matrix, intrinsic_noise=intrinsic_noise, dt=dt)
+        DynamicalModel.__init__(self,
+                                transition_matrix,
+                                intrinsic_noise=intrinsic_noise,
+                                dt=dt,
+                                is_model_differential=True,
+                                discretization_active=discretization_active,
+                                is_model_time_invariant=is_model_time_invariant,
+                                initial_time=initial_time,
+                                discrete_dt=discrete_dt)
 
     def step(self, state_mean, state, time):
         self._logger.debug('Performing a step for time %r' % str(time))
