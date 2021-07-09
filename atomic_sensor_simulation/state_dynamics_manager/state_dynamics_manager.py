@@ -15,3 +15,7 @@ class StateDynamicsManager(object):
     @property
     def vec(self):
         return self._state.vec
+
+    @property
+    def dynamics(self):
+        return self._dynamics

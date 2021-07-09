@@ -61,3 +61,7 @@ class AtomicSensorMeasurementHistoryManager(HistoryManager):
             return self.__measurement_data
         else:
             return warn('No history provided for this measurement scheme.', UserWarning)
+
+
+class KalmanFilterEstimatesHistoryManager(AtomicSensorMeasurementHistoryManager):
+    pass

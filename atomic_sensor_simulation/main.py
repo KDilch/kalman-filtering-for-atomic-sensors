@@ -55,6 +55,7 @@ def main():
                                    default=False)
     simulation_parser.add_argument('--max_num_processes',
                                    action='store',
+                                   type=int,
                                    help='Int specifying the maximum number of processes that should'
                                         'be spawned while running the simulation.',
                                    default=8)
@@ -117,15 +118,8 @@ def main():
         for w in workers:
             w.join()
 
-        # pool = multiprocessing.Pool(processes=processes)
-        # simulation_results = pool.starmap(run__atomic_sensor, args_tuples)
-        # pool.close()
-        # pool.join()
         logger.info('Simulation with %s processes spawned finished in %s' % (str(num_processes),
                                                                              str(time.time() - start_time)))
-        # if any(simulation_results) != 0:
-        #     logger.warning('Exit code other than 0 detected.')
-        #     raise UserWarning('Not all simulation exit codes were 0.')
     else:
         args.func(args)
 

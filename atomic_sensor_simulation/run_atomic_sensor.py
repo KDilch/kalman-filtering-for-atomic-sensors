@@ -24,9 +24,10 @@ def run__atomic_sensor(queue):
     logger.info('Starting execution of atomic sensor simulation.')
     config, args = queue.get()[0]
     # atomic_state_lin_dynamics_manager = args.dynamics
-    num_iter_simulation = (2 * np.pi * config.simulation['number_periods'] /
-                           config.physical_parameters['larmour_freq']) / config.simulation['dt_simulation']
+    num_iter_simulation = 2 * (np.pi * config.simulation['number_periods'] /config.physical_parameters['larmour_freq']) / config.simulation['dt_simulation']
+    print(num_iter_simulation)
     num_iter_measurement = np.int(np.floor_divide(num_iter_simulation, config.filter['measure_every_nth']))
+    print(num_iter_measurement)
     dt_filter = num_iter_simulation*config.simulation['dt_simulation']/num_iter_measurement
 
     time_arr_simulation = np.arange(0, num_iter_simulation * config.simulation['dt_simulation'], config.simulation['dt_simulation'])
@@ -62,6 +63,9 @@ def run__atomic_sensor(queue):
                                                           initial_time=0,
                                                           discrete_dt=dt_filter)
     kf_measurement_model = AtomicSensorMeasurementModel(config)
+    kalman_filter = None
+    kalman_filter_history_manager = AtomicSensorMeasurementHistoryManager(is_store_all=True)
+
     unscented_kalman_filter = None
     extended_kalman_filter = None
     # compute a steady state solution
@@ -84,6 +88,12 @@ def run__atomic_sensor(queue):
                 kalman_filter = DD_KalmanFilter(dynamical_model=kf_dynamical_model,
                                                 measurement_model=kf_measurement_model,
                                                 z0=measurement_outcome)
+            kalman_filter.predict()
+            kalman_filter.update(measurement_outcome)
+            kalman_filter_history_manager.add_history_point(history_point=[time, kalman_filter.x])
+    import matplotlib.pyplot as plt
+    plt.plot(time_arr_simulation, simulation_history_manager.full_history)
+    plt.plot(time_arr_measurement,)
     return 0
 
     # # FIND STEADY STATE SOLUTION
