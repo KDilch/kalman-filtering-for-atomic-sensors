@@ -24,4 +24,7 @@ class State(ABC):
         return self._time
 
     def update(self, value):
-        self._vec = value
+        if self._vec.shape == value.shape:
+            self._vec = value
+        else:
+            raise ValueError(f"The shape of the vector is incorrect. It is {value.shape} and should be {self._vec.shape}")

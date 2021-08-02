@@ -19,8 +19,7 @@ class DD_KalmanFilter(object):
         self.__logger = logger if logger else logging.getLogger(__name__)
         self._dynamical_model = dynamical_model
         self._measurement_model = measurement_model
-        self.R = self._measurement_model.noise_cov_delta(self._dynamical_model._dynamics._discrete_dt)
-
+        self.R = self._measurement_model.noise_cov_delta
 
         if prior is None:
             self.x, self.P = self.compute_x0_and_P0(z0)
@@ -41,24 +40,23 @@ class DD_KalmanFilter(object):
         self.z = None  # store last measurement outcome
 
     def predict(self):
-        print(self._dynamical_model.dynamics.discrete_transition_matrix, self.P)
         self.x = np.dot(self._dynamical_model.dynamics.discrete_transition_matrix, self._dynamical_model.vec)
         self.P = np.dot(np.dot(self._dynamical_model.dynamics.discrete_transition_matrix, self.P), self._dynamical_model.dynamics.discrete_transition_matrix_T) + self._dynamical_model.dynamics.discrete_intrinsic_noise
         self.t += self._measurement_model.dt
         # save prior
-        self.x_prior = np.copy(self._dynamical_model.state.vec)
+        self.x_prior = np.copy(self._dynamical_model.vec)
         self.P_prior = np.copy(self.P)
         return
 
     def update(self, z):
-        self.y = z - np.dot(self._measurement_model.H, self._dynamical_model.state.vec)  # y = z - Hx
+        self.y = z - np.dot(self._measurement_model.H, self._dynamical_model.vec)  # y = z - Hx
         PHT = np.dot(self.P, self._measurement_model.H_T)
-        self.S = np.dot(self._measurement_model.H_T, PHT) + self._measurement_model.R_delta  # system uncertainty -> P projected to measurement space
+        self.S = np.dot(self._measurement_model.H, PHT) + self.R  # system uncertainty -> P projected to measurement space
         self.SI = np.linalg.inv(self.S)
         self.K = np.dot(PHT, self.SI)
-        self._dynamical_model.state.vec.assign_new_vec(self.x + np.dot(self.K, self.y))
+        self._dynamical_model._state.update(self.x + np.dot(self.K, self.y))
         I_KH = self.Identity - np.dot(self.K, self._measurement_model.H)
-        self.P = np.dot(np.dot(I_KH, self.P), I_KH.T) + np.dot(np.dot(self.K, self._measurement_model.R_delta), self.K.T)
+        self.P = np.dot(np.dot(I_KH, self.P), I_KH.T) + np.dot(np.dot(self.K, self.R), self.K.T)
         self.z = copy.deepcopy(z)
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()

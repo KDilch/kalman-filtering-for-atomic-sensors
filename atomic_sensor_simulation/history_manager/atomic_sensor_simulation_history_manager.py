@@ -26,38 +26,10 @@ class AtomicSensorSimulationHistoryManager(HistoryManager):
             self.__simulation_data_measurement_frequency.append(history_point[1])
         return
 
-    def plot(self, jy=True, jz=True, p=True, q=True, show=False, output_file=None):
-        if (not show) & (not output_file):
-            raise UserWarning('Plotting not performed as show parameter is set to False and the output file is None.')
-        temp = np.array(self.__simulation_data)
-        if jy:
-            plt.plot(self.__time_arr, temp[:, 0])
-            if show:
-                plt.show()
-            if output_file:
-                plt.savefig(os.path.join(output_file))
-            plt.close()
+    @property
+    def full_simulation_history(self):
+        return self.__simulation_data
 
-        if jz:
-            plt.plot(self.__time_arr, temp[:, 1])
-            if show:
-                plt.show()
-            if output_file:
-                plt.savefig(os.path.join(output_file))
-            plt.close()
-
-        if p:
-            plt.plot(self.__time_arr, temp[:, 2])
-            if show:
-                plt.show()
-            if output_file:
-                plt.savefig(os.path.join(output_file))
-            plt.close()
-
-        if q:
-            plt.plot(self.__time_arr, temp[:, 3])
-            if show:
-                plt.show()
-            if output_file:
-                plt.savefig(os.path.join(output_file))
-            plt.close()
+    @property
+    def time_arr(self):
+        return self.__time_arr

@@ -16,6 +16,7 @@ from atomic_sensor_simulation.atomic_sensor_steady_state import compute_steady_s
 from state_dynamics_manager.atomic_state_linear_dynamics_manager import AtomicStateLinearDynamicsManager, AtomicStateSquareWaveManager, AtomicStateSawtoothWaveManager, AtomicStateSinWaveManager
 from atomic_sensor_simulation.history_manager.atomic_sensor_simulation_history_manager import AtomicSensorSimulationHistoryManager
 from atomic_sensor_simulation.history_manager.atomic_sensor_measurement_history_manager import AtomicSensorMeasurementHistoryManager
+from atomic_sensor_simulation.plot_kalman import plot_simulation_and_kalman
 
 def run__atomic_sensor(queue):
     # Logger for storing errors and logs in separate file, creates separate folder
@@ -51,7 +52,7 @@ def run__atomic_sensor(queue):
     simulation_history_manager = AtomicSensorSimulationHistoryManager()
 
     # INITIALIZE THE MEASUREMENT
-    sensor = AtomicSensorMeasurementModel(config)
+    sensor = AtomicSensorMeasurementModel(config, dt_filter)
     measurement_history_manager = AtomicSensorMeasurementHistoryManager(is_store_all=args.save_measurement_history)
 
     # KALMAN FILTER====================================================
@@ -62,7 +63,7 @@ def run__atomic_sensor(queue):
                                                           is_model_time_invariant=False,
                                                           initial_time=0,
                                                           discrete_dt=dt_filter)
-    kf_measurement_model = AtomicSensorMeasurementModel(config)
+    kf_measurement_model = AtomicSensorMeasurementModel(config, dt_filter)
     kalman_filter = None
     kalman_filter_history_manager = AtomicSensorMeasurementHistoryManager(is_store_all=True)
 
@@ -91,9 +92,7 @@ def run__atomic_sensor(queue):
             kalman_filter.predict()
             kalman_filter.update(measurement_outcome)
             kalman_filter_history_manager.add_history_point(history_point=[time, kalman_filter.x])
-    import matplotlib.pyplot as plt
-    plt.plot(time_arr_simulation, simulation_history_manager.full_history)
-    plt.plot(time_arr_measurement,)
+    plot_simulation_and_kalman(simulation_data=simulation_history_manager, kalman_data=kalman_filter_history_manager, show=True)
     return 0
 
     # # FIND STEADY STATE SOLUTION
