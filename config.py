@@ -22,7 +22,7 @@ config.simulation = {
     'spin_z_initial_val': 0.,
     'q_initial_val': 2.,
     'p_initial_val': 2.,
-    'R': np.array([[0.01]]),
+    'R': np.array([[0.001]]),
     'simulation_type': ['linear', 'sin', 'square', 'sawtooth']  # must be a list or value [NOT ND.ARRAY], input verification according to ATOMIC_SENSOR_DYNAMICS_TYPES in main.py
 }
 
@@ -42,7 +42,7 @@ config.square_waveform = {
 }
 
 config.filter = {
-    'measure_every_nth': 20,
+    'measure_every_nth': 1.5,
     'spin_y_initial_val': None,
     'spin_z_initial_val': None,
     'q_initial_val': None,

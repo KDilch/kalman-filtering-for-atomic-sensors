@@ -1,10 +1,5 @@
 from atomic_sensor_simulation.history_manager.history_manager import HistoryManager
 
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-
-
 class AtomicSensorSimulationHistoryManager(HistoryManager):
     def __init__(self):
         HistoryManager.__init__(self)

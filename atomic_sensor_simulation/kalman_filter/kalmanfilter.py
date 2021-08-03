@@ -33,13 +33,14 @@ class DD_KalmanFilter(object):
         self.P_post = None
         self.S = None
         self.SI = None
-        self.Identity = np.eye(self._dynamical_model._dynamics.state_vec_shape)
+        self.Identity = np.eye(self._dynamical_model.dynamics.state_vec_shape)
         self.t = initial_time
         self.y = None  # Residual between the measurement and prediction
         self.K = None
         self.z = None  # store last measurement outcome
 
     def predict(self):
+        self._dynamical_model.dynamics.num_compute_discrete_transition_and_noise_matrices(from_time=self.t)
         self.x = np.dot(self._dynamical_model.dynamics.discrete_transition_matrix, self._dynamical_model.vec)
         self.P = np.dot(np.dot(self._dynamical_model.dynamics.discrete_transition_matrix, self.P), self._dynamical_model.dynamics.discrete_transition_matrix_T) + self._dynamical_model.dynamics.discrete_intrinsic_noise
         self.t += self._measurement_model.dt
@@ -67,3 +68,31 @@ class DD_KalmanFilter(object):
         cov_x0 = self._dynamical_model.dynamics.discrete_intrinsic_noise + np.dot(np.dot(self._measurement_model.H_inverse, self.R),
                                                                                     np.transpose(self._measurement_model.H_inverse))
         return x0, cov_x0
+
+    @property
+    def discrete_transition_matrix(self):
+        return self._dynamical_model.dynamics.discrete_transition_matrix
+
+    @property
+    def discrete_intrinsic_noise_matrix(self):
+        return self._dynamical_model.dynamics.discrete_intrinsic_noise
+
+    @property
+    def intrinsic_noise_matrix(self):
+        return self._dynamical_model.dynamics.intrinsic_noise.cov
+
+    @property
+    def discrete_measurement_noise_matrix(self):
+        return self.R
+
+    @property
+    def dt(self):
+        return self._measurement_model.dt
+
+    @property
+    def measurement_matrix(self):
+        return self._measurement_model.H
+
+    @property
+    def state_vec_shape(self):
+        return self._dynamical_model.dynamics.state_vec_shape

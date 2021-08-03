@@ -65,7 +65,3 @@ class AtomicSensorMeasurementHistoryManager(HistoryManager):
     @property
     def time_arr(self):
         return self.__time_arr
-
-
-class KalmanFilterEstimatesHistoryManager(AtomicSensorMeasurementHistoryManager):
-    pass
