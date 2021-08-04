@@ -74,6 +74,10 @@ class DD_KalmanFilter(object):
         return self._dynamical_model.dynamics.discrete_transition_matrix
 
     @property
+    def continuous_transition_matrix(self):
+        return np.array(self._dynamical_model.dynamics.evaluate_transition_matrix_at_time_t(time=self.t), dtype=float)
+
+    @property
     def discrete_intrinsic_noise_matrix(self):
         return self._dynamical_model.dynamics.discrete_intrinsic_noise
 

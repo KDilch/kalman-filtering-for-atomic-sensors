@@ -26,22 +26,23 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
                                                     [lambda t: 0., lambda t: 0., lambda t: -np.sin(omega_p * t + phase_shift), lambda t: np.cos(omega_p * t + phase_shift)]])
         self.__rotating_frame_transform_T = self.__rotating_frame_transform.transpose()
         self.__D_rotating_frame_transform = None
-        self.__Phi_RF = None
+        self.__F_RF = None
+        self.__Phi_delta_RF = None
         self.__steady_prior = None
         self.__steady_post = None
         self.__Q_delta_RF = None
 
     def steady_state_solution_rotating_frame(self, t):
         self.__D_rotating_frame_transform = differentiate_matrix_of_functions(self.__rotating_frame_transform, t)
-        self.__Phi_RF = self.__change_time_dep_reference_frame_to_rotating(self._kalmanfilter.discrete_transition_matrix,
+        self.__F_RF = self.__change_time_dep_reference_frame_to_rotating(self._kalmanfilter.continuous_transition_matrix,
                                                                            eval_matrix_of_functions(self.__rotating_frame_transform, t),
                                                                            eval_matrix_of_functions(self.__rotating_frame_transform_T, t),
                                                                            self.__D_rotating_frame_transform)
-        # if self.__Q_delta_RF is None:
-        self.__num_compute_Q_delta_in_RF(t)
-
-        Phi_delta_RF = expm(self.__Phi_RF * self._kalmanfilter.dt)
-        steady_cov_predict_RF = solve_discrete_are(a=np.transpose(Phi_delta_RF),
+        if self.__Q_delta_RF is None:
+            self.__num_compute_Q_delta_in_RF(t)
+        if self.__Phi_delta_RF is None:
+            self.__Phi_delta_RF = expm(self.__F_RF * self._kalmanfilter.dt)
+        steady_cov_predict_RF = solve_discrete_are(a=np.transpose(self.__Phi_delta_RF),
                                                    b=np.transpose(self._kalmanfilter.measurement_matrix),
                                                    r=self._kalmanfilter.discrete_measurement_noise_matrix,
                                                    q=self.__Q_delta_RF)
@@ -66,7 +67,7 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
         :return:
         """
         def Phi_t(t):
-            return expm(self.__Phi_RF * t)
+            return expm(self.__F_RF * t)
 
         t = np.linspace(t, t+self._kalmanfilter.dt, num=num_terms)  # since everything is time independent I can perform this calculation once
         Phi_deltas = np.array([Phi_t(i) for i in t])
