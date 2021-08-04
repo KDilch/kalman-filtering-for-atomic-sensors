@@ -37,8 +37,8 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
                                                                            eval_matrix_of_functions(self.__rotating_frame_transform, t),
                                                                            eval_matrix_of_functions(self.__rotating_frame_transform_T, t),
                                                                            self.__D_rotating_frame_transform)
-        if self.__Q_delta_RF is None:
-            self.__num_compute_Q_delta_in_RF()
+        # if self.__Q_delta_RF is None:
+        self.__num_compute_Q_delta_in_RF(t)
 
         Phi_delta_RF = expm(self.__Phi_RF * self._kalmanfilter.dt)
         steady_cov_predict_RF = solve_discrete_are(a=np.transpose(Phi_delta_RF),
@@ -58,7 +58,7 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
                                                                                R_T=eval_matrix_of_functions(self.__rotating_frame_transform, t))
         return
 
-    def __num_compute_Q_delta_in_RF(self, num_terms=30):
+    def __num_compute_Q_delta_in_RF(self, t, num_terms=30):
         """
         This has to be computed in RF because if just transformed the matrix Q^Delta is not Hermitian -> dare can not
         be solved (this is due to the numerical error).
@@ -68,7 +68,7 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
         def Phi_t(t):
             return expm(self.__Phi_RF * t)
 
-        t = np.linspace(0, self._kalmanfilter.dt, num=num_terms)  # since everything is time independent I can perform this calculation once
+        t = np.linspace(t, t+self._kalmanfilter.dt, num=num_terms)  # since everything is time independent I can perform this calculation once
         Phi_deltas = np.array([Phi_t(i) for i in t])
         Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (self._kalmanfilter.state_vec_shape, self._kalmanfilter.state_vec_shape)) for i in range(len(Phi_deltas))]
         Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
