@@ -164,7 +164,7 @@ def plot_state_err_LKF(err_cov, err_ss, filename, target_dir='./'):
         plt.yscale("log")
 
     plt.savefig(os.path.join(target_dir, filename))
-    # plt.show()
+    plt.show()
     plt.close()
     return
 
@@ -568,18 +568,18 @@ def plot__all_atomic_sensor(sensor,
     config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
 
     # PLOT DIFFERENCE LKF-num_exp ESTIMATES
-    diff_LKF_num_exp = pd.DataFrame(
-        {
-            'time': time_arr_filter,
-            'diff': np.abs(lkf_num_history_manager.qs - lkf_exp_approx_history_manager.qs)
-        })
-    diff_LKF_EKF_num_exp_err = pd.DataFrame(
-        {
-            'time': time_arr_filter,
-            'diff': np.abs(np.sqrt(lkf_num_history_manager.qs_err_post) - np.sqrt(lkf_exp_approx_history_manager.qs_err_post))
-        })
-    plot_q_est_difference_num_exp(diff_LKF_num_exp, diff_LKF_EKF_num_exp_err, 'plt_LKF_num_exp_difference_gp_%r_wp_%r.png' % (
-    config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
+    # diff_LKF_num_exp = pd.DataFrame(
+    #     {
+    #         'time': time_arr_filter,
+    #         'diff': np.abs(lkf_num_history_manager.qs - lkf_exp_approx_history_manager.qs)
+    #     })
+    # diff_LKF_EKF_num_exp_err = pd.DataFrame(
+    #     {
+    #         'time': time_arr_filter,
+    #         'diff': np.abs(np.sqrt(lkf_num_history_manager.qs_err_post) - np.sqrt(lkf_exp_approx_history_manager.qs_err_post))
+    #     })
+    # plot_q_est_difference_num_exp(diff_LKF_num_exp, diff_LKF_EKF_num_exp_err, 'plt_LKF_num_exp_difference_gp_%r_wp_%r.png' % (
+    # config.coupling['g_p'], config.coupling['omega_p']), target_dir=target)
 
 
     #PLOT EKF LIN AND DISC

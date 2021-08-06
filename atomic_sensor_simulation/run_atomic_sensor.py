@@ -228,20 +228,20 @@ def run__atomic_sensor(*args):
     for index, time in enumerate(time_arr_filter):
         z = zs_filter_freq[index]
 
-        extended_kf_filterpy_lin.set_Q(lkf_num.Q) # THIS LINE NEEDS TO BE ADDED IF LINEARIZATION FIRST
-        extended_kf_filterpy_lin.predict()
-        extended_kf_filterpy_lin.update(z,
-                                    extended_kf_model_lin.HJacobianat,
-                                    extended_kf_model_lin.hx,
-                                    R=extended_kf_model_lin.R_delta)
-        extended_kf_history_manager_lin.add_entry(index)
-
-        extended_kf_filterpy.predict_discretization_first()
-        extended_kf_filterpy.update(z,
-                                    extended_kf_model.HJacobianat,
-                                    extended_kf_model.hx,
-                                    R=extended_kf_filterpy.R_delta)
-        extended_kf_history_manager.add_entry(index)
+        # extended_kf_filterpy_lin.set_Q(lkf_num.Q) # THIS LINE NEEDS TO BE ADDED IF LINEARIZATION FIRST
+        # extended_kf_filterpy_lin.predict()
+        # extended_kf_filterpy_lin.update(z,
+        #                             extended_kf_model_lin.HJacobianat,
+        #                             extended_kf_model_lin.hx,
+        #                             R=extended_kf_model_lin.R_delta)
+        # extended_kf_history_manager_lin.add_entry(index)
+        #
+        # extended_kf_filterpy.predict_discretization_first()
+        # extended_kf_filterpy.update(z,
+        #                             extended_kf_model.HJacobianat,
+        #                             extended_kf_model.hx,
+        #                             R=extended_kf_filterpy.R_delta)
+        # extended_kf_history_manager.add_entry(index)
 
         #COMMENTING OUT UKF SINCE IT NEEDS DEBUGGING (no reason to wait longer for the simulation to finish)
         # unscented_kf_model.set_Q(Q=lkf_num.Q)
