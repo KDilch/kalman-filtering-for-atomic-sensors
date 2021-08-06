@@ -92,9 +92,7 @@ def run__atomic_sensor(queue):
                 kalman_filter = DD_KalmanFilter(dynamical_model=kf_dynamical_model,
                                                 measurement_model=kf_measurement_model,
                                                 z0=measurement_outcome)
-                steady_state_solver = AtomicSensorSteadyStateSolver(kalman_filter,
-                                                                    omega_p=config.coupling['omega_p'],
-                                                                    phase_shift=config.coupling['phase_shift'])
+                steady_state_solver = AtomicSensorSteadyStateSolver(kalman_filter)
 
             kalman_filter.predict()
             kalman_filter.update(measurement_outcome)
@@ -106,3 +104,4 @@ def run__atomic_sensor(queue):
 
     plot_simulation_and_kalman(simulation_data=simulation_history_manager, kalman_data=kalman_filter_history_manager, show=True)
     plot_kalman_and_steady_state(kalman_data=kalman_filter_history_manager, steady_state_data=steady_state_history_manager, show=True)
+    return 0

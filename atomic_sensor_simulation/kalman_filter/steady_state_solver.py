@@ -5,6 +5,7 @@ from scipy.linalg import solve_discrete_are, expm
 from scipy.integrate import odeint, simps, trapz, quad
 
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions, differentiate_matrix_of_functions
+from config import config
 
 
 class SteadyStateSolver(object):
@@ -14,18 +15,18 @@ class SteadyStateSolver(object):
         self._kalmanfilter = kalmanfilter
 
     #TODO Implement a general solver
+R = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0.],
+              [lambda t: 0., lambda t: 1., lambda t: 0., lambda t: 0.],
+              [lambda t: 0., lambda t: 0., lambda t: np.cos(config.coupling["omega_p"] * t + config.coupling["phase_shift"]), lambda t: np.sin(config.coupling["omega_p"] * t + config.coupling["phase_shift"])],
+              [lambda t: 0., lambda t: 0., lambda t: -np.sin(config.coupling["omega_p"] * t + config.coupling["phase_shift"]), lambda t: np.cos(config.coupling["omega_p"] * t + config.coupling["phase_shift"])]])
 
+R_T = R.transpose()
 
 class AtomicSensorSteadyStateSolver(SteadyStateSolver):
 
-    def __init__(self, kalmanfilter, omega_p, phase_shift):
+    def __init__(self, kalmanfilter):
         SteadyStateSolver.__init__(self, kalmanfilter)
-        self.__rotating_frame_transform = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0.],
-                                                    [lambda t: 0., lambda t: 1., lambda t: 0., lambda t: 0.],
-                                                    [lambda t: 0., lambda t: 0., lambda t: np.cos(omega_p * t + phase_shift), lambda t: np.sin(omega_p * t + phase_shift)],
-                                                    [lambda t: 0., lambda t: 0., lambda t: -np.sin(omega_p * t + phase_shift), lambda t: np.cos(omega_p * t + phase_shift)]])
-        self.__rotating_frame_transform_T = self.__rotating_frame_transform.transpose()
-        self.__D_rotating_frame_transform = None
+        self.__R_derrivative = None
         self.__F_RF = None
         self.__Phi_delta_RF = None
         self.__steady_prior = None
@@ -33,32 +34,60 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
         self.__Q_delta_RF = None
 
     def steady_state_solution_rotating_frame(self, t):
-        self.__D_rotating_frame_transform = differentiate_matrix_of_functions(self.__rotating_frame_transform, t)
-        self.__F_RF = self.__change_time_dep_reference_frame_to_rotating(self._kalmanfilter.continuous_transition_matrix,
-                                                                           eval_matrix_of_functions(self.__rotating_frame_transform, t),
-                                                                           eval_matrix_of_functions(self.__rotating_frame_transform_T, t),
-                                                                           self.__D_rotating_frame_transform)
-        self.__num_compute_Q_delta_in_RF(t)
-        if self.__Phi_delta_RF is None:
-            self.__Phi_delta_RF = expm(self.__F_RF * self._kalmanfilter.dt)
-        steady_cov_predict_RF = solve_discrete_are(a=np.transpose(self.__Phi_delta_RF),
+        R_derivative = differentiate_matrix_of_functions(R, t)
+        # if steady_cov_predict_RF is None or steady_cov_update_RF is None:
+        F_RF = self.__change_time_dep_reference_frame_to_rotating(self._kalmanfilter.continuous_transition_matrix,
+                                               eval_matrix_of_functions(R, t),
+                                               eval_matrix_of_functions(R_T, t),
+                                               R_derivative)
+        R_delta = self._kalmanfilter.R
+        Phi_delta_RF = expm(F_RF * self._kalmanfilter.dt)
+        Phi_RF = expm(F_RF * t)
+        Q_delta = self.__num_compute_Q_delta_in_RF(t, F_RF)
+        # Q_delta = compute_Q_delta_sympy(F_RF, Matrix(model.Q), model.dt)
+
+        steady_cov_predict_RF = solve_discrete_are(a=np.transpose(Phi_delta_RF),
                                                    b=np.transpose(self._kalmanfilter.measurement_matrix),
-                                                   r=self._kalmanfilter.discrete_measurement_noise_matrix,
-                                                   q=self.__Q_delta_RF)
-        S_steady = self._kalmanfilter.discrete_measurement_noise_matrix + np.dot(np.dot(self._kalmanfilter.measurement_matrix, steady_cov_predict_RF), np.transpose(self._kalmanfilter.measurement_matrix))
+                                                   r=R_delta,
+                                                   q=Q_delta)
+        # print('steady cov prediction', steady_cov_predict_RF)
+        S_steady = R_delta + np.dot(np.dot(self._kalmanfilter.measurement_matrix, steady_cov_predict_RF), np.transpose(self._kalmanfilter.measurement_matrix))
         K_steady = np.dot(np.dot(steady_cov_predict_RF, np.transpose(self._kalmanfilter.measurement_matrix)), np.linalg.inv(S_steady))
         steady_cov_update_RF = np.dot((np.identity(self._kalmanfilter.state_vec_shape) - np.dot(K_steady, self._kalmanfilter.measurement_matrix)), steady_cov_predict_RF)
 
-        # go back to NOT ROTATING reference frame
+        # go back to LAB reference frame
         self.__steady_prior = self.__change_time_indep_reference_frame_rotating(steady_cov_predict_RF,
-                                                                                R=eval_matrix_of_functions(self.__rotating_frame_transform_T, t),
-                                                                                R_T=eval_matrix_of_functions(self.__rotating_frame_transform, t))
+                                                              R=eval_matrix_of_functions(R_T, t),
+                                                              R_T=eval_matrix_of_functions(R, t))
         self.__steady_post = self.__change_time_indep_reference_frame_rotating(steady_cov_update_RF,
-                                                                               R=eval_matrix_of_functions(self.__rotating_frame_transform_T, t),
-                                                                               R_T=eval_matrix_of_functions(self.__rotating_frame_transform, t))
+                                                             R=eval_matrix_of_functions(R_T, t),
+                                                             R_T=eval_matrix_of_functions(R, t))
+        # self.__R_derrivative = differentiate_matrix_of_functions(R, t)
+        # self.__F_RF = self.__change_time_dep_reference_frame_to_rotating(self._kalmanfilter.continuous_transition_matrix,
+        #                                                                  eval_matrix_of_functions(R, t),
+        #                                                                  eval_matrix_of_functions(R_T, t),
+        #                                                                  self.__R_derrivative)
+        # self.__num_compute_Q_delta_in_RF(t)
+        # if self.__Phi_delta_RF is None:
+        #     self.__Phi_delta_RF = expm(self.__F_RF * self._kalmanfilter.dt)
+        # steady_cov_predict_RF = solve_discrete_are(a=np.transpose(self.__Phi_delta_RF),
+        #                                            b=np.transpose(self._kalmanfilter.measurement_matrix),
+        #                                            r=self._kalmanfilter.discrete_measurement_noise_matrix,
+        #                                            q=self.__Q_delta_RF)
+        # S_steady = self._kalmanfilter.discrete_measurement_noise_matrix + np.dot(np.dot(self._kalmanfilter.measurement_matrix, steady_cov_predict_RF), np.transpose(self._kalmanfilter.measurement_matrix))
+        # K_steady = np.dot(np.dot(steady_cov_predict_RF, np.transpose(self._kalmanfilter.measurement_matrix)), np.linalg.inv(S_steady))
+        # steady_cov_update_RF = np.dot((np.identity(self._kalmanfilter.state_vec_shape) - np.dot(K_steady, self._kalmanfilter.measurement_matrix)), steady_cov_predict_RF)
+        #
+        # # go back to NOT ROTATING reference frame
+        # self.__steady_prior = self.__change_time_indep_reference_frame_rotating(steady_cov_predict_RF,
+        #                                                                         R=eval_matrix_of_functions(R_T, t),
+        #                                                                         R_T=eval_matrix_of_functions(R, t))
+        # self.__steady_post = self.__change_time_indep_reference_frame_rotating(steady_cov_update_RF,
+        #                                                                        R=eval_matrix_of_functions(R_T, t),
+        #                                                                        R_T=eval_matrix_of_functions(R, t))
         return
 
-    def __num_compute_Q_delta_in_RF(self, t, num_terms=30):
+    def __num_compute_Q_delta_in_RF(self, t, F_RF, num_terms=30):
         """
         This has to be computed in RF because if just transformed the matrix Q^Delta is not Hermitian -> dare can not
         be solved (this is due to the numerical error).
@@ -66,7 +95,7 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
         :return:
         """
         def Phi_t(t):
-            return expm(self.__F_RF*t)
+            return expm(F_RF*t)
 
         t = np.linspace(t, t+self._kalmanfilter.dt, num=num_terms)  # since everything is time independent I can perform this calculation once
         Phi_deltas = np.array([Phi_t(i) for i in t])
@@ -77,7 +106,8 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
         Q_delta_integrand_split = list(map(list, zip(*Q_delta_integrands.reshape(*Q_delta_integrands.shape[:1], -1))))
         self.__Q_delta_RF = np.reshape(np.array([trapz(i, t) for i in Q_delta_integrand_split]),
                                                 (self._kalmanfilter.state_vec_shape, self._kalmanfilter.state_vec_shape))
-        return
+        return np.reshape(np.array([trapz(i, t) for i in Q_delta_integrand_split]),
+                                                (self._kalmanfilter.state_vec_shape, self._kalmanfilter.state_vec_shape))
 
     @staticmethod
     def __change_time_dep_reference_frame_to_rotating(obj, R, R_T, R_derrrivative):

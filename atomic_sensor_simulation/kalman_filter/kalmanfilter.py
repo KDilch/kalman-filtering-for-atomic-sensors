@@ -57,7 +57,7 @@ class DD_KalmanFilter(object):
         self.K = np.dot(PHT, self.SI)
         self._dynamical_model._state.update(self.x + np.dot(self.K, self.y))
         I_KH = self.Identity - np.dot(self.K, self._measurement_model.H)
-        self.P = np.dot(np.dot(I_KH, self.P), I_KH.T) + np.dot(np.dot(self.K, self.R), self.K.T)
+        self.P = np.dot(np.dot(I_KH, self.P), np.transpose(I_KH)) + np.dot(np.dot(self.K, self.R), self.K.T)
         self.z = copy.deepcopy(z)
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
