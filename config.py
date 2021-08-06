@@ -4,19 +4,19 @@ import numpy as np
 config = SimpleNamespace()
 
 config.physical_parameters = {
-    'larmour_freq': [1.],
+    'larmour_freq': 6.,
     'spin_correlation_const': 0.33,
     'light_correlation_const': 1.
 }
 
 config.coupling = {
-    'omega_p': 1.,
+    'omega_p': 6.,
     'g_p': 150.,
     'phase_shift': 0.
 }
 
 config.simulation = {
-    'number_periods': 0.5,
+    'number_periods': 10,
     'dt_simulation': 0.005,
     'spin_y_initial_val': 1.,
     'spin_z_initial_val': 0.,

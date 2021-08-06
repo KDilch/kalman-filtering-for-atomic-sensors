@@ -38,8 +38,7 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
                                                                            eval_matrix_of_functions(self.__rotating_frame_transform, t),
                                                                            eval_matrix_of_functions(self.__rotating_frame_transform_T, t),
                                                                            self.__D_rotating_frame_transform)
-        if self.__Q_delta_RF is None:
-            self.__num_compute_Q_delta_in_RF(t)
+        self.__num_compute_Q_delta_in_RF(t)
         if self.__Phi_delta_RF is None:
             self.__Phi_delta_RF = expm(self.__F_RF * self._kalmanfilter.dt)
         steady_cov_predict_RF = solve_discrete_are(a=np.transpose(self.__Phi_delta_RF),
@@ -67,7 +66,7 @@ class AtomicSensorSteadyStateSolver(SteadyStateSolver):
         :return:
         """
         def Phi_t(t):
-            return expm(self.__F_RF * t)
+            return expm(self.__F_RF*t)
 
         t = np.linspace(t, t+self._kalmanfilter.dt, num=num_terms)  # since everything is time independent I can perform this calculation once
         Phi_deltas = np.array([Phi_t(i) for i in t])
