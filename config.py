@@ -16,13 +16,13 @@ config.coupling = {
 }
 
 config.simulation = {
-    'number_periods': 15,
+    'number_periods': 10.,
     'dt_simulation': 0.005,
     'spin_y_initial_val': 1.,
-    'spin_z_initial_val': 0.,
+    'spin_z_initial_val': 1.,
     'q_initial_val': 2.,
     'p_initial_val': 2.,
-    'R': np.array([[0.001]]),
+    'R': np.array([[0.01]]),
     'simulation_type': ['linear', 'sin', 'square', 'sawtooth']  # must be a list or value [NOT ND.ARRAY], input verification according to ATOMIC_SENSOR_DYNAMICS_TYPES in main.py
 }
 
@@ -42,7 +42,7 @@ config.square_waveform = {
 }
 
 config.filter = {
-    'measure_every_nth': 2,
+    'dt_filter': 0.01,
     'spin_y_initial_val': None,
     'spin_z_initial_val': None,
     'q_initial_val': None,

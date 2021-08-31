@@ -1,11 +1,51 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
+import abc
 import copy
 import logging
 
 
-class DD_KalmanFilter(object):
+class ExtendedKalmanFilterStrategy(metaclass=abc.ABCMeta):
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'predict') and
+                callable(subclass.predict) and
+                hasattr(subclass, 'update') and
+                callable(subclass.update) or
+                NotImplemented)
+
+    @abc.abstractmethod
+    def predict(self, ekf):
+        raise NotImplementedError("")
+
+    @abc.abstractmethod
+    def update(self, ekf):
+        raise NotImplementedError("")
+
+
+class ExtendedKFDiscretizationFirstStrategy(ExtendedKalmanFilterStrategy):
+    def __init__(self):
+        pass
+
+    def predict(self, ekf):
+        pass
+
+    def update(self, ekf):
+        pass
+
+
+class ExtendedKFLinearizationFirstStrategy(ExtendedKalmanFilterStrategy):
+    def __init__(self):
+        pass
+
+    def predict(self, ekf):
+        F = ekf.F
+
+
+
+class ExtendedKalmanFilter(object):
     """A class that is able to perform Discrete-Discrete Kalman filtering for continuous, discrete as well as hybrid dynamical
      and measurement models. For now I will only address the hybrid continuous dynamical model and discrete measurement
       model."""
@@ -40,7 +80,7 @@ class DD_KalmanFilter(object):
         self.z = None  # store last measurement outcome
 
     def predict(self):
-        self._dynamical_model.dynamics.num_compute_discrete_transition_and_noise_matrices(from_time=self.t)
+        self._dynamical_model.dynamics.extended_num_compute_discrete_transition_and_noise_matrices(from_time=self.t)
         self.x = np.dot(self._dynamical_model.dynamics.discrete_transition_matrix, self._dynamical_model.vec)
         self.P = np.dot(np.dot(self._dynamical_model.dynamics.discrete_transition_matrix, self.P), self._dynamical_model.dynamics.discrete_transition_matrix_T) + self._dynamical_model.dynamics.discrete_intrinsic_noise
         self.t += self._measurement_model.dt
@@ -50,17 +90,18 @@ class DD_KalmanFilter(object):
         return
 
     def update(self, z):
-        self.y = z - np.dot(self._measurement_model.H, self.x)  # y = z - Hx
+        "In our case the measurement is still linear"
+        self.y = z - np.dot(self._measurement_model.H, self._dynamical_model.vec)  # y = z - Hx
         PHT = np.dot(self.P, self._measurement_model.H_T)
         self.S = np.dot(self._measurement_model.H, PHT) + self.R  # system uncertainty -> P projected to measurement space
         self.SI = np.linalg.inv(self.S)
         self.K = np.dot(PHT, self.SI)
-        self.x = self.x + np.dot(self.K, self.y)
-        self._dynamical_model._state.update(self.x)
+        self._dynamical_model._state.update(self.x + np.dot(self.K, self.y))
         I_KH = self.Identity - np.dot(self.K, self._measurement_model.H)
-        self.P = np.dot(I_KH, self.P_prior)
-        self.x_post = np.copy(self.x)
-        self.P_post = np.copy(self.P)
+        self.P = np.dot(np.dot(I_KH, self.P), np.transpose(I_KH)) + np.dot(np.dot(self.K, self.R), self.K.T)
+        self.z = copy.deepcopy(z)
+        self.x_post = self.x.copy()
+        self.P_post = self.P.copy()
         return
 
     def compute_x0_and_P0(self, z0):

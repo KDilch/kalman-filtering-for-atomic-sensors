@@ -28,11 +28,15 @@ def run__atomic_sensor(queue):
     config, args = queue.get()[0]
     # atomic_state_lin_dynamics_manager = args.dynamics
     num_iter_simulation = 2 * (np.pi * config.simulation['number_periods'] /config.physical_parameters['larmour_freq']) / config.simulation['dt_simulation']
-    num_iter_measurement = np.int(np.floor_divide(num_iter_simulation, config.filter['measure_every_nth']))
-    dt_filter = num_iter_simulation*config.simulation['dt_simulation']/num_iter_measurement
+    num_iter_filter = np.int(np.floor_divide(num_iter_simulation * config.simulation['dt_simulation'],
+                                             config.filter['dt_filter']))
+
+    measure_every_nth = np.int(np.floor_divide(num_iter_simulation, num_iter_filter)) #the assumtion is that dt_simulation is continous in comparison to dt_filter
+    num_iter_measurement = np.int(np.floor_divide(num_iter_simulation, measure_every_nth))
+    dt_filter = config.filter['dt_filter']
 
     time_arr_simulation = np.arange(0, num_iter_simulation * config.simulation['dt_simulation'], config.simulation['dt_simulation'])
-    time_arr_measurement = np.arange(0, num_iter_measurement * dt_filter, dt_filter)
+    time_arr_filter = np.arange(0, num_iter_filter * config.filter['dt_filter'], config.filter['dt_filter'])
 
     # SIMULATE THE DYNAMICS AND PERFORM A REAL TIME MEASUREMENT FOR EVERY NTH SIMULATED VALUE===========================
 
@@ -70,13 +74,14 @@ def run__atomic_sensor(queue):
     steady_state_history_manager = AtomicSensorSteadyStateHistoryManager()
     unscented_kalman_filter = None
     extended_kalman_filter = None
+
     # compute a steady state solution
 
     simulation_steps_counter = 0
     for time in time_arr_simulation:
 
         simulation_steps_counter += 1
-        is_measurement_performed = (simulation_steps_counter) % config.filter['measure_every_nth']
+        is_measurement_performed = (simulation_steps_counter) % measure_every_nth
 
         # SIMULATE THE DYNAMICS
         atomic_state_dynamics_manager.step(time)
@@ -104,4 +109,4 @@ def run__atomic_sensor(queue):
 
     plot_simulation_and_kalman(simulation_data=simulation_history_manager, kalman_data=kalman_filter_history_manager, show=True)
     plot_kalman_and_steady_state(kalman_data=kalman_filter_history_manager, steady_state_data=steady_state_history_manager, show=True)
-    return 0
+    return
