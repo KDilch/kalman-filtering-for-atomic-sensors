@@ -31,7 +31,7 @@ def run__atomic_sensor(queue):
     num_iter_filter = np.int(np.floor_divide(num_iter_simulation * config.simulation['dt_simulation'],
                                              config.filter['dt_filter']))
 
-    measure_every_nth = np.int(np.floor_divide(num_iter_simulation, num_iter_filter)) #the assumtion is that dt_simulation is continous in comparison to dt_filter
+    measure_every_nth = np.int(np.floor_divide(num_iter_simulation, num_iter_filter)) # the assumtion is that dt_simulation is continous in comparison to dt_filter
     num_iter_measurement = np.int(np.floor_divide(num_iter_simulation, measure_every_nth))
     dt_filter = config.filter['dt_filter']
 
@@ -101,7 +101,7 @@ def run__atomic_sensor(queue):
 
             kalman_filter.predict()
             kalman_filter.update(measurement_outcome)
-            kalman_filter_history_manager.add_history_point(history_point=[time, kalman_filter.x, kalman_filter.P_prior, kalman_filter.P])
+            kalman_filter_history_manager.add_history_point(history_point=[time, kalman_filter.x, kalman_filter.P_prior, kalman_filter.P_post])
             # FIND STEADY STATE SOLUTION
             steady_state_solver.steady_state_solution_rotating_frame(time)
             logger.debug("Steady dynamical_model solution: predict_cov=%r,\n update_cov=%r" % (steady_state_solver.steady_prior, steady_state_solver.steady_post))

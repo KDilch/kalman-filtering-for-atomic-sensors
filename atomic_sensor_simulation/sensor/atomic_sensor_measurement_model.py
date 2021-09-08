@@ -10,8 +10,8 @@ class AtomicSensorMeasurementModel(LinearMeasurementModel):
     def __init__(self, config, dt, logger=None):
         H = np.array([[0., config.noise_and_measurement['gD'], 0., 0.]])
         measurement_noise = GaussianWhiteNoise(mean=0.,
-                                               cov=config.simulation['R'] / config.simulation['dt_simulation'],
-                                               dt=config.simulation['dt_simulation'])
+                                               cov=config.simulation['R'] / config.filter['dt_filter'],
+                                               dt=config.filter['dt_filter'])
         LinearMeasurementModel.__init__(self, H, measurement_noise, dt)
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.info('Initializing an instance of a %s class.' % AtomicSensorMeasurementModel.__name__)
