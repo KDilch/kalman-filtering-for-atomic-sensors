@@ -10,13 +10,13 @@ config.physical_parameters = {
 
 config.coupling = {
     'omega_p': 6.,
-    'g_p': 150.,
+    'g_p': 10.,
     'phase_shift': 0.
 }
 
 config.simulation = {
     'number_periods': 10.,
-    'dt_sensor': 0.005,
+    'dt_sensor': 0.001,
     'spin_y_initial_val': 2.,
     'spin_z_initial_val': 2.,
     'q_initial_val': 2.,
