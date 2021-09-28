@@ -460,7 +460,7 @@ def plot__all_atomic_sensor(sensor,
     if not os.path.exists(target):
         os.makedirs(target)
     # Get history data from sensor state class and separate into blocks using "zip".
-    j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history = zip(*sensor.state_vec_full_history)
+    j_y_full_history, j_z_full_history, q_q_full_history, q_p_full_history, omega_L_full_history = zip(*sensor.state_vec_full_history)
 
     #PLOT STATE VECTOR COMPONENTS AND LKF
     simulation_state = pd.DataFrame({'time': time_arr, r"J$_y$": j_y_full_history, r"J$_z$": j_z_full_history, 'q': q_q_full_history, 'p': q_p_full_history})

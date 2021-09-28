@@ -62,11 +62,12 @@ def run__atomic_sensor(*args):
 
     every_nth_z = np.int(np.floor_divide(num_iter_sensor, num_iter_filter))
 
-    Q = np.array([[config.noise_and_measurement['QJy'], 0., 0., 0.],
-                  [0., config.noise_and_measurement['QJz'], 0., 0.],
-                  [0., 0., config.noise_and_measurement['Qq'], 0.],
-                  [0., 0., 0., config.noise_and_measurement['Qp']]])
-    H = np.array([[0., config.noise_and_measurement['gD'], 0., 0.]])
+    Q = np.array([[config.noise_and_measurement['QJy'], 0., 0., 0., 0.],
+                  [0., config.noise_and_measurement['QJz'], 0., 0., 0.],
+                  [0., 0., config.noise_and_measurement['Qq'], 0., 0.],
+                  [0., 0., 0., config.noise_and_measurement['Qp'], 0.],
+                  [0., 0., 0., 0., 0.]])
+    H = np.array([[0., config.noise_and_measurement['gD'], 0., 0., 0.]])
     R = np.array([[config.noise_and_measurement['QD']]])
 
     logger.info('Setting Q, H and R to Q = %r, H = %r, R = %r' %
@@ -84,8 +85,9 @@ def run__atomic_sensor(*args):
     state = AtomicSensorState(initial_vec=np.array([config.simulation['spin_y_initial_val'],
                                                     config.simulation['spin_z_initial_val'],
                                                     config.simulation['q_initial_val'],
-                                                    config.simulation['p_initial_val']]),
-                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0.],
+                                                    config.simulation['p_initial_val'],
+                                                    0.]),
+                              noise_vec=GaussianWhiteNoise(mean=[0., 0., 0., 0., 0.],
                                                            cov=Q*config.simulation['dt_sensor'],
                                                            dt=config.simulation['dt_sensor']),
                               initial_time=0,
@@ -278,16 +280,16 @@ def run__atomic_sensor(*args):
         error_waveform_LKF[index] = (waveform_filter_freq[index]-lkf_num_history_manager.waveform_est[index])**2
         error_waveform_EKF[index] = (waveform_filter_freq[index]-extended_kf_history_manager.waveform_est[index])**2
 
-    # FIND STEADY STATE SOLUTION
+    # # FIND STEADY STATE SOLUTION
     steady_state_history_manager = SteadyStateHistoryManager(num_iter_filter, config, time_arr_filter)
-    for index, time_filter in enumerate(time_arr_filter):
-        steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(t=time_filter,
-                                                                                    F=eval_matrix_of_functions(
-                                                                                        state.F_transition_matrix,
-                                                                                        time_filter),
-                                                                                    model=linear_kf_model)
-        logger.debug("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
-        steady_state_history_manager.add_entry(steady_prior, steady_post, index)
+    # for index, time_filter in enumerate(time_arr_filter):
+    #     steady_prior, steady_post = compute_steady_state_solution_for_atomic_sensor(t=time_filter,
+    #                                                                                 F=eval_matrix_of_functions(
+    #                                                                                     state.F_transition_matrix,
+    #                                                                                     time_filter),
+    #                                                                                 model=linear_kf_model)
+    #     logger.debug("Steady state solution: predict_cov=%r,\n update_cov=%r" % (steady_prior, steady_post))
+    #     steady_state_history_manager.add_entry(steady_prior, steady_post, index)
 
     # # # PLOT DATA
     plot__all_atomic_sensor(sensor,

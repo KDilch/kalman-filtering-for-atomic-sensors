@@ -109,8 +109,8 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
         self.H = H
         self.R = R
         self.R_delta = R_delta
-        self.Phi_0 = np.identity(4)
-        self.Phi = np.identity(4)
+        self.Phi_0 = np.identity(5)
+        self.Phi = np.identity(5)
         self.Q_delta = self.compute_Q_delta(from_time=self.t, Phi_0=self.Phi, num_terms=30)
         self.time_arr = time_arr
         self.time_resolution = time_resolution_ode_solver
@@ -129,22 +129,22 @@ class AtomicSensorEKF(ExtendedKalmanFilter):
     def compute_Q_delta(self, from_time, Phi_0, num_terms=30):
         def dPhidt(Phi, t):
             return np.reshape(np.dot(np.array(eval_matrix_of_functions(self.F, t), dtype=float),
-                                     np.reshape(Phi, (4, 4))), 16)
+                                     np.reshape(Phi, (5, 5))), 25)
 
         t = np.linspace(from_time, from_time + self.dt, num=num_terms)  # times to report solution
-        Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, 16), t, full_output=True)
+        Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, 25), t, full_output=True)
         # Numerical
-        Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (4, 4)) for i in range(len(Phi_deltas))]
+        Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (5, 5)) for i in range(len(Phi_deltas))]
         Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
         integrands = np.array(
             [np.dot(np.dot(a, self.Q), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
-        int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33 = map(
+        int00, int01, int02, int03, int04, int10, int11, int12, int13, int14, int20, int21, int22, int23, int24, int30, int31, int32, int33, int34, int40, int41, int42, int43, int44 = map(
             list, zip(*integrands.reshape(*integrands.shape[:1], -1)))
-        integrand_split = [int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30,
-                           int31, int32, int33]
+        integrand_split = [int00, int01, int02, int03, int04, int10, int11, int12, int13, int14, int20, int21, int22, int23, int24, int30,
+                           int31, int32, int33, int34, int40, int41, int42, int43, int44]
         # calculate integral numerically using simpsons rule
-        self.Q_delta = np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
-        return np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
+        self.Q_delta = np.reshape(np.array([simps(i, t) for i in integrand_split]), (5, 5))
+        return np.reshape(np.array([simps(i, t) for i in integrand_split]), (5, 5))
 
     def predict(self, u=0):
         self.x = self.predict_x_ode_solve(from_time=self.t, time_resolution=self.time_resolution)

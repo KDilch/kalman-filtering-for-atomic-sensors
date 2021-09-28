@@ -12,12 +12,13 @@ from scipy.integrate import odeint
 from atomic_sensor_simulation.utilities import eval_matrix_of_functions, differentiate_matrix_of_functions
 from config import config
 
-R = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0.],
-              [lambda t: 0., lambda t: 1., lambda t: 0., lambda t: 0.],
+R = np.array([[lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0., lambda t: 0],
+              [lambda t: 0., lambda t: 1., lambda t: 0., lambda t: 0., lambda t: 0],
               [lambda t: 0., lambda t: 0., lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
-                lambda t: np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift'])],
+                lambda t: np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift']), lambda t:0],
               [lambda t: 0., lambda t: 0., lambda t: -np.sin(config.coupling['omega_p'] * t + config.coupling['phase_shift']),
-               lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift'])]])
+               lambda t: np.cos(config.coupling['omega_p'] * t + config.coupling['phase_shift']), lambda t:0],
+              [lambda t:0, lambda t:0, lambda t:0, lambda t:0, lambda t:0]])
 # steady_cov_predict_RF = None
 # steady_cov_update_RF = None
 R_T = R.transpose()
@@ -85,16 +86,16 @@ def compute_Q_delta_sympy(F_RF, Q, delta_t, num_terms=30):
         return expm(F_RF*t)
     t = np.linspace(0, delta_t, num=num_terms)
     Phi_deltas = np.array([Phi_t(i) for i in t])
-    Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (4, 4)) for i in range(len(Phi_deltas))]
+    Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (5, 5)) for i in range(len(Phi_deltas))]
     Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
     integrands = np.array([np.dot(np.dot(a, Q), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
     # Assuming 4x4 matrices! #TODO get rid of it
     a = integrands.reshape(-1, integrands.shape[-1])
-    int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33 = map(
+    int00, int01, int02, int03, int04, int10, int11, int12, int13, int14, int20, int21, int22, int23, int24, int30, int31, int32, int33, int34, int40, int41, int42, int43, int44 = map(
         list, zip(*integrands.reshape(*integrands.shape[:1], -1)))
-    integrand_split = [int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31,
-                       int32, int33]
-    Q_delta = np.dot(np.dot(Phi_t(delta_t), np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))), np.transpose(Phi_t(delta_t)))
+    integrand_split = [int00, int01, int02, int03, int04, int10, int11, int12, int13, int14, int20, int21, int22, int23, int24, int30, int31,
+                       int32, int33, int34, int40, int41, int42, int43, int44]
+    Q_delta = np.dot(np.dot(Phi_t(delta_t), np.reshape(np.array([simps(i, t) for i in integrand_split]), (5, 5))), np.transpose(Phi_t(delta_t)))
     return np.array(Q_delta, dtype=np.float64)
 
 def compute_expm_approx(matrix, num_terms):
