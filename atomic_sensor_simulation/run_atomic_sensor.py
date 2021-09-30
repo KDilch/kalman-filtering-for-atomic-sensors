@@ -81,7 +81,7 @@ def run__atomic_sensor(queue):
     for time in time_arr_simulation:
 
         simulation_steps_counter += 1
-        is_measurement_performed = (simulation_steps_counter) % measure_every_nth
+        is_measurement_performed = simulation_steps_counter % measure_every_nth
 
         # SIMULATE THE DYNAMICS
         atomic_state_dynamics_manager.step(time)

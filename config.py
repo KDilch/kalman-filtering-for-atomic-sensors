@@ -16,8 +16,8 @@ config.coupling = {
 }
 
 config.simulation = {
-    'number_periods': 2.,
-    'dt_simulation': 0.001,
+    'number_periods': 10.,
+    'dt_simulation': 0.01,
     'spin_y_initial_val': 1.,
     'spin_z_initial_val': 1.,
     'q_initial_val': 2.,
@@ -42,7 +42,7 @@ config.square_waveform = {
 }
 
 config.filter = {
-    'dt_filter': 0.01,
+    'dt_filter': 0.03,
     'spin_y_initial_val': None,
     'spin_z_initial_val': None,
     'q_initial_val': None,

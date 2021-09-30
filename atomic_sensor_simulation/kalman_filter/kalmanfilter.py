@@ -58,7 +58,7 @@ class DD_KalmanFilter(object):
         self.x = self.x + np.dot(self.K, self.y)
         self._dynamical_model._state.update(self.x)
         I_KH = self.Identity - np.dot(self.K, self._measurement_model.H)
-        self.P = np.dot(I_KH, self.P_prior)
+        self.P = np.dot(np.dot(I_KH, self.P), I_KH.T) + np.dot(np.dot(self.K, self.R), self.K.T)
         self.x_post = np.copy(self.x)
         self.P_post = np.copy(self.P)
         return
@@ -66,7 +66,7 @@ class DD_KalmanFilter(object):
     def compute_x0_and_P0(self, z0):
         x0 = np.dot(self._measurement_model.H_inverse, z0)
         cov_x0 = self._dynamical_model.dynamics.discrete_intrinsic_noise + np.dot(np.dot(self._measurement_model.H_inverse, self.R),
-                                                                                    np.transpose(self._measurement_model.H_inverse))
+                                                                                  np.transpose(self._measurement_model.H_inverse))
         return x0, cov_x0
 
     @property

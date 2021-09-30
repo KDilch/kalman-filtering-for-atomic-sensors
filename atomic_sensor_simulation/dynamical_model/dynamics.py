@@ -52,24 +52,56 @@ class DynamicalModel(ABC):
         """Computes discrete model (Phi, Q^{\Delta})"""
         if self.__is_model_differential and self.__discretization_active:
             Phi_0 = np.reshape(np.identity(self.__state_vec_shape),
-                               self.__state_vec_shape ** 2)  # transition matrix from_time to from_time is identity
+                               self.__state_vec_shape ** 2)
 
             def dPhidt(Phi, t):
                 return np.reshape(np.dot(np.array(self.evaluate_transition_matrix_at_time_t(time=t), dtype=float),
                                          np.reshape(Phi, (self.__state_vec_shape, self.__state_vec_shape))),
                                   self.__state_vec_shape ** 2)
 
-            t = np.linspace(from_time, from_time+self._discrete_dt, num=time_resolution)  # times to report solution
-            # solve ODE
-            Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, self.__state_vec_shape**2), t, full_output=True)
-            Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (self.__state_vec_shape, self.__state_vec_shape)) for i in range(len(Phi_deltas))]
-            self._discrete_transition_matrix = Phi_s_matrix_form[-1]
-            if self.intrinsic_noise:
-                Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
-                Q_delta_integrands = np.array([np.dot(np.dot(Phi, self.intrinsic_noise.cov), PhiT) for Phi, PhiT in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
-                Q_delta_integrand_split = list(map(list, zip(*Q_delta_integrands.reshape(*Q_delta_integrands.shape[:1], -1))))
-                self._discrete_intrinsic_noise = np.reshape(np.array([trapz(i, t) for i in Q_delta_integrand_split]), (self.__state_vec_shape, self.__state_vec_shape))
+            t = np.linspace(from_time, from_time + self._discrete_dt, num=time_resolution)  # times to report solution
+
+            for i in range(1, time_resolution):
+                # span for next time step
+                tspan = [t[i - 1], t[i]]
+                # solve for next step
+                Phi = odeint(dPhidt, Phi_0, tspan)
+                # next initial condition
+                Phi_0 = Phi[1]
+            self._discrete_transition_matrix = np.reshape(Phi_0, (self.__state_vec_shape, self.__state_vec_shape))
+
+
+            Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, 16), t, full_output=True)
+            # Numerical
+            Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (4, 4)) for i in range(len(Phi_deltas))]
+            Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
+            integrands = np.array(
+                [np.dot(np.dot(a, self.intrinsic_noise.cov), b) for a, b in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
+            int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23, int30, int31, int32, int33 = map(
+                list, zip(*integrands.reshape(*integrands.shape[:1], -1)))
+            integrand_split = [int00, int01, int02, int03, int10, int11, int12, int13, int20, int21, int22, int23,
+                               int30,
+                               int31, int32, int33]
+            # calculate integral numerically using simpsons rule
+            self._discrete_intrinsic_noise = np.reshape(np.array([simps(i, t) for i in integrand_split]), (4, 4))
             return
+
+            # def dPhidt(Phi, t):
+            #     return np.reshape(np.dot(np.array(self.evaluate_transition_matrix_at_time_t(time=t), dtype=float),
+            #                              np.reshape(Phi, (self.__state_vec_shape, self.__state_vec_shape))),
+            #                       self.__state_vec_shape ** 2)
+            #
+            # t = np.linspace(from_time, from_time+self._discrete_dt, num=time_resolution)  # times to report solution
+            # solve ODE
+            # Phi_deltas, _ = odeint(dPhidt, np.reshape(Phi_0, self.__state_vec_shape**2), t, full_output=True)
+            # Phi_s_matrix_form = [np.reshape(Phi_deltas[i], (self.__state_vec_shape, self.__state_vec_shape)) for i in range(len(Phi_deltas))]
+            # # self._discrete_transition_matrix = Phi_s_matrix_form[-1]
+            # if self.intrinsic_noise:
+            #     Phi_s_transpose_matrix_form = [np.transpose(a) for a in Phi_s_matrix_form]
+            #     Q_delta_integrands = np.array([np.dot(np.dot(Phi, self.intrinsic_noise.cov), PhiT) for Phi, PhiT in zip(Phi_s_matrix_form, Phi_s_transpose_matrix_form)])
+            #     Q_delta_integrand_split = list(map(list, zip(*Q_delta_integrands.reshape(*Q_delta_integrands.shape[:1], -1))))
+            #     self._discrete_intrinsic_noise = np.reshape(np.array([trapz(i, t) for i in Q_delta_integrand_split]), (self.__state_vec_shape, self.__state_vec_shape))
+            # return
         else:
             raise RuntimeError("Discretization unsuccessful.")
 
@@ -132,8 +164,8 @@ class LinearDifferentialDynamicalModel(DynamicalModel):
 
     def step(self, state_mean, state, time):
         self._logger.debug('Performing a step for time %r' % str(time))
-        state_mean.update(state_mean.vec + self.evaluate_transition_matrix_at_time_t(time).dot(
-            state_mean.vec) * self.dt)
+        state_mean.update(state_mean.vec + (self.evaluate_transition_matrix_at_time_t(time).dot(
+            state_mean.vec)) * self.dt)
         if self.intrinsic_noise:
             state.update(state_mean.vec + self.intrinsic_noise.step())
         else:
