@@ -24,7 +24,7 @@ config.simulation = {
 }
 
 config.filter = {
-    'dt_filter': 0.01,
+    'dt_filter': 0.05,
     'spin_y_initial_val': None,
     'spin_z_initial_val': None,
     'q_initial_val': None,

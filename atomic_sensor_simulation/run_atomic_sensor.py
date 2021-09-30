@@ -25,8 +25,6 @@ def run__atomic_sensor(*args):
 
     logger.info('Loading a config file from path %r' % args[0].config)
     config = import_config_from_path(args[0].config)
-    config.coupling['g_p'] = args[0].gp
-    config.coupling['omega_p'] = args[0].wp
 
     logger.info(
         'Setting physical parameters to larmour_freq = %r, spin_correlation_const = %r, light_correlation_const=%r.' %

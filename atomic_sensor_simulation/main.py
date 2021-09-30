@@ -100,20 +100,7 @@ def main():
     args = parser.parse_args()
     logger.info('Parsed input arguments %r' % stringify_namespace(args))
     # for element in [150]:
-    for wp in np.arange(0., 10., 1.).tolist():
-        for gp in [145]:
-            logger.info("Setting g_p to %r and wp to %r" % (gp, wp))
-            args.gp = gp
-            args.wp = wp
-            args.func(args)
-    # for wp in [6.]:
-    #     logger.info("Setting omega_p to %r" % wp)
-    #     # for gp in [165]:
-    #     for gp in [800]:
-    #         logger.info("Setting g_p to %r and wp to %r" % (gp, wp))
-    #         args.gp = gp
-    #         args.wp = wp
-    #         args.func(args)
+    args.func(args)
     logger.info('Ending execution of the application.')
     return 0
 
